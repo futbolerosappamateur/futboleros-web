@@ -1,0 +1,70 @@
+.stack {
+  position: relative;
+  width: 590px;
+  height: 470px;
+  flex-shrink: 0;
+}
+
+.card1,
+.card2,
+.card3 {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  margin-left: -148px;
+  width: 296px;
+  height: 427px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px #00000088;
+  opacity: 0;
+}
+
+.card3 { z-index: 1; }
+.card2 { z-index: 2; }
+.card1 { z-index: 3; }
+
+/* ── Animations triggered when .visible is added ── */
+
+.visible .card3 {
+  animation: card3In 1s 0s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.visible .card2 {
+  animation: card2In 1s 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.visible .card1 {
+  animation: card1In 1s 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes card3In {
+  from {
+    opacity: 0;
+    transform: rotate(7deg) translate(220px, 22px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(7deg) translate(130px, 22px);
+  }
+}
+
+@keyframes card2In {
+  from {
+    opacity: 0;
+    transform: rotate(-7deg) translate(-220px, 14px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-7deg) translate(-130px, 14px);
+  }
+}
+
+@keyframes card1In {
+  from {
+    opacity: 0;
+    transform: translateY(-48px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

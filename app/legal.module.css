@@ -1,0 +1,61 @@
+.page {
+  min-height: 100svh;
+  background: var(--bg);
+  padding-top: 170px;
+}
+
+.inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 60px 24px 100px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  margin-bottom: 40px;
+  transition: opacity 0.2s;
+}
+
+.back:hover { opacity: 0.7; }
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  letter-spacing: 0.06em;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.updated {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 48px;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+
+.body {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+  white-space: pre-line;
+}

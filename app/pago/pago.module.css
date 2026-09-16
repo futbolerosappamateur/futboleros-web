@@ -1,0 +1,70 @@
+.page {
+  min-height: 100svh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  max-width: 480px;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--gold-border);
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon {
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  line-height: 1;
+}
+
+.body {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  max-width: 340px;
+}
+
+.cta {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  background-color: var(--gold);
+  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
+  background-position: top left, top right, bottom left, bottom right;
+  background-repeat: no-repeat;
+  background-size: 20px 20px;
+  color: #12120e;
+  padding: 14px 36px 11px;
+  border-radius: 8px;
+  margin-top: 8px;
+  transition: background-color 0.2s;
+}
+
+.cta:hover { background-color: var(--gold-light); }
+
+.ctaSecondary {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.ctaSecondary:hover { color: var(--gold); }
