@@ -1,13 +1,37 @@
+import type { Metadata } from 'next'
+import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
-import BackLink from '../../components/BackLink'
+import ParallaxHero from '../../components/ParallaxHero'
+import AvatarModal from './AvatarModal'
 import { createServiceClient } from '@/lib/supabase/service'
 import styles from './jugador.module.css'
 
 export const revalidate = 60
+
+const PERFIL_FIELDS = 'id, nombre, nombre_figurita, apodo, username, avatar_url, imagen_ia, estilo_juego, caracteristicas, plan, pais, fecha_nacimiento, altura, hincha_de, idolo, es_pro, descripcion_propia'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Try username first, fall back to id. Cached so generateMetadata and the page share one lookup.
+const getPerfil = cache(async (slug: string) => {
+  const supabase = createServiceClient()
+  const { data } = await supabase.from('perfiles').select(PERFIL_FIELDS).eq('username', slug).maybeSingle()
+  if (data || !UUID_RE.test(slug)) return data
+  const res = await supabase.from('perfiles').select(PERFIL_FIELDS).eq('id', slug).maybeSingle()
+  return res.data
+})
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<Metadata> {
+  const { slug } = await params
+  const perfil = await getPerfil(slug)
+  const nombre = perfil?.nombre?.trim() || 'Jugador'
+  return { title: `${nombre} — Futboleros` }
+}
 
 const PAISES: Record<string, string> = {
   AR: 'Argentina', BR: 'Brasil', UY: 'Uruguay', PY: 'Paraguay', CL: 'Chile',
@@ -34,22 +58,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
   const { slug } = await params
   const supabase = createServiceClient()
 
-  // Try username first, fall back to id
-  let { data: perfil } = await supabase
-    .from('perfiles')
-    .select('id, nombre, nombre_figurita, apodo, username, avatar_url, imagen_ia, estilo_juego, caracteristicas, plan, pais, fecha_nacimiento, altura, hincha_de, idolo, es_pro, descripcion_propia')
-    .eq('username', slug)
-    .maybeSingle()
-
-  if (!perfil) {
-    const res = await supabase
-      .from('perfiles')
-      .select('id, nombre, nombre_figurita, apodo, username, avatar_url, imagen_ia, estilo_juego, caracteristicas, plan, pais, fecha_nacimiento, altura, hincha_de, idolo, es_pro, descripcion_propia')
-      .eq('id', slug)
-      .maybeSingle()
-    perfil = res.data
-  }
-
+  const perfil = await getPerfil(slug)
   if (!perfil) notFound()
   const id = perfil.id
 
@@ -82,7 +91,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
     lenador: statsData.lenador ?? 0,
   } : null
   const edad = perfil.fecha_nacimiento ? calcEdad(perfil.fecha_nacimiento) : null
-  const tags = [...(perfil.estilo_juego ?? []), ...(perfil.caracteristicas ?? [])].slice(0, 5)
+  const tags: string[] = (perfil.caracteristicas ?? []).slice(0, 8)
   const tenis = (testimonios ?? []) as any[]
 
   return (
@@ -91,60 +100,41 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
       <main className={styles.page}>
 
         {/* ── Hero ── */}
-        <div className={styles.hero}>
+        <ParallaxHero src="/fondos/jugador.webp" className={styles.hero}>
           <div className={styles.heroInner}>
-            <BackLink href="/jugadores" className={styles.back}>Jugadores</BackLink>
-
-            <div className={styles.profile}>
-              {/* Figurita o avatar */}
-              {perfil.imagen_ia ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/figurita/${perfil.id}`}
-                  alt={`Figurita de ${perfil.nombre}`}
-                  className={styles.figurita}
-                />
-              ) : perfil.avatar_url ? (
-                <Image
-                  src={perfil.avatar_url}
-                  alt={perfil.nombre}
-                  width={120}
-                  height={120}
-                  className={styles.avatar}
-                  unoptimized
-                />
-              ) : (
-                <div className={styles.avatarPlaceholder}>
-                  <span>{perfil.nombre?.charAt(0)?.toUpperCase()}</span>
-                </div>
-              )}
-
+            <div className={styles.heroBottom}>
+              <AvatarModal
+                avatarUrl={perfil.avatar_url}
+                imagenIa={perfil.imagen_ia}
+                nombre={perfil.nombre}
+                esPro={perfil.es_pro}
+              />
               <div className={styles.profileInfo}>
+                {perfil.username && <p className={styles.username}>@{perfil.username}</p>}
                 <h1 className={styles.nombre}>
                   {perfil.nombre}
-                  {perfil.plan === 10 && (
-                    <svg className={styles.starIcon} viewBox="0 0 24 24" fill="currentColor" aria-label="Plan 10">
-                      <path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.006Z" />
-                    </svg>
+                  {perfil.es_pro && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src="/ic-10.webp" alt="Plan 10" className={styles.starIcon} />
                   )}
                 </h1>
-                {perfil.apodo && <p className={styles.apodo}>"{perfil.apodo}"</p>}
-                {perfil.username && <p className={styles.username}>@{perfil.username}</p>}
-                {tags.length > 0 && (
-                  <div className={styles.tags}>
-                    {tags.map((t, i) => (
-                      <span key={i} className={styles.tag}>{t.replace(/[^\p{L}\s]/gu, '').trim()}</span>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
-        </div>
+        </ParallaxHero>
 
         {/* ── Body ── */}
         <div className={styles.body}>
           <div className={styles.inner}>
+
+            {/* Tags / características */}
+            {tags.length > 0 && (
+              <div className={styles.tagsBar}>
+                {tags.map((t, i) => (
+                  <span key={i} className={styles.tagCyan}>{t.replace(/[^\p{L}\s]/gu, '').trim()}</span>
+                ))}
+              </div>
+            )}
 
             {/* Info personal */}
             {(edad || perfil.altura || perfil.pais || perfil.hincha_de || perfil.idolo) && (

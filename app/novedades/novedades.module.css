@@ -1,7 +1,10 @@
 .page { min-height: 100svh; background: var(--bg); }
 
 /* Hero */
-.hero { background: #12120e; padding: 200px 24px 64px; }
+.hero {
+  background-color: #12120e;
+  padding: 200px 24px 64px;
+}
 .heroInner { max-width: 680px; margin: 0 auto; text-align: center; }
 .badge {
   display: inline-block;

@@ -68,10 +68,6 @@
   letter-spacing: 0.1em;
   line-height: 1;
   background-color: var(--gold);
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 24px 24px;
   color: #0a0a1a;
   padding: 16px 48px 13px 48px;
   border-radius: 8px;

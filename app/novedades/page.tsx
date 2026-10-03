@@ -1,11 +1,18 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
+import ParallaxHero from '../components/ParallaxHero'
 import { createServiceClient } from '@/lib/supabase/service'
 import styles from './novedades.module.css'
 
 export const revalidate = 60
+
+export const metadata: Metadata = {
+  title: 'Novedades — Futboleros',
+  description: 'Actualizaciones, mejoras y noticias de Futboleros.',
+}
 
 export default async function Novedades() {
   const supabase = createServiceClient()
@@ -21,13 +28,13 @@ export default async function Novedades() {
     <>
       <Header />
       <main className={styles.page}>
-        <div className={styles.hero}>
+        <ParallaxHero src="/fondos/novedades.webp" className={styles.hero}>
           <div className={styles.heroInner}>
             <span className={styles.badge}>BLOG</span>
             <h1 className={styles.title}>NOVEDADES</h1>
             <p className={styles.subtitle}>Actualizaciones, mejoras y noticias de Futboleros.</p>
           </div>
-        </div>
+        </ParallaxHero>
 
         <div className={styles.body}>
           <div className={styles.inner}>

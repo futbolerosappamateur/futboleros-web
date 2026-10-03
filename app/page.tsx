@@ -112,6 +112,64 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ── Partido en vivo ── */}
+      <section className={styles.liveMatch}>
+        <div className={styles.liveMatchInner}>
+          {/* Imagen / placeholder izquierda */}
+          <div className={styles.liveWidget}>
+            <div className={styles.widgetHeader}>
+              <span className={styles.widgetLiveTag}>
+                <span className={styles.widgetDot} />
+                EN VIVO
+              </span>
+              <span className={styles.widgetTime}>38'</span>
+            </div>
+            <div className={styles.widgetScore}>
+              <div className={styles.widgetTeam}>
+                <span className={styles.widgetTeamName}>AZUL</span>
+                <span className={styles.widgetGoal}>2</span>
+              </div>
+              <span className={styles.widgetDash}>–</span>
+              <div className={styles.widgetTeam}>
+                <span className={styles.widgetTeamName}>ROJO</span>
+                <span className={styles.widgetGoal}>1</span>
+              </div>
+            </div>
+            <div className={styles.widgetEvents}>
+              {[
+                { time: "34'", name: 'Limay U.' },
+                { time: "21'", name: 'Ibarak F.' },
+                { time: "12'", name: 'Andrés M.' },
+              ].map(e => (
+                <div key={e.time} className={styles.widgetEvent}>
+                  <span className={styles.widgetEventTime}>{e.time}</span>
+                  <span className={styles.widgetEventIcon}>⚽</span>
+                  <span className={styles.widgetEventName}>{e.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Texto derecha */}
+          <div className={styles.liveMatchText}>
+            <span className={styles.liveBadge}>
+              <span className={styles.liveDot} />
+              EN VIVO
+            </span>
+            <h2 className={styles.liveTitle}>EL PARTIDO,<br />EN TIEMPO REAL</h2>
+            <p className={styles.liveBody}>
+              Mientras juegan, el administrador registra goles, asistencias y eventos al instante desde el banco. Todos los jugadores siguen el partido desde sus teléfonos.
+            </p>
+            <ul className={styles.liveFeatures}>
+              <li>Marcador actualizado en tiempo real</li>
+              <li>Registro de goles y asistencias por jugador</li>
+              <li>Premios del partido: figura, tronco y leñador</li>
+              <li>Historial completo generado automáticamente al finalizar</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ── */}
       <section className={styles.cta}>
         <div className={styles.ctaInner}>

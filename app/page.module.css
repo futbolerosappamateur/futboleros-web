@@ -106,7 +106,6 @@
 .statsBar {
   background: var(--surface);
   border-top: 1px solid var(--gold-border);
-  border-bottom: 1px solid var(--gold-border);
 }
 
 .statsInner {
@@ -366,10 +365,6 @@
   letter-spacing: 0.1em;
   line-height: 1;
   background-color: var(--gold);
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 24px 24px;
   color: #0a0a1a;
   padding: 16px 48px 13px 48px;
   border-radius: 8px;
@@ -380,6 +375,213 @@
 .ctaPrimaryLarge:hover {
   background-color: var(--gold-light);
   transform: translateY(-1px);
+}
+
+/* ── Partido en vivo ── */
+.liveMatch {
+  background: #c9a84c;
+  padding: 100px 24px;
+}
+
+.liveMatchInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.liveMatchText {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.liveBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  color: #e63946;
+  border: 3px solid #e63946;
+  padding: 5px 14px 3px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e63946;
+  flex-shrink: 0;
+  animation: blink 1.4s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.liveTitle {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  letter-spacing: 0.06em;
+  color: #fff;
+  line-height: 0.95;
+}
+
+.liveBody {
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.75;
+  max-width: 480px;
+}
+
+.liveFeatures {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.liveFeatures li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.liveFeatures li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+/* ── Widget mock ── */
+.liveWidget {
+  background: #1a1a14;
+  border: 1px solid var(--gold-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.widgetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--gold-border);
+  background: #12120e;
+}
+
+.widgetLiveTag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: #e63946;
+}
+
+.widgetDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e63946;
+  animation: blink 1.4s ease-in-out infinite;
+}
+
+.widgetTime {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+}
+
+.widgetScore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px 24px;
+}
+
+.widgetTeam {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.widgetTeamName {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  color: var(--text-muted);
+}
+
+.widgetGoal {
+  font-family: var(--font-display);
+  font-size: 4rem;
+  letter-spacing: 0.02em;
+  color: #f0e6d0;
+  line-height: 1;
+}
+
+.widgetDash {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  color: #2e2e28;
+  line-height: 1;
+  margin-bottom: 0.6rem;
+}
+
+.widgetEvents {
+  border-top: 1px solid var(--gold-border);
+}
+
+.widgetEvent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #c9a84c0a;
+}
+.widgetEvent:last-child { border-bottom: none; }
+
+.widgetEventTime {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.widgetEventIcon { font-size: 0.85rem; }
+
+.widgetEventName {
+  font-size: 0.9rem;
+  color: var(--text);
+  flex: 1;
+}
+
+@media (max-width: 860px) {
+  .liveMatchInner {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+  .liveWidget { max-width: 360px; }
 }
 
 @media (max-width: 480px) {

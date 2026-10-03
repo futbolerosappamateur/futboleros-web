@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import styles from './jugadores.module.css'
@@ -12,16 +12,17 @@ export type JugadorConStats = {
   username: string | null
   avatar_url: string | null
   imagen_ia: string | null
-  plan: number | null
+  es_pro: boolean
   stats: {
     partidos: number
     goles: number
     asistencias: number
     ganados: number
+    rating: number | null
   }
 }
 
-type Sort = 'nombre' | 'partidos' | 'goles' | 'asistencias'
+type Sort = 'nombre' | 'partidos' | 'goles' | 'asistencias' | 'rating'
 type View = 'grid' | 'list'
 
 export default function JugadoresClient({
@@ -51,6 +52,7 @@ export default function JugadoresClient({
       if (sort === 'partidos') return b.stats.partidos - a.stats.partidos
       if (sort === 'goles') return b.stats.goles - a.stats.goles
       if (sort === 'asistencias') return b.stats.asistencias - a.stats.asistencias
+      if (sort === 'rating') return (b.stats.rating ?? -1) - (a.stats.rating ?? -1)
       return 0
     })
 
@@ -86,6 +88,7 @@ export default function JugadoresClient({
               <option value="partidos">Más partidos</option>
               <option value="goles">Más goles</option>
               <option value="asistencias">Más asistencias</option>
+              <option value="rating">Por rating</option>
             </select>
             <div className={styles.viewToggle}>
               <button
@@ -140,14 +143,15 @@ export default function JugadoresClient({
 /* ── Card ─────────────────────────────────────── */
 
 function JugadorCard({ j }: { j: JugadorConStats }) {
-  const pct = j.stats.partidos > 0
-    ? Math.round((j.stats.ganados / j.stats.partidos) * 100)
-    : 0
+  const avatarBg = useDominantColor(j.imagen_ia ? null : j.avatar_url)
 
   return (
     <Link href={`/jugadores/${j.username ?? j.id}`} className={styles.card}>
       {/* Visual: figurita photo or avatar */}
-      <div className={styles.visual}>
+      <div
+        className={styles.visual}
+        style={!j.imagen_ia ? { background: avatarBg } : undefined}
+      >
         {j.imagen_ia ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -176,7 +180,8 @@ function JugadorCard({ j }: { j: JugadorConStats }) {
       <div className={styles.cardInfo}>
         <div className={styles.nombreRow}>
           <p className={styles.nombre}>{j.nombre}</p>
-          {Number(j.plan) === 10 && <span className={styles.plan10Star}>★</span>}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {j.es_pro && <img src="/ic-10.webp" alt="Plan 10" className={styles.plan10Icon} />}
         </div>
         {j.apodo
           ? <p className={styles.apodo}>"{j.apodo}"</p>
@@ -204,8 +209,8 @@ function JugadorCard({ j }: { j: JugadorConStats }) {
         </div>
         <span className={styles.statDivider} />
         <div className={styles.statMini}>
-          <span className={styles.statVal}>{pct}%</span>
-          <span className={styles.statLbl}>G%</span>
+          <span className={styles.statVal}>{j.stats.rating != null ? j.stats.rating.toFixed(1) : '—'}</span>
+          <span className={styles.statLbl}>RAT</span>
         </div>
       </div>
     </Link>
@@ -215,10 +220,6 @@ function JugadorCard({ j }: { j: JugadorConStats }) {
 /* ── Row (list view) ──────────────────────────── */
 
 function JugadorRow({ j }: { j: JugadorConStats }) {
-  const pct = j.stats.partidos > 0
-    ? Math.round((j.stats.ganados / j.stats.partidos) * 100)
-    : 0
-
   return (
     <Link href={`/jugadores/${j.username ?? j.id}`} className={styles.listRow}>
       <div className={styles.listThumb}>
@@ -241,7 +242,8 @@ function JugadorRow({ j }: { j: JugadorConStats }) {
       <div className={styles.listInfo}>
         <span className={styles.listNombre}>
           {j.nombre}
-          {Number(j.plan) === 10 && <span className={styles.plan10StarRow}>★</span>}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {j.es_pro && <img src="/ic-10.webp" alt="Plan 10" className={styles.plan10IconRow} />}
         </span>
         {(j.apodo || j.username) && (
           <span className={styles.listSub}>
@@ -253,10 +255,46 @@ function JugadorRow({ j }: { j: JugadorConStats }) {
         <span className={styles.listStat}><b>{j.stats.partidos}</b><span className={styles.listStatLbl}>PJ</span></span>
         <span className={styles.listStat}><b>{j.stats.goles}</b><span className={styles.listStatLbl}>G</span></span>
         <span className={styles.listStat}><b>{j.stats.asistencias}</b><span className={styles.listStatLbl}>A</span></span>
-        <span className={styles.listStat}><b>{pct}%</b><span className={styles.listStatLbl}>G%</span></span>
+        <span className={styles.listStat}><b>{j.stats.rating != null ? j.stats.rating.toFixed(1) : '—'}</b><span className={styles.listStatLbl}>RAT</span></span>
       </div>
     </Link>
   )
+}
+
+/* ── Dominant colour from avatar ─────────────── */
+
+function useDominantColor(src: string | null): string {
+  const [gradient, setGradient] = useState('linear-gradient(to bottom, #222218, #12120e)')
+  useEffect(() => {
+    if (!src) return
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = 40
+        canvas.height = 40
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+        ctx.drawImage(img, 0, 0, 40, 40)
+        const d = ctx.getImageData(0, 0, 40, 40).data
+        let r = 0, g = 0, b = 0, n = 0
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] < 128) continue
+          const lum = (d[i] + d[i + 1] + d[i + 2]) / 3
+          if (lum < 20 || lum > 235) continue
+          r += d[i]; g += d[i + 1]; b += d[i + 2]; n++
+        }
+        if (!n) return
+        const rA = r / n, gA = g / n, bA = b / n
+        const dark = `rgb(${Math.round(rA * 0.42)},${Math.round(gA * 0.42)},${Math.round(bA * 0.42)})`
+        const light = `rgb(${Math.round(rA * 0.70)},${Math.round(gA * 0.70)},${Math.round(bA * 0.70)})`
+        setGradient(`linear-gradient(to bottom, ${light}, ${dark})`)
+      } catch { /* tainted canvas or CORS — keep fallback */ }
+    }
+    img.src = src
+  }, [src])
+  return gradient
 }
 
 /* ── Icons ────────────────────────────────────── */

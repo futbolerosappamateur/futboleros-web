@@ -8,7 +8,7 @@
 }
 
 .headerScrolled {
-  background: #f4f4f2f0;
+  background: #fff;
   box-shadow: 0 2px 16px #00000018;
 }
 
@@ -166,10 +166,6 @@
   padding: 5px 14px 5px 5px;
   border: 2px solid var(--gold-border);
   border-radius: 999px;
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 14px 14px;
   transition: border-color 0.2s, background-color 0.2s;
   cursor: default;
 }

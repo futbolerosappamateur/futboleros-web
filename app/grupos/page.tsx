@@ -1,11 +1,18 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
+import ParallaxHero from '../components/ParallaxHero'
 import { createServiceClient } from '@/lib/supabase/service'
 import styles from './grupos.module.css'
 
 export const revalidate = 60
+
+export const metadata: Metadata = {
+  title: 'Grupos — Futboleros',
+  description: 'Equipos, ligas y peñas de toda la Argentina.',
+}
 
 type Grupo = {
   id: string
@@ -51,7 +58,7 @@ export default async function Grupos({
     <>
       <Header />
       <main className={styles.page}>
-        <div className={styles.hero}>
+        <ParallaxHero src="/fondos/grupos.webp" className={styles.hero}>
           <div className={styles.heroInner}>
             <span className={styles.badge}>COMUNIDAD</span>
             <h1 className={styles.title}>GRUPOS</h1>
@@ -74,7 +81,7 @@ export default async function Grupos({
               <button type="submit" className={styles.searchBtn}>Buscar</button>
             </form>
           </div>
-        </div>
+        </ParallaxHero>
 
         <div className={styles.body}>
           <div className={styles.inner}>
