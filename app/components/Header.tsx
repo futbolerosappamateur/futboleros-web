@@ -8,9 +8,10 @@ import styles from './Header.module.css'
 
 type UserInfo = {
   id: string
-  nombre: string
+  nombre: string | null
   username: string | null
   avatar_url: string | null
+  tienePerfil: boolean
 }
 
 export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
@@ -33,7 +34,10 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
         .select('id, nombre, username, avatar_url')
         .eq('id', u.id)
         .maybeSingle()
-      if (perfil) setUser(perfil as UserInfo)
+      // Cuenta sin perfil todavía (registrada en la web): igual se muestra el menú para que pueda completarlo
+      setUser(perfil
+        ? { ...perfil, tienePerfil: true }
+        : { id: u.id, nombre: u.user_metadata?.nombre_completo ?? null, username: null, avatar_url: null, tienePerfil: false })
     })
   }, [])
 
@@ -73,7 +77,7 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
                 {user.avatar_url ? (
                   <Image
                     src={user.avatar_url}
-                    alt={user.nombre}
+                    alt={user.nombre ?? ''}
                     width={32}
                     height={32}
                     className={styles.userAvatar}
@@ -84,16 +88,21 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
                     {user.nombre?.charAt(0)?.toUpperCase() ?? '?'}
                   </span>
                 )}
-                <span className={styles.userNombre}>{user.nombre.split(' ')[0]}</span>
+                <span className={styles.userNombre}>{user.nombre?.split(' ')[0]}</span>
               </div>
               <div className={styles.userDropdown}>
                 <div className={styles.userDropdownInner}>
-                  <Link
-                    href={`/jugadores/${user.username ?? user.id}`}
-                    className={styles.dropdownItem}
-                    onClick={() => setOpen(false)}
-                  >
-                    Perfil
+                  {user.tienePerfil && (
+                    <Link
+                      href={`/jugadores/${user.username ?? user.id}`}
+                      className={styles.dropdownItem}
+                      onClick={() => setOpen(false)}
+                    >
+                      Perfil
+                    </Link>
+                  )}
+                  <Link href="/editar-perfil" className={styles.dropdownItem} onClick={() => setOpen(false)}>
+                    Editar perfil
                   </Link>
                   <button
                     className={styles.dropdownItem}

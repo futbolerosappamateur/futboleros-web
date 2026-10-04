@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Footer from '../components/Footer'
+import BotonGoogle from '../components/BotonGoogle'
 import styles from '../auth.module.css'
 
 export default function Registro() {
@@ -39,6 +40,8 @@ export default function Registro() {
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>CREAR CUENTA</h1>
+        <BotonGoogle texto="REGISTRARSE CON GOOGLE" />
+        <p className={styles.separador}>o con tu email</p>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
             <label className={styles.label}>NOMBRE</label>

@@ -211,6 +211,22 @@
   overflow-wrap: anywhere;
 }
 
+.btnEditar {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: var(--gold-light);
+  border: 1px solid var(--gold-border);
+  border-radius: 6px;
+  padding: 6px 14px 4px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.btnEditar:hover {
+  border-color: var(--gold);
+  background: var(--gold-dim);
+}
+
 .tagCyan {
   font-family: var(--font-display);
   font-size: 0.75rem;

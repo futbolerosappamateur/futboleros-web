@@ -7,7 +7,9 @@ import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import ParallaxHero from '../../components/ParallaxHero'
 import AvatarModal from './AvatarModal'
+import BotonEditar from './BotonEditar'
 import { createServiceClient } from '@/lib/supabase/service'
+import { NOMBRE_PAIS } from '@/lib/perfil-opciones'
 import styles from './jugador.module.css'
 
 export const revalidate = 60
@@ -31,13 +33,6 @@ export async function generateMetadata(
   const perfil = await getPerfil(slug)
   const nombre = perfil?.nombre?.trim() || 'Jugador'
   return { title: nombre }
-}
-
-const PAISES: Record<string, string> = {
-  AR: 'Argentina', BR: 'Brasil', UY: 'Uruguay', PY: 'Paraguay', CL: 'Chile',
-  CO: 'Colombia', PE: 'Perú', BO: 'Bolivia', VE: 'Venezuela', EC: 'Ecuador',
-  MX: 'México', ES: 'España', IT: 'Italia', DE: 'Alemania', FR: 'Francia',
-  PT: 'Portugal', GB: 'Inglaterra', US: 'EE.UU.',
 }
 
 function calcEdad(fechaNac: string) {
@@ -129,6 +124,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
               {tags.map((t, i) => (
                 <span key={i} className={styles.tagCyan}>{t.replace(/[^\p{L}\s]/gu, '').trim()}</span>
               ))}
+              <BotonEditar perfilId={perfil.id} />
             </div>
 
             {/* Ficha (columna izquierda) */}
@@ -141,8 +137,8 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`https://flagcdn.com/${perfil.pais.toLowerCase()}.svg`}
-                      alt={PAISES[perfil.pais] ?? perfil.pais}
-                      title={PAISES[perfil.pais] ?? perfil.pais}
+                      alt={NOMBRE_PAIS[perfil.pais] ?? perfil.pais}
+                      title={NOMBRE_PAIS[perfil.pais] ?? perfil.pais}
                       className={styles.fichaBandera}
                     />
                   </div>

@@ -90,6 +90,43 @@
   cursor: not-allowed;
 }
 
+.btnGoogle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 13px 14px 11px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.btnGoogle:hover:not(:disabled) { border-color: var(--gold); }
+.btnGoogle:disabled { opacity: 0.6; cursor: not-allowed; }
+.btnGoogle svg { flex-shrink: 0; margin-top: -2px; }
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.separador::before,
+.separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gold-border);
+}
+
 .footer {
   text-align: center;
   color: var(--text-muted);

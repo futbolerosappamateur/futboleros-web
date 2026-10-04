@@ -5,16 +5,20 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Footer from '../components/Footer'
+import BotonGoogle from '../components/BotonGoogle'
 import styles from '../auth.module.css'
 
 export default function Login() {
+  const searchParams = useSearchParams()
+  const pedido = searchParams.get('next') || '/'
+  const next = /^\/(?![/\\])/.test(pedido) ? pedido : '/'   // solo rutas internas
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(
+    searchParams.get('error') === 'google' ? 'No se pudo ingresar con Google. Probá de nuevo.' : ''
+  )
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const next = searchParams.get('next') || '/'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,6 +40,8 @@ export default function Login() {
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>INGRESAR</h1>
+        <BotonGoogle texto="INGRESAR CON GOOGLE" next={next} />
+        <p className={styles.separador}>o con tu email</p>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
             <label className={styles.label}>EMAIL</label>
