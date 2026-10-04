@@ -1,5 +1,9 @@
 /* ── Page ── */
 .page {
+  /* Columnas compartidas por hero y body, así el nombre y la columna derecha quedan alineados */
+  --col-izq: 240px;          /* = ancho del avatar */
+  --col-gap: 36px;
+  --avatar-overlap: 84px;    /* cuánto baja el avatar por debajo del hero */
   min-height: 100svh;
   background: var(--bg);
 }
@@ -28,20 +32,21 @@
 .back:hover { opacity: 1; }
 
 .heroBottom {
-  display: flex;
-  align-items: flex-end;
-  gap: 36px;
+  display: grid;
+  grid-template-columns: var(--col-izq) minmax(0, 1fr);
+  column-gap: var(--col-gap);
+  align-items: end;
 }
 
 /* ── Avatar circle ── */
 .avatarCircle {
-  width: 240px;
-  height: 240px;
+  width: var(--col-izq);
+  height: var(--col-izq);
   border-radius: 50%;
   border: 10px solid #fff;
   overflow: hidden;
   flex-shrink: 0;
-  margin-bottom: -84px;
+  margin-bottom: calc(-1 * var(--avatar-overlap));
   background: #1a1a14;
   padding: 0;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -103,10 +108,11 @@
   margin-bottom: 0.5em;
 }
 
-.username {
-  font-size: 0.85rem;
+.apodo {
+  font-size: 1.2rem;
+  font-weight: 600;
   color: #fff001;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
 
 .tags {
@@ -166,12 +172,43 @@
   padding: 14px 24px 80px;
 }
 
-/* ── Tags bar (below hero) ── */
-.tagsBar {
+/* ── Layout de dos columnas ── */
+.layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: var(--col-izq) minmax(0, 1fr);
+  grid-template-areas:
+    "side id"
+    "side main";
+  grid-template-rows: auto 1fr;
+  column-gap: var(--col-gap);
+  row-gap: 40px;
+}
+
+.main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  min-width: 0;
+}
+
+/* ── Usuario + tags (arriba de la columna derecha) ── */
+.idRow {
+  grid-area: id;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  margin-left: 125px;
+}
+
+.username {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  margin-right: 8px;
+  overflow-wrap: anywhere;
 }
 
 .tagCyan {
@@ -184,17 +221,101 @@
   padding: 5px 14px 3px;
 }
 
-.inner {
-  max-width: 800px;
-  margin: 0 auto;
+/* ── Ficha (columna izquierda) ── */
+.ficha {
+  --filete: #bfaf9c;         /* mismo tono que los firuletes */
+  --ficha-w: 128px;
+  --firu-aire-x: 2.5px;      /* separación entre la línea y los firuletes: costados */
+  --firu-aire-y: 4.5px;      /* arriba y abajo */
+  grid-area: side;
+  justify-self: center;
+  align-self: start;
+  margin-top: calc(var(--avatar-overlap) + 20px);
+  position: relative;
+  width: var(--ficha-w);
+  min-height: 320px;         /* que entren los dos firuletes sin pisarse */
+  padding: 56px 8px 52px;
+  border: 1.5px solid var(--filete);
+  border-radius: calc(var(--ficha-w) / 2);
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  text-align: center;
+}
+
+/* Firuletes: arriba y abajo, al ancho del marco */
+.ficha::before,
+.ficha::after {
+  content: '';
+  position: absolute;
+  inset: var(--firu-aire-y) var(--firu-aire-x);
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  mix-blend-mode: multiply;  /* las imágenes tienen fondo blanco: así solo se ve el dibujo */
+  pointer-events: none;
+}
+.ficha::before { background-image: url('/firu-up.webp'); background-position: center top; }
+.ficha::after { background-image: url('/firu-down.webp'); background-position: center bottom; }
+
+.fichaDato {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Separador entre datos */
+.fichaDato + .fichaDato::before {
+  content: '';
+  width: 60%;
+  height: 1px;
+  background: #ececec;
+  margin-bottom: 22px;
+}
+
+.fichaLabel {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.fichaValor {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.05;
+}
+
+.fichaBandera {
+  width: 76px;
+  height: auto;
+  display: block;
+}
+
+.fichaEstilo {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);   /* se lee de abajo hacia arriba */
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #cbbaa4;
+}
+
+/* Fija al scrollear, solo si la pantalla es lo bastante alta para verla entera */
+@media (min-width: 721px) and (min-height: 900px) {
+  .ficha {
+    position: sticky;
+    top: 88px;   /* header compacto (68px) + aire */
+  }
 }
 
 /* ── Section ── */
 .section {}
-.section:first-of-type { padding-top: 50px; }
 
 .sectionTitle {
   font-family: var(--font-display);
@@ -508,11 +629,48 @@
 }
 
 /* ── Responsive ── */
+@media (max-width: 720px) {
+  /* Una columna: usuario y tags al lado del avatar, la ficha horizontal debajo */
+  .layout {
+    grid-template-areas:
+      ". id"
+      "side side"
+      "main main";
+    grid-template-rows: minmax(calc(var(--avatar-overlap) - 14px), auto);
+    row-gap: 28px;
+  }
+
+  .ficha {
+    width: 100%;
+    min-height: 0;
+    margin-top: 0;
+    padding: 18px 12px;
+    border-radius: 24px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 14px 0;
+  }
+  .ficha::before,
+  .ficha::after { display: none; }
+
+  .fichaDato { flex: 1; }
+  .fichaDato + .fichaDato { border-left: 1px solid #ececec; }
+  .fichaDato + .fichaDato::before { display: none; }
+  .fichaValor { font-size: 2rem; }
+  .fichaBandera { width: 56px; }
+
+  .fichaEstilo {
+    flex-basis: 100%;
+    writing-mode: horizontal-tb;
+    transform: none;
+    font-size: 2rem;
+  }
+}
+
 @media (max-width: 600px) {
+  .page { --col-izq: 180px; --col-gap: 20px; --avatar-overlap: 64px; }
   .hero { padding: 120px 16px 0; }
-  .heroBottom { gap: 20px; }
-  .avatarCircle { width: 180px; height: 180px; margin-bottom: -64px; }
-  .body { padding-top: 90px; }
+  .body { padding: 14px 16px 60px; }
   .ratingCard { flex-direction: column; align-items: flex-start; gap: 16px; }
   .statsGrid { grid-template-columns: repeat(3, 1fr); }
 }

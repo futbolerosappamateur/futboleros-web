@@ -10,7 +10,7 @@ import styles from './novedades.module.css'
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Novedades — Futboleros',
+  title: 'Novedades',
   description: 'Actualizaciones, mejoras y noticias de Futboleros.',
 }
 

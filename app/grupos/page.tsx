@@ -10,7 +10,7 @@ import styles from './grupos.module.css'
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Grupos — Futboleros',
+  title: 'Grupos',
   description: 'Equipos, ligas y peñas de toda la Argentina.',
 }
 

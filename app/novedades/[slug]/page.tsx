@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .eq('publicado', true)
     .maybeSingle()
   if (!data) return {}
-  return { title: `${data.titulo} — Futboleros`, description: data.resumen }
+  return { title: data.titulo, description: data.resumen }
 }
 
 function renderContenido(texto: string) {

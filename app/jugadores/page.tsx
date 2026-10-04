@@ -9,7 +9,7 @@ import styles from './jugadores.module.css'
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Jugadores — Futboleros',
+  title: 'Jugadores',
   description: 'Encontrá jugadores, mirá sus figuritas y estadísticas.',
 }
 
