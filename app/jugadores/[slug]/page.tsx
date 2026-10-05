@@ -379,7 +379,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
                     )}
                   </section>
                 ) : (
-                  <BloquePublicidad />
+                  <BloquePublicidad slot="perfil_testimonios" esPro={esPro} />
                 )}
               </div>
 

@@ -40,6 +40,14 @@ export default function AdminNav() {
         }}>
           NOVEDADES
         </Link>
+        <Link href="/admin/publicidades" style={{
+          fontFamily: 'var(--font-display)',
+          color: 'var(--text-muted)',
+          fontSize: '1rem',
+          letterSpacing: '0.06em',
+        }}>
+          PUBLICIDADES
+        </Link>
       </div>
     </nav>
   )

@@ -1,9 +1,8 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
 import Header from './components/Header'
 import HeroSlider from './components/HeroSlider'
-import FiguritaStack from './components/FiguritaStack'
+import BloquePublicidad from './components/BloquePublicidad'
 import Footer from './components/Footer'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -82,6 +81,11 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ── Publicidad principal ── */}
+      <section style={{ padding: '0 24px 0', maxWidth: 1100, margin: '0 auto' }}>
+        <BloquePublicidad slot="home_principal" />
+      </section>
+
       {/* ── Features ── */}
       <section className={styles.features}>
         <div className={styles.featuresInner}>
@@ -105,10 +109,6 @@ export default async function Home() {
               },
             ].map(f => (
               <div key={f.title} className={styles.featureCard}>
-                <Image src="/cor-left-top.webp"     alt="" width={42} height={42} className={styles.corLT} aria-hidden />
-                <Image src="/cor-right-top.webp"    alt="" width={42} height={42} className={styles.corRT} aria-hidden />
-                <Image src="/cor-left-bottom.webp"  alt="" width={42} height={42} className={styles.corLB} aria-hidden />
-                <Image src="/cor-right-bottom.webp" alt="" width={42} height={42} className={styles.corRB} aria-hidden />
                 <h3 className={styles.featureTitle}>{f.title}</h3>
                 <p className={styles.featureBody}>{f.body}</p>
               </div>
@@ -135,7 +135,9 @@ export default async function Home() {
             <Link href="/registro" className={styles.figuritaCta}>Conseguí tu figurita</Link>
           </div>
 
-          <FiguritaStack />
+          <div style={{ width: 280, flexShrink: 0 }}>
+            <BloquePublicidad slot="home_figurita" />
+          </div>
         </div>
       </section>
 
