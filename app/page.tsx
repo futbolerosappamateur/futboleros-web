@@ -7,7 +7,6 @@ import FiguritaStack from './components/FiguritaStack'
 import Footer from './components/Footer'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { urlEscudo } from '@/lib/escudos'
 import styles from './page.module.css'
 
 async function getSlides() {
@@ -51,7 +50,7 @@ const getHinchas = unstable_cache(async () => {
   return [...conteo]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))
     .slice(0, 10)
-    .map(([club, hinchas]) => ({ club, hinchas, escudo: urlEscudo(club) }))
+    .map(([club, hinchas]) => ({ club, hinchas }))
 }, ['home-hinchas'], { revalidate: 600 })
 
 export default async function Home() {
@@ -208,12 +207,6 @@ export default async function Home() {
               {hinchas.map((h, i) => (
                 <li key={h.club} className={styles.hinchaFila}>
                   <span className={styles.hinchaPos}>{i + 1}</span>
-                  {h.escudo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={h.escudo} alt="" className={styles.hinchaEscudo} loading="lazy" />
-                  ) : (
-                    <span className={styles.hinchaEscudoPh} aria-hidden="true">{h.club.charAt(0)}</span>
-                  )}
                   <div className={styles.hinchaInfo}>
                     <p className={styles.hinchaClub}>{h.club}</p>
                     <div className={styles.hinchaBarra}>
