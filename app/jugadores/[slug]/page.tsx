@@ -12,6 +12,7 @@ import CarruselFiguritas from './CarruselFiguritas'
 import BloquePublicidad from '../../components/BloquePublicidad'
 import { createServiceClient } from '@/lib/supabase/service'
 import { NOMBRE_PAIS, REDES, urlRed } from '@/lib/perfil-opciones'
+import { formatoRating } from '@/lib/formato'
 import styles from './jugador.module.css'
 
 export const revalidate = 60
@@ -129,7 +130,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
     lenador: statsData?.lenador ?? 0,
     palo: statsData?.palo ?? 0,
   }
-  const rating = s.partidos > 0 && statsData?.rating != null ? parseFloat(statsData.rating).toFixed(1) : '–'
+  const rating = s.partidos > 0 && statsData?.rating != null ? formatoRating(statsData.rating) : '–'
   const redes = REDES.filter(r => perfil.redes?.[r.key]?.trim())
   const edad = perfil.fecha_nacimiento ? calcEdad(perfil.fecha_nacimiento) : null
   const tags: string[] = (perfil.caracteristicas ?? []).slice(0, 8)

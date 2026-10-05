@@ -329,6 +329,123 @@
   }
 }
 
+/* ── Los más hinchados ── */
+.hinchas {
+  padding: 100px 24px;
+}
+
+.hinchasInner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Dos columnas que se leen hacia abajo: 1–5 y 6–10 */
+.hinchasLista {
+  list-style: none;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+}
+
+.hinchaFila {
+  display: grid;
+  grid-template-columns: 30px 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  background: var(--surface);
+  border: 1px solid var(--gold-border);
+  border-radius: 12px;
+}
+
+.hinchaPos {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--gold);
+  text-align: center;
+}
+
+.hinchaEscudo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.hinchaEscudoPh {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--gold);
+}
+
+.hinchaInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.hinchaClub {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hinchaBarra {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--gold-dim);
+  overflow: hidden;
+}
+.hinchaBarra span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gold);
+}
+
+.hinchaCant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--gold);
+}
+.hinchaCant span {
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+@media (max-width: 700px) {
+  .hinchas { padding: 64px 16px; }
+  /* Una sola columna, en orden */
+  .hinchasLista {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none !important;   /* pisa las filas en línea de 2 columnas */
+  }
+  .hinchaFila { gap: 10px; padding: 10px 12px; grid-template-columns: 24px 38px minmax(0, 1fr) auto; }
+  .hinchaEscudo,
+  .hinchaEscudoPh { width: 38px; height: 38px; }
+}
+
 /* ── CTA ── */
 .cta {
   background: var(--surface);

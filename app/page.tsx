@@ -1,10 +1,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { unstable_cache } from 'next/cache'
 import Header from './components/Header'
 import HeroSlider from './components/HeroSlider'
 import FiguritaStack from './components/FiguritaStack'
 import Footer from './components/Footer'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
+import { urlEscudo } from '@/lib/escudos'
 import styles from './page.module.css'
 
 async function getSlides() {
@@ -17,18 +20,43 @@ async function getSlides() {
   return data ?? []
 }
 
+// Con la clave anónima las políticas de Supabase no dejan contar (daba 0): son solo totales, van con service
 async function getStats() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const [{ count: jugadores }, { count: partidos }, { count: grupos }] = await Promise.all([
     supabase.from('perfiles').select('*', { count: 'exact', head: true }),
     supabase.from('partidos').select('*', { count: 'exact', head: true }).eq('estado', 'finalizado'),
-    supabase.from('grupos').select('*', { count: 'exact', head: true }),
+    supabase.from('grupos').select('*', { count: 'exact', head: true }).eq('activo', true),
   ])
   return { jugadores: jugadores ?? 0, partidos: partidos ?? 0, grupos: grupos ?? 0 }
 }
 
+// Los 10 clubes con más hinchas entre los usuarios. Recorre todos los perfiles: se recalcula cada 10 minutos.
+const NO_SON_CLUBES = new Set(['otro', 'ninguno'])
+const getHinchas = unstable_cache(async () => {
+  const supabase = createServiceClient()
+  const conteo = new Map<string, number>()
+  for (let desde = 0; ; desde += 1000) {
+    const { data } = await supabase
+      .from('perfiles')
+      .select('hincha_de')
+      .not('hincha_de', 'is', null)
+      .range(desde, desde + 999)
+    for (const { hincha_de } of data ?? []) {
+      const club = (hincha_de as string).trim()
+      if (club && !NO_SON_CLUBES.has(club.toLowerCase())) conteo.set(club, (conteo.get(club) ?? 0) + 1)
+    }
+    if (!data || data.length < 1000) break
+  }
+  return [...conteo]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))
+    .slice(0, 10)
+    .map(([club, hinchas]) => ({ club, hinchas, escudo: urlEscudo(club) }))
+}, ['home-hinchas'], { revalidate: 600 })
+
 export default async function Home() {
-  const [slides, stats] = await Promise.all([getSlides(), getStats()])
+  const [slides, stats, hinchas] = await Promise.all([getSlides(), getStats(), getHinchas()])
+  const maxHinchas = hinchas[0]?.hinchas ?? 1
 
   return (
     <>
@@ -169,6 +197,39 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Los más hinchados ── */}
+      {hinchas.length > 0 && (
+        <section className={styles.hinchas}>
+          <div className={styles.hinchasInner}>
+            <h2 className={styles.sectionTitle}>LOS MÁS HINCHADOS</h2>
+            <p className={styles.sectionSub}>Los clubes con más hinchas entre los jugadores de Futboleros.</p>
+            <ol className={styles.hinchasLista} style={{ gridTemplateRows: `repeat(${Math.ceil(hinchas.length / 2)}, auto)` }}>
+              {hinchas.map((h, i) => (
+                <li key={h.club} className={styles.hinchaFila}>
+                  <span className={styles.hinchaPos}>{i + 1}</span>
+                  {h.escudo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={h.escudo} alt="" className={styles.hinchaEscudo} loading="lazy" />
+                  ) : (
+                    <span className={styles.hinchaEscudoPh} aria-hidden="true">{h.club.charAt(0)}</span>
+                  )}
+                  <div className={styles.hinchaInfo}>
+                    <p className={styles.hinchaClub}>{h.club}</p>
+                    <div className={styles.hinchaBarra}>
+                      <span style={{ width: `${(h.hinchas / maxHinchas) * 100}%` }} />
+                    </div>
+                  </div>
+                  <p className={styles.hinchaCant}>
+                    {h.hinchas}
+                    <span>{h.hinchas === 1 ? 'hincha' : 'hinchas'}</span>
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      )}
 
       {/* ── CTA ── */}
       <section className={styles.cta}>

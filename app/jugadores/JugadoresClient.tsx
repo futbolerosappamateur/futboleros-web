@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { formatoRating } from '@/lib/formato'
 import styles from './jugadores.module.css'
 
 export type JugadorConStats = {
@@ -209,7 +210,7 @@ function JugadorCard({ j }: { j: JugadorConStats }) {
         </div>
         <span className={styles.statDivider} />
         <div className={styles.statMini}>
-          <span className={styles.statVal}>{j.stats.rating != null ? j.stats.rating.toFixed(1) : '—'}</span>
+          <span className={styles.statVal}>{j.stats.rating != null ? formatoRating(j.stats.rating) : '—'}</span>
           <span className={styles.statLbl}>RAT</span>
         </div>
       </div>
@@ -255,7 +256,7 @@ function JugadorRow({ j }: { j: JugadorConStats }) {
         <span className={styles.listStat}><b>{j.stats.partidos}</b><span className={styles.listStatLbl}>PJ</span></span>
         <span className={styles.listStat}><b>{j.stats.goles}</b><span className={styles.listStatLbl}>G</span></span>
         <span className={styles.listStat}><b>{j.stats.asistencias}</b><span className={styles.listStatLbl}>A</span></span>
-        <span className={styles.listStat}><b>{j.stats.rating != null ? j.stats.rating.toFixed(1) : '—'}</b><span className={styles.listStatLbl}>RAT</span></span>
+        <span className={styles.listStat}><b>{j.stats.rating != null ? formatoRating(j.stats.rating) : '—'}</b><span className={styles.listStatLbl}>RAT</span></span>
       </div>
     </Link>
   )

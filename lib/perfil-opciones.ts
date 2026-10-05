@@ -132,7 +132,7 @@ export const CLUBES = [
   'Inter Miami','Juventus','Milan','Inter de Milán','PSG',
 ]
 
-const sinAcentos = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+const sinAcentos = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 export function buscarClubes(texto: string) {
   if (!texto || texto.length < 2) return []
