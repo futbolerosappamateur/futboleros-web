@@ -4,6 +4,12 @@
   --col-izq: 240px;          /* = ancho del avatar */
   --col-gap: 36px;
   --avatar-overlap: 84px;    /* cuánto baja el avatar por debajo del hero */
+  /* Paleta del perfil */
+  --cyan: #1ce2e0;
+  --tostado: #bda580;        /* íconos */
+  --tostado-claro: #cbbaa4;  /* títulos grandes y estilo de juego */
+  --linea: #dccfbe;          /* divisores y bordes */
+  --gris-card: #f2f2f2;
   min-height: 100svh;
   background: var(--bg);
 }
@@ -188,6 +194,7 @@
 
 .main {
   grid-area: main;
+  container-type: inline-size;   /* el bloque de estadísticas se acomoda al ancho de esta columna */
   display: flex;
   flex-direction: column;
   gap: 48px;
@@ -211,8 +218,39 @@
   overflow-wrap: anywhere;
 }
 
-.btnEditar {
+/* Redes y botón de editar, contra el borde derecho */
+.idDerecha {
   margin-left: auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.redes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.red {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--linea);
+  border-radius: 6px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.red:hover {
+  border-color: var(--tostado);
+  background: #faf6f0;
+}
+
+.redIcono { width: 15px; height: 15px; }
+
+.btnEditar {
   font-family: var(--font-display);
   font-size: 0.85rem;
   letter-spacing: 0.1em;
@@ -231,7 +269,7 @@
   font-family: var(--font-display);
   font-size: 0.75rem;
   letter-spacing: 0.06em;
-  background: #1ce2e0;
+  background: var(--cyan);
   color: #1a1a1a;
   border-radius: 4px;
   padding: 5px 14px 3px;
@@ -319,7 +357,7 @@
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #cbbaa4;
+  color: var(--tostado-claro);
 }
 
 /* Fija al scrollear, solo si la pantalla es lo bastante alta para verla entera */
@@ -330,318 +368,532 @@
   }
 }
 
-/* ── Section ── */
-.section {}
-
-.sectionTitle {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  letter-spacing: 0.15em;
-  color: var(--text-muted);
-  margin-bottom: 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--gold-border);
+/* ── Íconos de la app teñidos con la paleta (máscara sobre el PNG/WebP) ── */
+.icono {
+  display: block;
+  flex-shrink: 0;
+  background: var(--tostado);
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
 }
 
-/* ── Info grid ── */
-.infoGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-}
-
-.infoItem {
-  background-color: var(--surface);
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 22px 22px;
-  border: 1px solid var(--gold-border);
-  border-radius: 10px;
-  padding: 14px 16px;
+/* ── Resumen: hincha/ídolo + estadísticas ── */
+.resumen {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 28px;
 }
 
-.infoLabel {
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
+.datosLinea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 6px;
+  padding: 22px 0;
+  border-top: 1px solid var(--linea);
+  border-bottom: 1px solid var(--linea);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  color: #6f6f6b;
 }
-
-.infoValue {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  letter-spacing: 0.03em;
+.datosLinea strong {
+  font-weight: 800;
+  color: var(--text);
+}
+.datosLinea span + span::before {
+  content: '•';
+  margin: 0 16px;
   color: var(--text);
 }
 
-/* ── Rating ── */
-.ratingCard {
-  background-color: var(--surface);
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 26px 26px;
-  border: 1px solid var(--gold-border);
-  border-radius: 14px;
-  padding: 24px 28px;
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  margin-bottom: 14px;
+.stats {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 36px;
+  align-items: start;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--linea);
 }
 
-.ratingMain {
-  text-align: center;
+.statsIzq {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Tarjeta de partidos con el círculo del rating montado encima de su borde derecho */
+.partidos {
+  --circulo: 190px;
+  position: relative;
+  height: var(--circulo);
+}
+
+.partidosCard {
+  position: absolute;
+  left: 0;
+  right: calc(var(--circulo) / 2);
+  top: calc(var(--circulo) * 0.26);
+  bottom: calc(var(--circulo) * 0.04);
+  background: var(--gris-card);
+  border-radius: 16px;
+  padding: 0 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.partidosTitulo {
+  font-size: 1.15rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.gep {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(1.4em, auto));
+  justify-content: start;
+  justify-items: center;
+  column-gap: 10px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--text);
+}
+.gepG { color: #3dc52b; }
+.gepE { color: #c5b52b; }
+.gepP { color: #c52b2b; }
+
+.rating {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--circulo);
+  height: var(--circulo);
+  border-radius: 50%;
+  background: var(--cyan);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .ratingLabel {
-  font-family: var(--font-display);
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
-  color: var(--text-muted);
-  margin-bottom: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
 }
 
 .ratingNum {
   font-family: var(--font-display);
-  font-size: 3.5rem;
-  letter-spacing: 0.04em;
-  color: var(--gold);
-  line-height: 1;
+  font-size: 7.4rem;
+  line-height: 0.85;
+  color: #2c2c2c;
 }
 
-.gepRow {
-  display: flex;
-  gap: 20px;
-}
-
-.gepItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.gepLetraG { font-family: var(--font-display); font-size: 1.4rem; color: #4caf50; }
-.gepLetraE { font-family: var(--font-display); font-size: 1.4rem; color: #ff9800; }
-.gepLetraP { font-family: var(--font-display); font-size: 1.4rem; color: #e63946; }
-
-.gepVal {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  color: var(--text);
-}
-
-/* ── Stats grid ── */
-.statsGrid {
+/* Seguidores y grupos */
+.contadores {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-bottom: 14px;
 }
 
-.statCard {
-  background: var(--surface);
-  border: 1px solid var(--gold-border);
-  border-radius: 10px;
-  padding: 16px 12px;
+.contador {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--gris-card);
+  border-radius: 12px;
+  padding: 14px 18px;
+}
+
+.contadorIcono { width: 52px; height: 52px; }
+
+.contadorValor {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.statsDer {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Ocupa justo el ancho de su columna, como en el diseño (con tope cuando la columna es ancha) */
+.statsTitulo {
+  font-size: min(13.2cqi, 2.6rem);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--tostado-claro);
+  margin-bottom: 4px;
+}
+
+.cards3,
+.cards2 {
+  display: grid;
+  gap: 10px;
+}
+.cards3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cards2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.statCard,
+.premio {
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-}
-
-.statValue {
-  font-family: var(--font-display);
-  font-size: 1.8rem;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  line-height: 1;
-}
-
-.statLabel {
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  text-transform: uppercase;
+  justify-content: center;
+  gap: 2px;
   text-align: center;
 }
 
-/* ── Premios ── */
-.premiosRow {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.statCard {
+  background: #fff;
+  border: 1px solid var(--linea);
+  padding: 10px 6px 9px;
 }
 
-.premioCard {
+.premio {
+  background: var(--gris-card);
+  padding: 12px 6px 10px;
+}
+
+.premioIcono {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 4px;
+}
+
+.statValor {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.statLabel {
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* Columna derecha angosta (tablet o celular): las dos mitades una debajo de la otra */
+@container (max-width: 640px) {
+  .stats {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+
+/* Angosto: hincha e ídolo uno debajo del otro (si no, "•" queda al principio del renglón) */
+@container (max-width: 480px) {
+  .datosLinea {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .datosLinea span + span::before { display: none; }
+}
+
+@container (max-width: 400px) {
+  .partidos { --circulo: 160px; }
+  .ratingNum { font-size: 6.2rem; }
+  .partidosCard { padding: 0 18px; }
+  .contador { gap: 10px; padding: 12px; }
+  .contadorIcono { width: 38px; height: 38px; }
+}
+
+/* ── Títulos de bloque (Figuritas, Últimos partidos, Testimonios) ── */
+.tituloBloque {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--tostado-claro);
+}
+
+.vacio {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ── Figuritas (Plan 10) ── */
+.figuritas {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  background: var(--surface);
-  border: 1px solid var(--gold-border);
-  border-radius: 10px;
-  padding: 14px 20px;
-  min-width: 90px;
+  gap: 18px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--linea);
 }
 
-.premioEmoji { font-size: 1.6rem; }
+.bloqueHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
 
-.premioNum {
-  font-family: var(--font-display);
+.subtituloBloque {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.flechas {
+  margin-left: auto;
+  align-self: center;
+  display: flex;
+  gap: 6px;
+}
+
+.flecha {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding-bottom: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: #ececec;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.flecha:hover:not(:disabled) {
+  background: var(--linea);
+  color: var(--text);
+}
+.flecha:disabled { opacity: 0.4; cursor: default; }
+
+.figusPista {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 4 * 14px) / 5);   /* 5 a la vista */
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.figusPista::-webkit-scrollbar { display: none; }
+
+.figu {
+  scroll-snap-align: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 8.59% / 5.95%;   /* mismo redondeo que la tarjeta (54 sobre 629) */
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
+.figu:hover { transform: translateY(-3px); }
+.figu:focus-visible {
+  outline: 2px solid var(--tostado);
+  outline-offset: 3px;
+}
+.figu img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 629 / 907;
+  border-radius: inherit;
+  background: #022232;   /* mientras carga */
+}
+
+/* Figurita en grande (modal): lo más grande que entre en pantalla, con la proporción de la tarjeta */
+.figuGrande {
+  position: relative;
+  height: min(calc(100svh - 48px), calc((100vw - 32px) * 907 / 629));
+  aspect-ratio: 629 / 907;
+  cursor: default;
+}
+.figuGrande img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* La versión grande aparece encima de la miniatura cuando termina de cargar */
+.capaGrande {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.capaGrande.capaLista { opacity: 1; }
+
+.modalFlecha {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  padding-bottom: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.modalFlecha:hover { background: rgba(255, 255, 255, 0.26); }
+.modalAnterior { left: 16px; }
+.modalSiguiente { right: 16px; }
+
+/* ── Cierre: últimos partidos + testimonios (Plan 10) o publicidad ── */
+.cierre {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+  align-items: start;
+}
+
+.ultimos,
+.testimonios {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.partidosLista,
+.testimoniosLista {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.partidosLista { gap: 10px; }
+
+.partidoFila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  background: #fff;
+  border: 1px solid var(--linea);
+  border-radius: 8px;
+}
+
+.partidoLetra {
+  width: 1.1em;
+  flex-shrink: 0;
+  text-align: center;
   font-size: 1.4rem;
-  color: var(--gold);
+  font-weight: 800;
   line-height: 1;
 }
 
-.premioLabel {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
+.partidoInfo {
+  flex: 1;
+  min-width: 0;
 }
 
-/* ── Historial ── */
-.historialList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.historialRow {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--surface);
-  border: 1px solid var(--gold-border);
-  border-radius: 10px;
-  padding: 12px 16px;
-}
-
-.historialLetra {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.historialInfo { flex: 1; min-width: 0; }
-
-.historialGrupo {
-  font-family: var(--font-display);
-  font-size: 0.9rem;
-  letter-spacing: 0.03em;
+.partidoGrupo {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.historialMeta {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+.partidoMeta {
   margin-top: 1px;
-}
-
-.historialStats {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.hStat {
-  font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
-  letter-spacing: 0.04em;
 }
 
-.hNota {
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  color: var(--gold);
-  background: var(--gold-dim);
-  border: 1px solid var(--gold-border);
-  border-radius: 5px;
-  padding: 1px 6px;
-}
-
-.hFigura {
-  font-family: var(--font-display);
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  color: #c9a84c;
-  background: #c9a84c15;
-  border: 1px solid #c9a84c33;
-  border-radius: 4px;
-  padding: 2px 6px;
-}
-
-/* ── Testimonios ── */
-.testimoniosList {
+.partidoStats {
+  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.partidoStats span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.partidoStats svg {
+  width: 15px;
+  height: 15px;
+  color: var(--tostado);
 }
 
-.testimonioCard {
+.partidoCopa { width: 20px; height: 20px; }
+
+.testimonio {
   display: flex;
-  gap: 14px;
   align-items: flex-start;
-  background: var(--surface);
-  border: 1px solid var(--gold-border);
-  border-radius: 12px;
-  padding: 16px;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--linea);
 }
+.testimonio:first-child { padding-top: 0; }
 
 .testimonioAvatar {
-  width: 36px;
-  height: 36px;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
-  flex-shrink: 0;
+  background: #e2e2e2;
 }
-
-.testimonioAvatarPlaceholder {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--gold-dim);
-  border: 1px solid var(--gold-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  color: var(--gold);
-  flex-shrink: 0;
-}
-
-.testimonioBody { flex: 1; }
 
 .testimonioAutor {
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-  color: var(--gold);
-  margin-bottom: 4px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.testimonioAutor a { transition: color 0.2s; }
+.testimonioAutor a:hover {
+  color: var(--tostado);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.testimonioFecha {
+  margin: 1px 0 4px;
+  font-size: 0.62rem;
+  color: var(--tostado);
 }
 
 .testimonioTexto {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.45;
   color: var(--text);
-  line-height: 1.6;
+}
+
+/* Columna derecha angosta: partidos y testimonios (o publicidad) uno debajo del otro */
+@container (max-width: 640px) {
+  .cierre { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Celular: menos figuritas a la vista, se desliza con el dedo */
+@container (max-width: 480px) {
+  .figusPista {
+    grid-auto-columns: calc((100% - 2 * 12px) / 2.6);
+    gap: 12px;
+  }
 }
 
 /* ── Responsive ── */
@@ -687,6 +939,4 @@
   .page { --col-izq: 180px; --col-gap: 20px; --avatar-overlap: 64px; }
   .hero { padding: 120px 16px 0; }
   .body { padding: 14px 16px 60px; }
-  .ratingCard { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .statsGrid { grid-template-columns: repeat(3, 1fr); }
 }

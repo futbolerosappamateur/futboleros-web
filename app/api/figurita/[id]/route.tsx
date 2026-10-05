@@ -49,17 +49,100 @@ async function getMarcoSrc(): Promise<string> {
   return marcoPngSrc
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+const CAMPOS = 'nombre, nombre_figurita, apodo, imagen_ia, pais, fecha_nacimiento, altura, estilo_juego, descripcion_propia'
+
+// La figurita actual sale del perfil; una del historial (?f=), de los datos que tenía el perfil cuando se generó
+async function datosFigurita(supabase: ReturnType<typeof createServiceClient>, id: string, figuritaId: string | null) {
+  if (!figuritaId) {
+    const { data } = await supabase.from('perfiles').select(CAMPOS).eq('id', id).maybeSingle()
+    return data
+  }
+  const { data: f } = await supabase
+    .from('figuritas_generadas').select('url, snapshot').eq('id', figuritaId).eq('user_id', id).maybeSingle()
+  if (!f) return null
+  if (f.snapshot) return { ...f.snapshot, imagen_ia: f.url }
+  const { data } = await supabase.from('perfiles').select(CAMPOS).eq('id', id).maybeSingle()
+  return data && { ...data, imagen_ia: f.url }
+}
+
+// Satori tarda segundos por figurita: lo ya dibujado queda en memoria (WebP a tamaño completo).
+// Miniatura y versión grande salen del mismo dibujo, y pedidos simultáneos esperan el mismo.
+const CACHE_MAX = 80
+const dibujadas = new Map<string, Promise<Buffer>>()
+
+function webpCompleta(clave: string, dibujar: () => Promise<Buffer>) {
+  const enCache = dibujadas.get(clave)
+  if (enCache) {
+    dibujadas.delete(clave)
+    dibujadas.set(clave, enCache)   // queda como la más reciente
+    return enCache
+  }
+  const nueva = dibujar().then(async png => (await import('sharp')).default(png).webp({ quality: 90 }).toBuffer())
+  nueva.catch(() => dibujadas.delete(clave))   // si falla, que se pueda reintentar
+  dibujadas.set(clave, nueva)
+  if (dibujadas.size > CACHE_MAX) dibujadas.delete(dibujadas.keys().next().value!)
+  return nueva
+}
+
+// La foto IA es una PNG de ~2,5 MB (1024×1536) y era lo más lento del dibujo: se baja una vez,
+// se recorta a la ventana que se ve en la tarjeta (mismo escalado y posición que antes) y va a Satori como JPEG chico
+const FOTO = { ancho: Math.round(W * 1.35), alto: Math.round(W * 2.025), x: Math.round(W * 0.175), y: 40, ventanaAlto: 630 }
+const fotos = new Map<string, Promise<string>>()
+
+function fotoRecortada(url: string) {
+  const enCache = fotos.get(url)
+  if (enCache) return enCache
+  const nueva = (async () => {
+    const r = await fetch(url)
+    if (!r.ok) throw new Error(`foto ${r.status}`)
+    const sharp = (await import('sharp')).default
+    const jpg = await sharp(Buffer.from(await r.arrayBuffer()))
+      .resize(FOTO.ancho, FOTO.alto, { fit: 'fill' })
+      .extract({ left: FOTO.x, top: FOTO.y, width: W, height: FOTO.ventanaAlto })
+      .jpeg({ quality: 88 })
+      .toBuffer()
+    return `data:image/jpeg;base64,${jpg.toString('base64')}`
+  })()
+  nueva.catch(() => fotos.delete(url))
+  fotos.set(url, nueva)
+  if (fotos.size > 100) fotos.delete(fotos.keys().next().value!)
+  return nueva
+}
+
+// La bandera también se baja una vez por país (antes Satori la pedía a flagcdn en cada dibujo)
+const banderas = new Map<string, Promise<string>>()
+
+function bandera(codigo: string) {
+  const url = `https://flagcdn.com/w80/${codigo}.png`
+  let b = banderas.get(codigo)
+  if (!b) {
+    b = fetch(url)
+      .then(async r => {
+        if (!r.ok) throw new Error(`bandera ${r.status}`)
+        return `data:image/png;base64,${Buffer.from(await r.arrayBuffer()).toString('base64')}`
+      })
+      .catch(() => { banderas.delete(codigo); return url })   // si falla, que Satori la pida como antes
+    banderas.set(codigo, b)
+  }
+  return b
+}
+
+async function achicar(webp: Buffer, ancho: number) {
+  const sharp = (await import('sharp')).default
+  return sharp(webp).resize({ width: Math.max(ancho, 100) }).webp({ quality: 85 }).toBuffer()
+}
+
+// ?f=<id de figuritas_generadas>: una figurita del historial
+// ?ancho=<px>: WebP achicado (para mostrar en la web; el PNG completo pesa más de 1 MB)
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const busqueda = new URL(req.url).searchParams
+  const ancho = Number(busqueda.get('ancho')) || null
 
   try {
     const supabase = createServiceClient()
-    const [{ data: p }, marcoSrc] = await Promise.all([
-      supabase
-        .from('perfiles')
-        .select('nombre, nombre_figurita, apodo, imagen_ia, pais, fecha_nacimiento, altura, estilo_juego, descripcion_propia')
-        .eq('id', id)
-        .maybeSingle(),
+    const [p, marcoSrc] = await Promise.all([
+      datosFigurita(supabase, id, busqueda.get('f')),
       getMarcoSrc(),
     ])
 
@@ -70,7 +153,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const rawNombre = (p.nombre_figurita as string)?.trim() || (p.nombre as string)?.split(' ')[0] || 'Nombre'
     const nombre    = rawNombre.charAt(0).toUpperCase() + rawNombre.slice(1).toLowerCase()
     const apodo     = p.apodo ? String(p.apodo) : null
-    const posicion  = ((p.estilo_juego as string[])?.[0] ?? '').replace(/[^a-zA-Z\s]/g, '').trim().toUpperCase().slice(0, 12) || '-'
+    // \p{L} y no a-zA-Z: si no, "Mágico" queda "MGICO"
+    const posicion  = ((p.estilo_juego as string[])?.[0] ?? '').replace(/[^\p{L}\s]/gu, '').trim().toUpperCase().slice(0, 12) || '-'
     const edad      = p.fecha_nacimiento ? calcEdad(String(p.fecha_nacimiento)) : '-'
     const alturaRaw = p.altura as number | null
     const alturaStr = alturaRaw
@@ -79,23 +163,34 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const quote    = ((p.descripcion_propia as string) || '').slice(0, 25)
     const paisCode = ((p.pais as string) || 'ar').toLowerCase()
 
-    const imageResponse = new ImageResponse(
+    // Si falla el recorte, Satori baja la foto original como antes
+    const dibujar = async () => {
+      const [foto, flag] = await Promise.all([
+        fotoRecortada(p.imagen_ia as string).catch(() => null),
+        bandera(paisCode),
+      ])
+      return Buffer.from(await new ImageResponse(
       (
-        <div style={{ width: W, height: H, display: 'flex', position: 'relative', background: '#022232' }}>
+        // Esquinas redondeadas como la tarjeta de la app (borderRadius 54 sobre 629)
+        <div style={{ width: W, height: H, display: 'flex', position: 'relative', background: '#022232', borderRadius: 54, overflow: 'hidden' }}>
 
           {/* Player photo */}
           <div style={{ position: 'absolute', left: 0, top: 143, width: W, height: 630, display: 'flex', overflow: 'hidden' }}>
-            <img
-              src={p.imagen_ia as string}
-              width={Math.round(W * 1.35)}
-              height={Math.round(W * 2.025)}
-              style={{ position: 'absolute', top: -40, left: -Math.round(W * 0.175) }}
-            />
+            {foto ? (
+              <img src={foto} width={W} height={FOTO.ventanaAlto} style={{ position: 'absolute', top: 0, left: 0 }} />
+            ) : (
+              <img
+                src={p.imagen_ia as string}
+                width={FOTO.ancho}
+                height={FOTO.alto}
+                style={{ position: 'absolute', top: -FOTO.y, left: -FOTO.x }}
+              />
+            )}
           </div>
 
           {/* Country flag — rectangular, flush right */}
           <img
-            src={`https://flagcdn.com/w80/${paisCode}.png`}
+            src={flag}
             width={88} height={59}
             style={{ position: 'absolute', left: 515, top: 636 }}
           />
@@ -148,14 +243,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           { name: 'Lobster',   data: lobsterData,  weight: 400, style: 'normal' },
         ],
       }
-    )
+      ).arrayBuffer())
+    }
+
+    // Las del historial no cambian: el navegador las puede guardar una semana
+    const cache = busqueda.get('f') ? 'public, max-age=604800, s-maxage=604800' : 'public, max-age=3600, s-maxage=3600'
+
+    if (ancho) {
+      const completa = await webpCompleta(JSON.stringify([id, busqueda.get('f'), p, edad]), dibujar)
+      const salida = ancho >= W ? completa : await achicar(completa, ancho)
+      return new Response(new Uint8Array(salida), { headers: { 'Content-Type': 'image/webp', 'Cache-Control': cache } })
+    }
 
     // Eagerly buffer the render — surfaces any Satori errors here so we can catch them
-    const buf = await imageResponse.arrayBuffer()
-    return new Response(buf, {
+    const png = await dibujar()
+    return new Response(new Uint8Array(png), {
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        'Cache-Control': cache,
       },
     })
   } catch (err) {

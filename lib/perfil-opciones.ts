@@ -43,13 +43,29 @@ export const NOMBRE_PAIS: Record<string, string> = Object.fromEntries(PAISES.map
 export const TALLES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
 export const REDES = [
-  { key: 'instagram', label: 'Instagram', placeholder: 'tu_usuario' },
-  { key: 'facebook', label: 'Facebook', placeholder: 'tu.usuario' },
-  { key: 'tiktok', label: 'TikTok', placeholder: 'tu_usuario' },
-  { key: 'x', label: 'X (Twitter)', placeholder: 'tu_usuario' },
-  { key: 'youtube', label: 'YouTube', placeholder: 'tu_canal' },
-  { key: 'web', label: 'Tu web', placeholder: 'https://tusitio.com' },
+  { key: 'instagram', label: 'Instagram', placeholder: 'tu_usuario', icono: '/redes/instagram.webp' },
+  { key: 'facebook', label: 'Facebook', placeholder: 'tu.usuario', icono: '/redes/facebook.webp' },
+  { key: 'tiktok', label: 'TikTok', placeholder: 'tu_usuario', icono: '/redes/tiktok.webp' },
+  { key: 'x', label: 'X (Twitter)', placeholder: 'tu_usuario', icono: '/redes/x.webp' },
+  { key: 'youtube', label: 'YouTube', placeholder: 'tu_canal', icono: '/redes/youtube.webp' },
+  { key: 'web', label: 'Tu web', placeholder: 'https://tusitio.com', icono: '/redes/web.webp' },
 ]
+
+// Del usuario cargado al link de su perfil, como en la app (screens/VerPerfil.js).
+// Si cargaron directamente un link http(s), se usa tal cual.
+export function urlRed(key: string, valor: string) {
+  const v = valor.trim()
+  if (/^https?:\/\//i.test(v)) return v
+  const u = v.replace(/^@/, '')
+  switch (key) {
+    case 'instagram': return `https://instagram.com/${u}`
+    case 'facebook': return `https://facebook.com/${u}`
+    case 'tiktok': return `https://tiktok.com/@${u}`
+    case 'x': return `https://x.com/${u}`
+    case 'youtube': return `https://youtube.com/@${u}`
+    default: return `https://${v}`
+  }
+}
 
 export const CLUBES = [
   // Argentina — Primera División
