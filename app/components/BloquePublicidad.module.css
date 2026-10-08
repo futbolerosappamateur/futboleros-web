@@ -27,6 +27,13 @@
   border-radius: 12px;
 }
 
+/* Link que envuelve la imagen: si el contenedor le da alto (en el perfil), el aviso lo llena */
+.enlace {
+  display: block;
+  text-decoration: none;
+}
+.enlace > .bloque { height: 100%; }
+
 .etiqueta {
   position: absolute;
   top: 10px;

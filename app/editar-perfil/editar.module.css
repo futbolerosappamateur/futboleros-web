@@ -59,11 +59,6 @@
 
 .seccion {
   background-color: var(--surface);
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 26px 26px;
-  border: 1px solid var(--gold-border);
   border-radius: 14px;
   padding: 26px 28px 28px;
 }

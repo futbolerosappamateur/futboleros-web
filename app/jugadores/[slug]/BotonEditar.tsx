@@ -16,5 +16,9 @@ export default function BotonEditar({ perfilId }: { perfilId: string }) {
   }, [perfilId])
 
   if (!esMio) return null
-  return <Link href="/editar-perfil" className={styles.btnEditar}>Editar perfil</Link>
+  return (
+    <div className={styles.filaEditar}>
+      <Link href="/editar-perfil" className={styles.btnEditar}>Editar perfil</Link>
+    </div>
+  )
 }

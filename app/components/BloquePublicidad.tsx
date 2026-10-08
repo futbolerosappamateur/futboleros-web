@@ -5,9 +5,10 @@ import styles from './BloquePublicidad.module.css'
 interface Props {
   slot: string
   esPro?: boolean
+  className?: string   // clase extra para el elemento de afuera (el perfil la usa para estirarlo)
 }
 
-export default async function BloquePublicidad({ slot, esPro = false }: Props) {
+export default async function BloquePublicidad({ slot, esPro = false, className }: Props) {
   const supabase = createServiceClient()
   const planField = esPro ? 'para_plan10' : 'para_free'
 
@@ -21,10 +22,11 @@ export default async function BloquePublicidad({ slot, esPro = false }: Props) {
     .limit(1)
 
   const pub = data?.[0]
+  const extra = className ? ` ${className}` : ''
 
   if (!pub) {
     return (
-      <aside className={styles.bloque} aria-label="Publicidad">
+      <aside className={`${styles.bloque}${extra}`} aria-label="Publicidad">
         <span className={styles.etiqueta}>Publicidad</span>
         <p className={styles.titulo}>Tu marca en Futboleros</p>
         <p className={styles.texto}>Llegá a los jugadores de fútbol amateur de todo el país.</p>
@@ -33,8 +35,9 @@ export default async function BloquePublicidad({ slot, esPro = false }: Props) {
     )
   }
 
+  const conEnlace = !!pub.url_destino
   const inner = (
-    <aside className={`${styles.bloque} ${styles.bloqueImagen}`} aria-label="Publicidad">
+    <aside className={`${styles.bloque} ${styles.bloqueImagen}${conEnlace ? '' : extra}`} aria-label="Publicidad">
       <span className={styles.etiqueta}>Publicidad</span>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -45,9 +48,9 @@ export default async function BloquePublicidad({ slot, esPro = false }: Props) {
     </aside>
   )
 
-  if (pub.url_destino) {
+  if (conEnlace) {
     return (
-      <a href={pub.url_destino} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
+      <a href={pub.url_destino} target="_blank" rel="noopener noreferrer" className={`${styles.enlace}${extra}`}>
         {inner}
       </a>
     )

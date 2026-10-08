@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
 import Header from './components/Header'
 import HeroSlider from './components/HeroSlider'
+import FiguritaStack from './components/FiguritaStack'
 import BloquePublicidad from './components/BloquePublicidad'
 import Footer from './components/Footer'
 import { createClient } from '@/lib/supabase/server'
@@ -82,7 +83,7 @@ export default async function Home() {
       </section>
 
       {/* ── Publicidad principal ── */}
-      <section style={{ padding: '0 24px 0', maxWidth: 1100, margin: '0 auto' }}>
+      <section style={{ padding: '30px 24px 0', maxWidth: 1100, margin: '0 auto' }}>
         <BloquePublicidad slot="home_principal" />
       </section>
 
@@ -135,9 +136,7 @@ export default async function Home() {
             <Link href="/registro" className={styles.figuritaCta}>Conseguí tu figurita</Link>
           </div>
 
-          <div style={{ width: 280, flexShrink: 0 }}>
-            <BloquePublicidad slot="home_figurita" />
-          </div>
+          <FiguritaStack />
         </div>
       </section>
 

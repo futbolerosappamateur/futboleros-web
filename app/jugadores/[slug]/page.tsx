@@ -199,26 +199,24 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
               {tags.map((t, i) => (
                 <span key={i} className={styles.tagCyan}>{t.replace(/[^\p{L}\s]/gu, '').trim()}</span>
               ))}
-              <div className={styles.idDerecha}>
-                {redes.length > 0 && (
-                  <div className={styles.redes}>
-                    {redes.map(r => (
-                      <a
-                        key={r.key}
-                        href={urlRed(r.key, perfil.redes[r.key])}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.red}
-                        aria-label={r.label}
-                        title={r.label}
-                      >
-                        <Icono src={r.icono} className={styles.redIcono} />
-                      </a>
-                    ))}
-                  </div>
-                )}
-                <BotonEditar perfilId={perfil.id} />
-              </div>
+              {redes.length > 0 && (
+                <div className={styles.redes}>
+                  {redes.map(r => (
+                    <a
+                      key={r.key}
+                      href={urlRed(r.key, perfil.redes[r.key])}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.red}
+                      aria-label={r.label}
+                      title={r.label}
+                    >
+                      <Icono src={r.icono} className={styles.redIcono} />
+                    </a>
+                  ))}
+                </div>
+              )}
+              <BotonEditar perfilId={perfil.id} />
             </div>
 
             {/* Ficha (columna izquierda) */}
@@ -379,7 +377,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
                     )}
                   </section>
                 ) : (
-                  <BloquePublicidad slot="perfil_testimonios" esPro={esPro} />
+                  <BloquePublicidad slot="perfil_testimonios" esPro={esPro} className={styles.publicidad} />
                 )}
               </div>
 
