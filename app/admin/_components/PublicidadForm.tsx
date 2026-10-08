@@ -38,6 +38,7 @@ const selectStyle: React.CSSProperties = { ...input, cursor: 'pointer' }
 
 const SLOTS = [
   { value: 'home_principal', label: 'Home — Banner principal (ancho)' },
+  { value: 'home_hinchas', label: 'Home — Debajo de los más hinchados (ancho)' },
   { value: 'home_figurita', label: 'Home — Columna figurita (alto)' },
   { value: 'perfil_testimonios', label: 'Perfil jugador — Testimonios' },
 ]

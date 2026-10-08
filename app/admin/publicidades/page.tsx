@@ -5,6 +5,7 @@ import { eliminarPublicidad } from '../_actions/publicidades'
 
 const SLOT_LABELS: Record<string, string> = {
   home_principal: 'Home — Banner principal',
+  home_hinchas:   'Home — Más hinchados',
   home_figurita:  'Home — Figurita (alto)',
   perfil_testimonios: 'Perfil — Testimonios',
 }

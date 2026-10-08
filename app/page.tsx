@@ -198,9 +198,9 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── Los más hinchados ── */}
-      {hinchas.length > 0 && (
-        <section className={styles.hinchas}>
+      {/* ── Los más hinchados, con una publicidad abajo ── */}
+      <section className={styles.hinchas}>
+        {hinchas.length > 0 && (
           <div className={styles.hinchasInner}>
             <h2 className={styles.sectionTitle}>LOS MÁS HINCHADOS</h2>
             <p className={styles.sectionSub}>Los clubes con más hinchas entre los jugadores de Futboleros.</p>
@@ -222,8 +222,11 @@ export default async function Home() {
               ))}
             </ol>
           </div>
-        </section>
-      )}
+        )}
+        <div className={styles.hinchasPubli}>
+          <BloquePublicidad slot="home_hinchas" />
+        </div>
+      </section>
 
       {/* ── CTA ── */}
       <section className={styles.cta}>

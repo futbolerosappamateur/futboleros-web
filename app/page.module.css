@@ -400,8 +400,16 @@
   color: var(--text-muted);
 }
 
+/* Publicidad debajo de los clubes: mismo ancho que la principal (1100 menos 24px por lado) */
+.hinchasPubli {
+  max-width: 1052px;
+  margin: 0 auto;
+}
+.hinchasInner + .hinchasPubli { margin-top: 60px; }
+
 @media (max-width: 700px) {
   .hinchas { padding: 64px 16px; }
+  .hinchasInner + .hinchasPubli { margin-top: 40px; }
   /* Una sola columna, en orden */
   .hinchasLista {
     grid-auto-flow: row;

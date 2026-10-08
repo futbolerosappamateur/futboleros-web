@@ -1,7 +1,7 @@
 -- Tabla de publicidades propias (imágenes de negocios que publican en Futboleros)
 create table if not exists publicidades (
   id          uuid        primary key default gen_random_uuid(),
-  slot        text        not null,          -- 'home_principal' | 'home_figurita' | 'perfil_testimonios'
+  slot        text        not null,          -- 'home_principal' | 'home_hinchas' | 'home_figurita' | 'perfil_testimonios'
   titulo      text,                          -- nombre interno para el admin
   imagen_url  text        not null,
   url_destino text,
