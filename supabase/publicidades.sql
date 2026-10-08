@@ -16,6 +16,7 @@ create table if not exists publicidades (
 alter table publicidades enable row level security;
 create policy "publicidades_select" on publicidades for select using (true);
 
--- Bucket público para las imágenes de publicidades
+-- Bucket público para las imágenes de publicidades. Se llama "marcas" y no "publicidades"
+-- porque los bloqueadores de anuncios bloquean cualquier URL con "/publicidades/"
 -- (correr esto en Supabase Storage o desde el dashboard)
--- insert into storage.buckets (id, name, public) values ('publicidades', 'publicidades', true);
+-- insert into storage.buckets (id, name, public) values ('marcas', 'marcas', true);

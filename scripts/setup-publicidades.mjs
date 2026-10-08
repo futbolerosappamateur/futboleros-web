@@ -56,11 +56,11 @@ if (sqlRes.error || sqlRes.message) {
   console.log('Tabla: OK')
 }
 
-// 2. Crear bucket publicidades
+// 2. Crear bucket marcas (no "publicidades": los bloqueadores de anuncios bloquean esas URLs)
 const bucketRes = await fetch(`${URL}/storage/v1/bucket`, {
   method: 'POST',
   headers,
-  body: JSON.stringify({ id: 'publicidades', name: 'publicidades', public: true }),
+  body: JSON.stringify({ id: 'marcas', name: 'marcas', public: true }),
 }).then(r => r.json())
 
 if (bucketRes.error) {

@@ -5,6 +5,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 const PATHS = ['/', '/admin/publicidades']
+// Las imágenes no van en un bucket "publicidades": los bloqueadores de anuncios (EasyList)
+// bloquean cualquier URL con "/publicidades/" y el aviso queda en negro
+const BUCKET = 'marcas'
 
 export async function subirImagenPublicidad(formData: FormData): Promise<string> {
   const file = formData.get('file') as File
@@ -14,10 +17,10 @@ export async function subirImagenPublicidad(formData: FormData): Promise<string>
   const filename = `${Date.now()}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
   const { error } = await supabase.storage
-    .from('publicidades')
+    .from(BUCKET)
     .upload(filename, buffer, { contentType: file.type, upsert: true })
   if (error) throw error
-  const { data } = supabase.storage.from('publicidades').getPublicUrl(filename)
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filename)
   return data.publicUrl
 }
 

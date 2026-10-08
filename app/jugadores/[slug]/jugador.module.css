@@ -690,6 +690,10 @@
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
+  /* Con el scroll horizontal la pista también corta arriba y abajo: este aire deja ver la
+     figurita levantada (hover) y el contorno de foco. El margen negativo lo compensa */
+  padding-block: 6px;
+  margin-block: -6px;
 }
 .figusPista::-webkit-scrollbar { display: none; }
 
