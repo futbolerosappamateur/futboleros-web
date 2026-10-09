@@ -22,25 +22,24 @@ export default function RecortarFoto({ archivo, onListo, onCancelar }: Props) {
   const arrastre = useRef<{ x: number; y: number; desdeX: number; desdeY: number } | null>(null)
 
   useEffect(() => {
-    // La URL se libera cuando la imagen terminó de cargar: si se liberaba al limpiar el efecto,
-    // en desarrollo (React corre los efectos dos veces) la primera carga fallaba y quedaba el error
-    // aunque la segunda anduviera. El resultado de un efecto ya limpiado se ignora.
+    // La URL vive mientras el recorte está abierto (la vista previa la usa) y se libera al limpiar.
+    // En desarrollo React corre los efectos dos veces: la primera carga se corta al liberar su URL,
+    // así que el resultado de un efecto ya limpiado se ignora (si no, quedaba el error de imagen).
     let vigente = true
     const url = URL.createObjectURL(archivo)
     const im = new Image()
     im.onload = () => {
-      URL.revokeObjectURL(url)
       if (!vigente) return
       const s = VISOR / Math.min(im.naturalWidth, im.naturalHeight)
       setPos({ x: (VISOR - im.naturalWidth * s) / 2, y: (VISOR - im.naturalHeight * s) / 2 })
       setImg(im)
     }
-    im.onerror = () => {
-      URL.revokeObjectURL(url)
-      if (vigente) setFallo(true)
-    }
+    im.onerror = () => { if (vigente) setFallo(true) }
     im.src = url
-    return () => { vigente = false }
+    return () => {
+      vigente = false
+      URL.revokeObjectURL(url)
+    }
   }, [archivo])
 
   useEffect(() => {

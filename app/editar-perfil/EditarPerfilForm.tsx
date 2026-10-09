@@ -88,16 +88,16 @@ function achicarFondo(archivo: File): Promise<Blob> {
     const url = URL.createObjectURL(archivo)
     const img = new Image()
     img.onload = () => {
-      URL.revokeObjectURL(url)
       const escala = Math.min(1, ANCHO_FONDO / img.naturalWidth)
       const canvas = document.createElement('canvas')
       canvas.width = Math.round(img.naturalWidth * escala)
       canvas.height = Math.round(img.naturalHeight * escala)
       const ctx = canvas.getContext('2d')
-      if (!ctx) { reject(new Error('Sin canvas')); return }
+      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('Sin canvas')); return }
       ctx.fillStyle = '#1a1a14'   // lo transparente de un PNG queda oscuro y no negro puro
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(url)   // recién después de dibujarla
       canvas.toBlob(b => (b ? resolve(b) : reject(new Error('No se pudo procesar la imagen'))), 'image/jpeg', 0.85)
     }
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer la imagen')) }
