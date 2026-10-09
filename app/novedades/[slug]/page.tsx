@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
@@ -74,26 +73,18 @@ export default async function NovedadPage({ params }: { params: Promise<{ slug: 
 
   return (
     <>
-      <Header />
+      {/* Sin foto de fondo arriba: el menú va con letras oscuras sobre el blanco */}
+      <Header darkLinks />
       <main className={styles.page}>
-
-        {/* Cover */}
-        {novedad.imagen_url && (
-          <div className={styles.cover}>
-            <Image
-              src={novedad.imagen_url}
-              alt={novedad.titulo}
-              fill
-              className={styles.coverImg}
-              priority
-              unoptimized
-            />
-            <div className={styles.coverOverlay} />
-          </div>
-        )}
 
         <div className={styles.body}>
           <div className={styles.inner}>
+            {/* La imagen de la nota arriba de todo, al ancho del texto y con su proporción original */}
+            {novedad.imagen_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={novedad.imagen_url} alt={novedad.titulo} className={styles.imagen} />
+            )}
+
             <BackLink href="/novedades" className={styles.back}>Novedades</BackLink>
 
             <article className={styles.article}>
