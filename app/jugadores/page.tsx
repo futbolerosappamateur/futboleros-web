@@ -13,12 +13,13 @@ export const metadata: Metadata = {
   description: 'Encontrá jugadores, mirá sus figuritas y estadísticas.',
 }
 
-type EstadisticaRow = {
+type RatingRow = {
   usuario_id: string
-  goles: number | null
-  asistencias: number | null
-  resultado: string | null
-  nota_admin: number | null
+  partidos_jugados: number | null
+  total_goles: number | null
+  total_asistencias: number | null
+  partidos_ganados: number | null
+  rating: number | string | null
 }
 
 export default async function Jugadores({
@@ -42,31 +43,37 @@ export default async function Jugadores({
   const lista = jugadores ?? []
   const ids = lista.map((j: { id: string }) => j.id)
 
-  let statsRows: EstadisticaRow[] = []
+  // Mismos números que la página del jugador y la app: salen de ratings (una fila por grupo)
+  // y se suman como en get_stats_globales
+  let ratingRows: RatingRow[] = []
   if (ids.length) {
     const { data } = await supabase
-      .from('estadisticas')
-      .select('usuario_id, goles, asistencias, resultado, nota_admin')
+      .from('ratings')
+      .select('usuario_id, partidos_jugados, total_goles, total_asistencias, partidos_ganados, rating')
       .in('usuario_id', ids)
       .limit(10000)
-    statsRows = (data ?? []) as EstadisticaRow[]
+    ratingRows = (data ?? []) as RatingRow[]
   }
 
-  type Stats = { partidos: number; goles: number; asistencias: number; ganados: number; ratingSum: number; ratingCount: number }
+  type Stats = { partidos: number; goles: number; asistencias: number; ganados: number; ratingSum: number; conRating: number; filas: number }
   const statsMap: Record<string, Stats> = {}
-  for (const row of statsRows) {
-    if (!statsMap[row.usuario_id]) {
-      statsMap[row.usuario_id] = { partidos: 0, goles: 0, asistencias: 0, ganados: 0, ratingSum: 0, ratingCount: 0 }
-    }
-    statsMap[row.usuario_id].partidos++
-    statsMap[row.usuario_id].goles += row.goles ?? 0
-    statsMap[row.usuario_id].asistencias += row.asistencias ?? 0
-    if (row.resultado === 'ganado') statsMap[row.usuario_id].ganados++
-    if (row.nota_admin != null) {
-      statsMap[row.usuario_id].ratingSum += Number(row.nota_admin)
-      statsMap[row.usuario_id].ratingCount++
+  for (const row of ratingRows) {
+    const s = (statsMap[row.usuario_id] ??= { partidos: 0, goles: 0, asistencias: 0, ganados: 0, ratingSum: 0, conRating: 0, filas: 0 })
+    s.partidos += row.partidos_jugados ?? 0
+    s.goles += row.total_goles ?? 0
+    s.asistencias += row.total_asistencias ?? 0
+    s.ganados += row.partidos_ganados ?? 0
+    s.filas++
+    if (row.rating != null) {
+      s.ratingSum += Number(row.rating)
+      s.conRating++
     }
   }
+
+  // Rating global como get_stats_globales: SUM(rating) / COUNT(*) / 10 (ratings guarda la nota × 10),
+  // y 5.0 si nunca tuvo nota; la página del jugador lo muestra solo si jugó algún partido
+  const ratingGlobal = (s: Stats) =>
+    s.partidos > 0 ? (s.conRating > 0 ? s.ratingSum / s.filas / 10 : 5) : null
 
   const jugadoresConStats: JugadorConStats[] = lista.map((j: any) => ({
     id: j.id,
@@ -82,7 +89,7 @@ export default async function Jugadores({
           goles: statsMap[j.id].goles,
           asistencias: statsMap[j.id].asistencias,
           ganados: statsMap[j.id].ganados,
-          rating: statsMap[j.id].ratingCount > 0 ? statsMap[j.id].ratingSum / statsMap[j.id].ratingCount : null,
+          rating: ratingGlobal(statsMap[j.id]),
         }
       : { partidos: 0, goles: 0, asistencias: 0, ganados: 0, rating: null },
   }))
