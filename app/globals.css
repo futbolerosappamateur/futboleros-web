@@ -8,7 +8,7 @@
 
 :root {
   --bg:          #ffffff;
-  --surface:     #ebebea;
+  --surface:     #f2f2f2;   /* gris de todos los bloques (el de las cards del perfil del jugador) */
   --surface-2:   #e2e2e0;
   --gold:        #c9a84c;
   --gold-light:  #b8942e;
