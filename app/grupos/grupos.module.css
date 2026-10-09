@@ -56,7 +56,7 @@
 
 /* ── Body ── */
 .body {
-  padding: 40px 24px 80px;
+  padding: 20px 24px 80px;   /* filtros a 20 px del encabezado, igual en jugadores, grupos y novedades */
 }
 
 .inner {

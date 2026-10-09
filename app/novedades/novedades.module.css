@@ -29,7 +29,7 @@
 .subtitle { font-size: 1rem; color: rgba(240, 230, 208, 0.85); line-height: 1.7; }   /* claro: el dorado transparente se perdía con el fondo */
 
 /* Body */
-.body { padding: 56px 24px 80px; }
+.body { padding: 20px 24px 80px; }   /* filtros a 20 px del encabezado, igual en jugadores y grupos */
 .inner { max-width: 960px; margin: 0 auto; }
 .empty { text-align: center; color: var(--text-muted); padding: 60px 0; }
 
