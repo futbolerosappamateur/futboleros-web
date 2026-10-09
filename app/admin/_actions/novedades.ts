@@ -27,6 +27,7 @@ export async function crearNovedad(formData: FormData) {
     resumen: (formData.get('resumen') as string) || null,
     contenido: (formData.get('contenido') as string) || null,
     imagen_url: (formData.get('imagen_url') as string) || null,
+    categoria: (formData.get('categoria') as string) || null,
     publicado: formData.get('publicado') === 'on',
   })
   if (error) throw error
@@ -43,6 +44,7 @@ export async function editarNovedad(id: string, formData: FormData) {
     resumen: (formData.get('resumen') as string) || null,
     contenido: (formData.get('contenido') as string) || null,
     imagen_url: (formData.get('imagen_url') as string) || null,
+    categoria: (formData.get('categoria') as string) || null,
     publicado: formData.get('publicado') === 'on',
     actualizado_en: new Date().toISOString(),
   }).eq('id', id)

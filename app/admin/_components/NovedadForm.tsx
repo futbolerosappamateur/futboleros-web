@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { crearNovedad, editarNovedad, subirImagenNovedad } from '../_actions/novedades'
+import { CATEGORIAS_NOVEDADES } from '@/lib/novedades'
 
 interface Novedad {
   id: string
@@ -12,6 +13,7 @@ interface Novedad {
   contenido: string | null
   imagen_url: string | null
   publicado: boolean
+  categoria?: string | null
 }
 
 function slugify(text: string) {
@@ -116,6 +118,22 @@ export default function NovedadForm({ novedad }: { novedad?: Novedad }) {
         />
         <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
           URL: /novedades/<b>{slug || 'slug-del-articulo'}</b>
+        </span>
+      </div>
+
+      <div style={field}>
+        <label style={labelStyle} htmlFor="categoria">CATEGORÍA</label>
+        <select
+          id="categoria"
+          name="categoria"
+          style={{ ...inputStyle, cursor: 'pointer' }}
+          defaultValue={novedad?.categoria ?? ''}
+        >
+          <option value="">Sin categoría</option>
+          {CATEGORIAS_NOVEDADES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+          Sirve para filtrar en /novedades
         </span>
       </div>
 

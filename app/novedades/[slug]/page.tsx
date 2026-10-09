@@ -38,7 +38,8 @@ export default async function NovedadPage({ params }: { params: Promise<{ slug: 
   const supabase = createServiceClient()
   const { data: novedad } = await supabase
     .from('novedades')
-    .select('titulo, resumen, contenido, imagen_url, creado_en')
+    // '*': trae la categoría si la columna ya existe, sin fallar si todavía no
+    .select('*')
     .eq('slug', slug)
     .eq('publicado', true)
     .maybeSingle()
@@ -46,7 +47,7 @@ export default async function NovedadPage({ params }: { params: Promise<{ slug: 
   if (!novedad) notFound()
 
   const fecha = new Date(novedad.creado_en).toLocaleDateString('es-AR', {
-    day: 'numeric', month: 'long', year: 'numeric'
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires'
   })
 
   return (
@@ -74,7 +75,10 @@ export default async function NovedadPage({ params }: { params: Promise<{ slug: 
             <BackLink href="/novedades" className={styles.back}>Novedades</BackLink>
 
             <article className={styles.article}>
-              <time className={styles.fecha}>{fecha}</time>
+              <p className={styles.meta}>
+                {novedad.categoria && <span className={styles.categoria}>{novedad.categoria}</span>}
+                <time className={styles.fecha}>{fecha}</time>
+              </p>
               <h1 className={styles.titulo}>{novedad.titulo}</h1>
               {novedad.resumen && <p className={styles.resumen}>{novedad.resumen}</p>}
 

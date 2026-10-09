@@ -26,12 +26,44 @@
   line-height: 0.95;
   margin-bottom: 14px;
 }
-.subtitle { font-size: 1rem; color: #c9a84c88; line-height: 1.7; }
+.subtitle { font-size: 1rem; color: rgba(240, 230, 208, 0.85); line-height: 1.7; }   /* claro: el dorado transparente se perdía con el fondo */
 
 /* Body */
 .body { padding: 56px 24px 80px; }
 .inner { max-width: 960px; margin: 0 auto; }
 .empty { text-align: center; color: var(--text-muted); padding: 60px 0; }
+
+/* Filtros: categoría y fecha */
+.controls {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.filtroSelect {
+  background: var(--surface);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 10px 30px 10px 14px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a5a56' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+.filtroSelect:focus { border-color: var(--gold); }
+.clearBtn {
+  color: var(--gold);
+  font-family: var(--font-body);
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 /* Grid */
 .grid {
@@ -46,12 +78,10 @@
   flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--gold-border);
-  border-radius: 14px;
   overflow: hidden;
   transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 .card:hover {
-  border-color: var(--gold);
   transform: translateY(-3px);
   box-shadow: 0 6px 24px #c9a84c12;
 }
@@ -81,6 +111,16 @@
   flex-direction: column;
   gap: 8px;
   flex: 1;
+}
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.categoria {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--gold-dim);
+  padding: 3px 8px 2px;
 }
 .fecha { font-size: 0.75rem; color: var(--gold); letter-spacing: 0.06em; }
 .cardTitle {

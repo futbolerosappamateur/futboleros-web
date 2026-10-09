@@ -7,7 +7,8 @@ export default async function EditarNovedad({ params }: { params: Promise<{ id: 
   const supabase = createServiceClient()
   const { data: novedad } = await supabase
     .from('novedades')
-    .select('id, titulo, slug, resumen, contenido, imagen_url, publicado')
+    // '*': trae la categoría si la columna ya existe, sin fallar si todavía no
+    .select('*')
     .eq('id', id)
     .maybeSingle()
 
