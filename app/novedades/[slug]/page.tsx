@@ -6,6 +6,7 @@ import BackLink from '../../components/BackLink'
 import { createServiceClient } from '@/lib/supabase/service'
 import { SITE_URL } from '@/lib/sitio'
 import CompartirNota from './CompartirNota'
+import ImagenNota from './ImagenNota'
 import styles from './novedad.module.css'
 
 export const revalidate = 60
@@ -80,10 +81,7 @@ export default async function NovedadPage({ params }: { params: Promise<{ slug: 
         <div className={styles.body}>
           <div className={styles.inner}>
             {/* La imagen de la nota arriba de todo, al ancho del texto y con su proporción original */}
-            {novedad.imagen_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={novedad.imagen_url} alt={novedad.titulo} className={styles.imagen} />
-            )}
+            {novedad.imagen_url && <ImagenNota src={novedad.imagen_url} alt={novedad.titulo} />}
 
             <BackLink href="/novedades" className={styles.back}>Novedades</BackLink>
 

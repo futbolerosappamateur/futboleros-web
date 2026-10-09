@@ -1,15 +1,60 @@
 .page { min-height: 100svh; background: var(--bg); }
 
 /* Body: sin foto de fondo, deja lugar para el menú fijo (como contacto) */
-.body { padding: 170px 24px 80px; }
+.body { padding: 190px 24px 80px; }
 .inner { max-width: 720px; margin: 0 auto; }
 
 /* Imagen de la nota: al ancho de la columna del texto, con su proporción original */
+.imagenBtn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  margin-bottom: 28px;
+}
 .imagen {
   display: block;
   width: 100%;
   height: auto;
-  margin-bottom: 28px;
+  border-radius: 6px;
+}
+
+/* Modal con la imagen en tamaño real (si no entra en la pantalla, se achica hasta entrar) */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  cursor: zoom-out;
+}
+.modalClose {
+  position: absolute;
+  top: 20px;
+  right: 28px;
+  color: #fff;
+  font-size: 1.8rem;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.modalClose:hover { opacity: 1; }
+.modalImg {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 40px);
+  object-fit: contain;
+  cursor: default;
 }
 
 .back {
@@ -130,5 +175,5 @@
 }
 
 @media (max-width: 600px) {
-  .body { padding: 100px 16px 60px; }   /* en el celular el menú mide 72 px */
+  .body { padding: 120px 16px 60px; }   /* en el celular el menú mide 72 px */
 }
