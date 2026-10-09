@@ -160,3 +160,22 @@ export async function guardarFoto(url: string): Promise<{ error?: string }> {
   revalidarPerfiles()
   return {}
 }
+
+// El fondo del encabezado va al mismo bucket (perfil_<id>_fondo_...); null vuelve al predeterminado
+export async function guardarFondo(url: string | null): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Tu sesión expiró. Volvé a ingresar.' }
+
+  const propio = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatares/perfil_${user.id}_fondo_`
+  if (url !== null && !url.startsWith(propio)) return { error: 'No se pudo guardar el fondo.' }
+
+  const { error, guardado } = await guardarFila(supabase, user.id, {
+    fondo_url: url,
+    actualizado_en: new Date().toISOString(),
+  })
+  if (error || !guardado) return { error: 'No se pudo guardar el fondo. Probá de nuevo.' }
+
+  revalidarPerfiles()
+  return {}
+}

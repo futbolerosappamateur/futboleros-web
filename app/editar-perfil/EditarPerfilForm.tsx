@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  CARACT_FEM, CARACT_MASC, ESTILOS_FEM, ESTILOS_MASC, GENEROS, MAX_CARACTERISTICAS,
+  CARACT_FEM, CARACT_MASC, ESTILOS_FEM, ESTILOS_MASC, FONDO_PERFIL, GENEROS, MAX_CARACTERISTICAS,
   PAISES, REDES, TALLES, buscarClubes, sinEmojis,
 } from '@/lib/perfil-opciones'
-import { guardarFoto, guardarPerfil, type DatosPerfil } from './actions'
+import { guardarFondo, guardarFoto, guardarPerfil, type DatosPerfil } from './actions'
 import RecortarFoto from './RecortarFoto'
 import styles from './editar.module.css'
 
@@ -41,6 +41,7 @@ export type PerfilEditable = {
 type Props = {
   userId: string
   perfil: PerfilEditable | null
+  fondoUrl: string | null
   tienePassword: boolean
 }
 
@@ -79,7 +80,32 @@ function traducir(valor: string, desde: string[], hacia: string[]) {
 
 const soloNumeros = (v: string) => v.replace(/\D/g, '')
 
-export default function EditarPerfilForm({ userId, perfil, tienePassword }: Props) {
+const ANCHO_FONDO = 1920   // ancho máximo del fondo que se sube (el de la medida sugerida)
+
+// Achica el fondo en el navegador antes de subirlo (hasta 1920 px de ancho, en JPG), así el perfil carga rápido
+function achicarFondo(archivo: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(archivo)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const escala = Math.min(1, ANCHO_FONDO / img.naturalWidth)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.naturalWidth * escala)
+      canvas.height = Math.round(img.naturalHeight * escala)
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { reject(new Error('Sin canvas')); return }
+      ctx.fillStyle = '#1a1a14'   // lo transparente de un PNG queda oscuro y no negro puro
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(b => (b ? resolve(b) : reject(new Error('No se pudo procesar la imagen'))), 'image/jpeg', 0.85)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer la imagen')) }
+    img.src = url
+  })
+}
+
+export default function EditarPerfilForm({ userId, perfil, fondoUrl, tienePassword }: Props) {
   const router = useRouter()
   const [d, setD] = useState<DatosPerfil>(() => datosIniciales(perfil))
   const [error, setError] = useState<ErrorForm | null>(null)
@@ -90,6 +116,11 @@ export default function EditarPerfilForm({ userId, perfil, tienePassword }: Prop
   const [subiendoFoto, setSubiendoFoto] = useState(false)
   const [errorFoto, setErrorFoto] = useState('')
   const inputFoto = useRef<HTMLInputElement>(null)
+
+  const [fondo, setFondo] = useState(fondoUrl)
+  const [subiendoFondo, setSubiendoFondo] = useState(false)
+  const [errorFondo, setErrorFondo] = useState('')
+  const inputFondo = useRef<HTMLInputElement>(null)
 
   const [busquedaClub, setBusquedaClub] = useState('')
   const [password, setPassword] = useState('')
@@ -164,6 +195,45 @@ export default function EditarPerfilForm({ userId, perfil, tienePassword }: Prop
     }
   }
 
+  // El fondo también se guarda apenas se elige
+  const elegirFondo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0]
+    e.target.value = ''   // para poder volver a elegir el mismo archivo
+    if (!archivo) return
+    if (!archivo.type.startsWith('image/')) {
+      setErrorFondo('Elegí una imagen (JPG o PNG).')
+      return
+    }
+    setErrorFondo('')
+    setSubiendoFondo(true)
+    try {
+      const blob = await achicarFondo(archivo)
+      const supabase = createClient()
+      const nombreArchivo = `perfil_${userId}_fondo_${Date.now()}.jpg`
+      const { error: errSubida } = await supabase.storage
+        .from('avatares')
+        .upload(nombreArchivo, blob, { contentType: 'image/jpeg', upsert: true })
+      if (errSubida) throw errSubida
+      const url = supabase.storage.from('avatares').getPublicUrl(nombreArchivo).data.publicUrl
+      const res = await guardarFondo(url)
+      if (res.error) throw new Error(res.error)
+      setFondo(url)
+    } catch {
+      setErrorFondo('No se pudo subir el fondo. Probá de nuevo.')
+    } finally {
+      setSubiendoFondo(false)
+    }
+  }
+
+  const quitarFondo = async () => {
+    setErrorFondo('')
+    setSubiendoFondo(true)
+    const res = await guardarFondo(null)
+    if (res.error) setErrorFondo(res.error)
+    else setFondo(null)
+    setSubiendoFondo(false)
+  }
+
   const mostrarError = (mensaje: string, campo?: string) => {
     setError({ mensaje, campo })
     const el = campo ? document.getElementById(campo) : null
@@ -228,6 +298,39 @@ export default function EditarPerfilForm({ userId, perfil, tienePassword }: Prop
             {errorFoto && <p className={styles.errorCampo}>{errorFoto}</p>}
           </div>
         </div>
+      </section>
+
+      {/* ── Fondo del encabezado del perfil ── */}
+      <section className={styles.seccion}>
+        <TituloSeccion icono="/ic-galeria.webp">Fondo de tu perfil</TituloSeccion>
+        {/* Con la misma capa oscura que le pone ParallaxHero en el perfil */}
+        <div
+          className={styles.fondoPreview}
+          role="img"
+          aria-label={fondo ? 'Tu fondo de perfil' : 'Fondo predeterminado'}
+          style={{ backgroundImage: `linear-gradient(rgba(10,10,18,0.58), rgba(10,10,18,0.58)), url('${fondo ?? FONDO_PERFIL}')` }}
+        />
+        <div className={styles.fondoAcciones}>
+          <button
+            type="button"
+            className={styles.btnSecundario}
+            onClick={() => inputFondo.current?.click()}
+            disabled={subiendoFondo}
+          >
+            {subiendoFondo ? 'Guardando...' : fondo ? 'Cambiar fondo' : 'Subir fondo'}
+          </button>
+          {fondo && (
+            <button type="button" className={styles.btnSecundario} onClick={quitarFondo} disabled={subiendoFondo}>
+              Volver al predeterminado
+            </button>
+          )}
+          <input ref={inputFondo} type="file" accept="image/*" hidden onChange={elegirFondo} />
+        </div>
+        <p className={styles.ayuda}>
+          Medida sugerida: 1920 × 820 px, horizontal (JPG o PNG). En pantallas angostas se recorta a los costados: dejá lo importante en el centro.
+        </p>
+        <p className={styles.ayuda}>Le ponemos una capa oscura encima para que se lean tu nombre y tu apodo. Se guarda apenas la elegís.</p>
+        {errorFondo && <p className={styles.errorCampo}>{errorFondo}</p>}
       </section>
 
       {/* ── Datos personales ── */}
@@ -568,7 +671,7 @@ export default function EditarPerfilForm({ userId, perfil, tienePassword }: Prop
       <div className={styles.acciones}>
         {error && !error.campo && <p className={styles.errorGeneral}>{error.mensaje}</p>}
         <Link href={volverA} className={styles.btnSecundario}>Cancelar</Link>
-        <button type="submit" className={styles.btnPrimario} disabled={guardando || subiendoFoto}>
+        <button type="submit" className={styles.btnPrimario} disabled={guardando || subiendoFoto || subiendoFondo}>
           {guardando ? 'Guardando...' : 'Guardar perfil'}
         </button>
       </div>

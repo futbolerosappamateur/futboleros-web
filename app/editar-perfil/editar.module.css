@@ -323,6 +323,25 @@
   gap: 8px;
 }
 
+/* Fondo del encabezado: vista previa con las proporciones de la imagen predeterminada */
+.fondoPreview {
+  width: 100%;
+  aspect-ratio: 1916 / 821;
+  border-radius: 10px;
+  border: 1px solid var(--gold-border);
+  background-color: #1a1a14;
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 14px;
+}
+
+.fondoAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 .aviso {
   background: var(--gold-dim);
   border: 1px solid var(--gold-border);

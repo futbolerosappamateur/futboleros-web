@@ -42,6 +42,9 @@ export const NOMBRE_PAIS: Record<string, string> = Object.fromEntries(PAISES.map
 
 export const TALLES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
+// Fondo del encabezado del perfil cuando el jugador no eligió uno propio
+export const FONDO_PERFIL = '/fondos/jugador.webp'
+
 export const REDES = [
   { key: 'instagram', label: 'Instagram', placeholder: 'tu_usuario', icono: '/redes/instagram.webp' },
   { key: 'facebook', label: 'Facebook', placeholder: 'tu.usuario', icono: '/redes/facebook.webp' },

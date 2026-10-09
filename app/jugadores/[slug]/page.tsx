@@ -11,7 +11,7 @@ import BotonEditar from './BotonEditar'
 import CarruselFiguritas from './CarruselFiguritas'
 import BloquePublicidad from '../../components/BloquePublicidad'
 import { createServiceClient } from '@/lib/supabase/service'
-import { NOMBRE_PAIS, REDES, urlRed } from '@/lib/perfil-opciones'
+import { FONDO_PERFIL, NOMBRE_PAIS, REDES, urlRed } from '@/lib/perfil-opciones'
 import { formatoRating } from '@/lib/formato'
 import styles from './jugador.module.css'
 
@@ -73,7 +73,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
   const esPro = !!perfil.es_pro
   const sinFilas = Promise.resolve({ data: [] as any[] })
 
-  const [{ data: statsData }, { data: historial }, { data: testimonios }, { count: seguidores }, { count: grupos }, { data: figusData }] =
+  const [{ data: statsData }, { data: historial }, { data: testimonios }, { count: seguidores }, { count: grupos }, { data: figusData }, { data: fondoData }] =
     await Promise.all([
 
       supabase.rpc('get_stats_globales', { p_usuario_id: id }),
@@ -117,6 +117,9 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
             .order('created_at', { ascending: false })
             .limit(20)
         : sinFilas,
+
+      // Fondo del encabezado aparte: si la columna fondo_url todavía no existe, el perfil se ve igual
+      supabase.from('perfiles').select('fondo_url').eq('id', id).maybeSingle(),
     ])
 
   const s = {
@@ -166,7 +169,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
       <main className={styles.page}>
 
         {/* ── Hero ── */}
-        <ParallaxHero src="/fondos/jugador.webp" className={styles.hero}>
+        <ParallaxHero src={fondoData?.fondo_url || FONDO_PERFIL} className={styles.hero}>
           <div className={styles.heroInner}>
             <div className={styles.heroBottom}>
               <AvatarModal
