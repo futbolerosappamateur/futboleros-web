@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
 import { createClient } from '@/lib/supabase/server'
+import { FONDO_PERFIL } from '@/lib/perfil-opciones'
 import EditarPerfilForm, { type PerfilEditable } from './EditarPerfilForm'
 import styles from './editar.module.css'
 
@@ -25,13 +26,14 @@ export default async function EditarPerfil() {
     // Aparte: si la columna fondo_url todavía no existe, el resto del perfil se carga igual
     supabase.from('perfiles').select('fondo_url').eq('id', user.id).maybeSingle(),
   ])
+  const fondoUrl = (fondo as { fondo_url: string | null } | null)?.fondo_url ?? null
   const tienePassword = user.identities?.some(i => i.provider === 'email') ?? false
 
   return (
     <>
       <Header />
       <main className={styles.page}>
-        <ParallaxHero src="/fondos/jugador.webp" className={styles.hero}>
+        <ParallaxHero src={fondoUrl || FONDO_PERFIL} className={styles.hero}>
           <div className={styles.heroInner}>
             <span className={styles.badge}>TU CUENTA</span>
             <h1 className={styles.title}>EDITAR PERFIL</h1>
@@ -43,7 +45,7 @@ export default async function EditarPerfil() {
           <EditarPerfilForm
             userId={user.id}
             perfil={perfil as PerfilEditable | null}
-            fondoUrl={(fondo as { fondo_url: string | null } | null)?.fondo_url ?? null}
+            fondoUrl={fondoUrl}
             tienePassword={tienePassword}
           />
         </div>

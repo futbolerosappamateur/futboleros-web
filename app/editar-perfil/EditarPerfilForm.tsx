@@ -218,6 +218,7 @@ export default function EditarPerfilForm({ userId, perfil, fondoUrl, tienePasswo
       const res = await guardarFondo(url)
       if (res.error) throw new Error(res.error)
       setFondo(url)
+      router.refresh()   // el encabezado de esta página también usa el fondo
     } catch {
       setErrorFondo('No se pudo subir el fondo. Probá de nuevo.')
     } finally {
@@ -230,7 +231,7 @@ export default function EditarPerfilForm({ userId, perfil, fondoUrl, tienePasswo
     setSubiendoFondo(true)
     const res = await guardarFondo(null)
     if (res.error) setErrorFondo(res.error)
-    else setFondo(null)
+    else { setFondo(null); router.refresh() }
     setSubiendoFondo(false)
   }
 
