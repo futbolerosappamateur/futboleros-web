@@ -1,0 +1,403 @@
+/* ── Page ── */
+.page {
+  /* Columnas compartidas por hero y body, así el nombre y los datos de abajo quedan alineados */
+  --col-izq: 220px;          /* = ancho de la foto */
+  --col-gap: 36px;
+  --avatar-overlap: 78px;    /* cuánto baja la foto por debajo del hero */
+  /* Misma paleta que el perfil del jugador */
+  --tostado: #bda580;        /* íconos */
+  --tostado-claro: #cbbaa4;  /* títulos grandes */
+  --linea: #dccfbe;          /* divisores y bordes */
+  --gris-card: #f2f2f2;
+  min-height: 100svh;
+  background: var(--bg);
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 260px 24px 0;
+  overflow: visible;
+}
+
+.heroInner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.heroBottom {
+  display: grid;
+  grid-template-columns: var(--col-izq) minmax(0, 1fr);
+  column-gap: var(--col-gap);
+  align-items: end;
+}
+
+.fotoCircle {
+  width: var(--col-izq);
+  height: var(--col-izq);
+  border-radius: 50%;
+  border: 10px solid #fff;
+  overflow: hidden;
+  margin-bottom: calc(-1 * var(--avatar-overlap));
+  background: #1a1a14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.fotoCircle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.fotoCircle span {
+  font-family: var(--font-display);
+  font-size: 4rem;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.heroInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 14px;
+  min-width: 0;
+}
+
+.badge {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.nombre {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 6vw, 4rem);
+  letter-spacing: 0.06em;
+  color: #fff;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+/* ── Body ── */
+.body {
+  padding: 14px 24px 80px;
+}
+
+.layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: var(--col-izq) minmax(0, 1fr);
+  grid-template-areas:
+    ".    id"
+    "main main";
+  grid-template-rows: minmax(calc(var(--avatar-overlap) - 14px), auto) auto;
+  column-gap: var(--col-gap);
+  row-gap: 40px;
+}
+
+/* Admin y antigüedad, al lado de la foto */
+.idRow {
+  grid-area: id;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px 24px;
+}
+
+.meta {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.link {
+  color: var(--text);
+  font-weight: 700;
+}
+.link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.main {
+  grid-area: main;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  min-width: 0;
+}
+
+/* ── Números del grupo ── */
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.numero {
+  background: #fff;
+  border: 1px solid var(--linea);
+  border-radius: 8px;
+  padding: 14px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.numeroValor {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+}
+
+.numeroLabel {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* ── Bloques ── */
+.seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.tituloBloque {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--tostado-claro);
+}
+
+.descripcion {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-line;
+}
+
+.vacio {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ── Premios: El Diego, El Bati, Román ── */
+.premios {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.premio {
+  background: var(--gris-card);
+  border-radius: 8px;
+  padding: 16px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
+}
+
+.premioIcono {
+  display: block;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 6px;
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
+}
+
+.premioTitulo {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.premioDetalle {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.premioNombres {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.premioValor {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ── Integrantes y últimos partidos ── */
+.cierre {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+  align-items: start;
+}
+
+.lista {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.integrante,
+.partido {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  background: #fff;
+  border: 1px solid var(--linea);
+  border-radius: 8px;
+}
+.integrante { transition: border-color 0.2s; }
+.integrante:hover { border-color: var(--tostado); }
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--gold-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.avatar span {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.filaInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.filaTitulo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plan10 {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(83%) sepia(70%) saturate(600%) hue-rotate(140deg) brightness(105%);
+}
+
+.filaMeta {
+  margin-top: 1px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filaStats {
+  flex-shrink: 0;
+  display: flex;
+  gap: 12px;
+}
+.filaStats span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.filaStats b {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.figura {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  max-width: 45%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Íconos de la app teñidos con la paleta (máscara sobre el PNG/WebP) */
+.icono {
+  display: block;
+  flex-shrink: 0;
+  background: var(--tostado);
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
+}
+
+.figuraIcono { width: 18px; height: 18px; }
+
+/* Columna angosta: integrantes y partidos uno debajo del otro */
+@container (max-width: 760px) {
+  .cierre { grid-template-columns: minmax(0, 1fr); }
+}
+
+@container (max-width: 560px) {
+  .numeros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .premios { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .page { --col-izq: 150px; --col-gap: 18px; --avatar-overlap: 54px; }
+  .hero { padding: 120px 16px 0; }
+  .body { padding: 14px 16px 60px; }
+  .heroInfo { padding-bottom: 8px; }
+  .fotoCircle { border-width: 6px; }
+  .layout {
+    grid-template-areas:
+      "id   id"
+      "main main";
+    grid-template-rows: auto auto;
+    row-gap: 28px;
+  }
+  /* En el celular el admin y la fecha van debajo de la foto */
+  .idRow { padding-top: calc(var(--avatar-overlap) + 8px); flex-direction: column; }
+}

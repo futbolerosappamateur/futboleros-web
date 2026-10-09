@@ -136,102 +136,133 @@
   margin-bottom: 64px;
 }
 
-/* ── Card ── */
+/* ── Card (como las de jugadores: sin bordes redondeados ni filetes) ── */
 .card {
   background-color: var(--surface);
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 28px 28px;
-  border: 1px solid var(--gold-border);
-  border-radius: 14px;
-  padding: 22px 16px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 12px;
-  transition: border-color 0.2s, transform 0.15s;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.2s;
 }
-
 .card:hover {
-  border-color: var(--gold);
   transform: translateY(-3px);
+  box-shadow: 0 6px 24px #c9a84c14;
 }
 
-/* ── Foto ── */
-.fotoWrap {
+/* ── Arriba: fondo del grupo con la foto ── */
+.visual {
+  width: 100%;
+  height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: #12120e;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid var(--gold-border);
+  flex-shrink: 0;
 }
 
 .foto {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--gold-border);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
 }
 
 .fotoPlaceholder {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: var(--gold-dim);
-  border: 2px solid var(--gold-border);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
 .fotoPlaceholder span {
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: 2.4rem;
   color: var(--gold);
   line-height: 1;
 }
 
-/* ── Info ── */
+/* ── Nombre y descripción ── */
 .info {
+  padding: 12px 14px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   width: 100%;
+  flex: 1;
 }
 
 .nombre {
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.35rem;
   letter-spacing: 0.04em;
   color: var(--text);
-  line-height: 1.15;
+  line-height: 1.1;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .descripcion {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.meta {
+/* ── Números (abajo de la card) ── */
+.statsRow {
+  width: 100%;
   display: flex;
-  gap: 10px;
   align-items: center;
-  margin-top: 2px;
+  justify-content: center;
+  padding: 8px 8px 7px;
+  border-top: 1px solid #dedede;
 }
 
-.metaItem {
+.statMini {
+  flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
+  gap: 1px;
+}
+
+.statVal {
+  font-family: var(--font-display);
+  font-size: 1.425rem;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  line-height: 1;
+}
+
+.statLbl {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.statDivider {
+  width: 1px;
+  height: 24px;
+  background: #dedede;
+  flex-shrink: 0;
 }
 
 /* ── Bottom CTA ── */

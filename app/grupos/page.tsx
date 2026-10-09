@@ -5,6 +5,7 @@ import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
 import { createServiceClient } from '@/lib/supabase/service'
+import { FONDO_GRUPO } from '@/lib/perfil-opciones'
 import styles from './grupos.module.css'
 
 export const revalidate = 60
@@ -19,9 +20,11 @@ type Grupo = {
   nombre: string
   descripcion: string | null
   foto_url: string | null
-  partidos_jugados: number | null
+  fondo_url: string | null
   creado_en: string
   miembros: number
+  partidos: number
+  goles: number
 }
 
 export default async function Grupos({
@@ -36,7 +39,7 @@ export default async function Grupos({
 
   let sb = supabase
     .from('grupos')
-    .select('id, nombre, descripcion, foto_url, partidos_jugados, creado_en, grupo_jugadores(count)')
+    .select('id, nombre, descripcion, foto_url, creado_en, grupo_jugadores(count)')
     .eq('activo', true)
     .eq('grupo_jugadores.activo', true)
     .eq('grupo_jugadores.estado', 'aceptado')
@@ -48,10 +51,37 @@ export default async function Grupos({
   }
 
   const { data: raw } = await sb
+  const ids = (raw ?? []).map((g: any) => g.id as string)
+
+  // Partidos y goles de cada grupo contados desde los partidos terminados, como en la app
+  // (la columna grupos.partidos_jugados no se actualiza). El fondo va aparte: si la columna
+  // fondo_url todavía no existe, la lista se ve igual.
+  const [{ data: partidosData }, { data: fondosData }] = ids.length
+    ? await Promise.all([
+        supabase
+          .from('partidos')
+          .select('grupo_id, goles_equipo1, goles_equipo2')
+          .in('grupo_id', ids)
+          .eq('estado', 'finalizado')
+          .limit(10000),
+        supabase.from('grupos').select('id, fondo_url').in('id', ids),
+      ])
+    : [{ data: [] }, { data: [] }]
+
+  const conteo: Record<string, { partidos: number; goles: number }> = {}
+  for (const p of (partidosData ?? []) as any[]) {
+    const c = (conteo[p.grupo_id] ??= { partidos: 0, goles: 0 })
+    c.partidos++
+    c.goles += (p.goles_equipo1 ?? 0) + (p.goles_equipo2 ?? 0)
+  }
+  const fondos = new Map(((fondosData ?? []) as any[]).map(f => [f.id as string, f.fondo_url as string | null]))
 
   const lista: Grupo[] = (raw ?? []).map((g: any) => ({
     ...g,
+    fondo_url: fondos.get(g.id) ?? null,
     miembros: g.grupo_jugadores?.[0]?.count ?? 0,
+    partidos: conteo[g.id]?.partidos ?? 0,
+    goles: conteo[g.id]?.goles ?? 0,
   }))
 
   return (
@@ -101,14 +131,18 @@ export default async function Grupos({
 
             <div className={styles.grid}>
               {lista.map(g => (
-                <div key={g.id} className={styles.card}>
-                  <div className={styles.fotoWrap}>
+                <Link key={g.id} href={`/grupos/${g.id}`} className={styles.card}>
+                  {/* Arriba: el fondo del grupo (el que carga el admin en la app) con la foto encima */}
+                  <div
+                    className={styles.visual}
+                    style={{ backgroundImage: `linear-gradient(rgba(10,10,18,0.45), rgba(10,10,18,0.45)), url('${g.fondo_url || FONDO_GRUPO}')` }}
+                  >
                     {g.foto_url ? (
                       <Image
                         src={g.foto_url}
                         alt={g.nombre}
-                        width={80}
-                        height={80}
+                        width={96}
+                        height={96}
                         className={styles.foto}
                         unoptimized
                       />
@@ -121,29 +155,26 @@ export default async function Grupos({
 
                   <div className={styles.info}>
                     <p className={styles.nombre}>{g.nombre}</p>
-                    {g.descripcion && (
-                      <p className={styles.descripcion}>{g.descripcion}</p>
-                    )}
-                    <div className={styles.meta}>
-                      {g.miembros > 0 && (
-                        <span className={styles.metaItem}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                          </svg>
-                          {g.miembros}
-                        </span>
-                      )}
-                      {(g.partidos_jugados ?? 0) > 0 && (
-                        <span className={styles.metaItem}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                          </svg>
-                          {g.partidos_jugados} partidos
-                        </span>
-                      )}
+                    {g.descripcion && <p className={styles.descripcion}>{g.descripcion}</p>}
+                  </div>
+
+                  <div className={styles.statsRow}>
+                    <div className={styles.statMini}>
+                      <span className={styles.statVal}>{g.miembros}</span>
+                      <span className={styles.statLbl}>Integ.</span>
+                    </div>
+                    <span className={styles.statDivider} />
+                    <div className={styles.statMini}>
+                      <span className={styles.statVal}>{g.partidos}</span>
+                      <span className={styles.statLbl}>PJ</span>
+                    </div>
+                    <span className={styles.statDivider} />
+                    <div className={styles.statMini}>
+                      <span className={styles.statVal}>{g.goles}</span>
+                      <span className={styles.statLbl}>Goles</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 

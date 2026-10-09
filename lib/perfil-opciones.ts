@@ -45,6 +45,9 @@ export const TALLES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 // Fondo del encabezado del perfil cuando el jugador no eligió uno propio
 export const FONDO_PERFIL = '/fondos/jugador.webp'
 
+// Fondo del encabezado (y de la card) de un grupo cuando el admin no cargó uno desde la app
+export const FONDO_GRUPO = '/fondos/grupos.webp'
+
 export const REDES = [
   { key: 'instagram', label: 'Instagram', placeholder: 'tu_usuario', icono: '/redes/instagram.webp' },
   { key: 'facebook', label: 'Facebook', placeholder: 'tu.usuario', icono: '/redes/facebook.webp' },
