@@ -1,19 +1,20 @@
 import type { Metadata } from 'next'
 import { cache } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import ParallaxHero from '../../components/ParallaxHero'
 import { createServiceClient } from '@/lib/supabase/service'
 import { FONDO_GRUPO } from '@/lib/perfil-opciones'
+import { resolverGrupo } from '@/lib/grupos'
 import { formatoRating } from '@/lib/formato'
 import styles from './grupo.module.css'
 
 export const revalidate = 60
 
 // Página pública del grupo, solo lectura: todo sale de lo que se carga en la app
-const getGrupo = cache(async (id: string) => {
+const getGrupo = cache(async (id: number) => {
   const supabase = createServiceClient()
   const { data } = await supabase
     .from('grupos')
@@ -24,10 +25,11 @@ const getGrupo = cache(async (id: string) => {
 })
 
 export async function generateMetadata(
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
-  const { id } = await params
-  const grupo = await getGrupo(id)
+  const { slug } = await params
+  const ruta = await resolverGrupo(slug)
+  const grupo = ruta ? await getGrupo(ruta.id) : null
   return { title: grupo?.nombre?.trim() || 'Grupo' }
 }
 
@@ -42,8 +44,14 @@ type Rating = { usuario_id: string; partidos_jugados: number | null; total_goles
 
 const linkJugador = (p: Perfil) => `/jugadores/${p.username ?? p.id}`
 
-export default async function GrupoPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function GrupoPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const ruta = await resolverGrupo(slug)
+  if (!ruta) notFound()
+  // Links viejos (/grupos/1) o escritos distinto: a la dirección actual del grupo.
+  // Temporal (307): si el grupo cambia de nombre, la dirección cambia.
+  if (slug !== ruta.ruta) redirect(`/grupos/${ruta.ruta}`)
+  const id = ruta.id
   const grupo = await getGrupo(id)
   if (!grupo) notFound()
   const supabase = createServiceClient()

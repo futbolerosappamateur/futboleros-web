@@ -6,6 +6,7 @@ import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
 import { createServiceClient } from '@/lib/supabase/service'
 import { FONDO_GRUPO } from '@/lib/perfil-opciones'
+import { getRutasGrupos } from '@/lib/grupos'
 import styles from './grupos.module.css'
 
 export const revalidate = 60
@@ -75,6 +76,7 @@ export default async function Grupos({
     c.goles += (p.goles_equipo1 ?? 0) + (p.goles_equipo2 ?? 0)
   }
   const fondos = new Map(((fondosData ?? []) as any[]).map(f => [f.id as string, f.fondo_url as string | null]))
+  const { porId: rutas } = await getRutasGrupos()
 
   const lista: Grupo[] = (raw ?? []).map((g: any) => ({
     ...g,
@@ -131,7 +133,7 @@ export default async function Grupos({
 
             <div className={styles.grid}>
               {lista.map(g => (
-                <Link key={g.id} href={`/grupos/${g.id}`} className={styles.card}>
+                <Link key={g.id} href={`/grupos/${rutas.get(Number(g.id))?.ruta ?? g.id}`} className={styles.card}>
                   {/* Arriba: el fondo del grupo (el que carga el admin en la app) con la foto encima */}
                   <div
                     className={styles.visual}
