@@ -5,6 +5,8 @@ import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import BackLink from '../../components/BackLink'
 import { createServiceClient } from '@/lib/supabase/service'
+import { SITE_URL } from '@/lib/sitio'
+import CompartirNota from './CompartirNota'
 import styles from './novedad.module.css'
 
 export const revalidate = 60
@@ -14,12 +16,32 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = createServiceClient()
   const { data } = await supabase
     .from('novedades')
-    .select('titulo, resumen')
+    .select('titulo, resumen, imagen_url')
     .eq('slug', slug)
     .eq('publicado', true)
     .maybeSingle()
   if (!data) return {}
-  return { title: data.titulo, description: data.resumen }
+  // Vista previa al compartir el link en Facebook, X, WhatsApp, etc.
+  const imagenes = data.imagen_url ? [data.imagen_url] : undefined
+  return {
+    title: data.titulo,
+    description: data.resumen,
+    openGraph: {
+      type: 'article',
+      url: `${SITE_URL}/novedades/${slug}`,
+      siteName: 'Futboleros',
+      locale: 'es_AR',
+      title: data.titulo,
+      description: data.resumen ?? undefined,
+      images: imagenes,
+    },
+    twitter: {
+      card: data.imagen_url ? 'summary_large_image' : 'summary',
+      title: data.titulo,
+      description: data.resumen ?? undefined,
+      images: imagenes,
+    },
+  }
 }
 
 function renderContenido(texto: string) {
@@ -87,6 +109,8 @@ export default async function NovedadPage({ params }: { params: Promise<{ slug: 
                   {renderContenido(novedad.contenido)}
                 </div>
               )}
+
+              <CompartirNota url={`${SITE_URL}/novedades/${slug}`} titulo={novedad.titulo} />
             </article>
 
             <div className={styles.footer}>

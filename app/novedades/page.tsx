@@ -39,7 +39,7 @@ export default async function Novedades() {
       resumen: n.resumen,
       imagen_url: n.imagen_url,
       categoria: categoriaDe.get(n.id) ?? null,
-      fecha: d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: TZ }),
+      fecha: d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ }),   // 15/09/2026
       mes: d.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', timeZone: TZ }),   // "2026-09"
       mesLabel: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1),
     }

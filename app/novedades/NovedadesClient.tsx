@@ -13,7 +13,7 @@ export type NovedadItem = {
   resumen: string | null
   imagen_url: string | null
   categoria: string | null
-  fecha: string      // "15 de septiembre de 2026"
+  fecha: string      // "15/09/2026"
   mes: string        // "2026-09", para filtrar
   mesLabel: string   // "Septiembre de 2026"
 }

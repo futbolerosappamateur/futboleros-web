@@ -85,6 +85,50 @@
 }
 
 /* Footer */
+/* Compartir la nota */
+.compartir {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.compartirLabel {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.compartirBtn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.compartirBtn:hover { background: var(--gold-dim); }
+
+.compartirIcono {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
+}
+
+.compartirAviso {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .footer {
   margin-top: 56px;
   padding-top: 32px;
