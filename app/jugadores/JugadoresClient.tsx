@@ -110,17 +110,16 @@ export default function JugadoresClient({
           </div>
         </div>
 
-        <p className={styles.resultCount}>
-          {filtered.length} jugador{filtered.length !== 1 ? 'es' : ''}
-          {q && (
-            <>
-              {' para '}
-              <span className={styles.qLabel}>"{q}"</span>
-              {' · '}
-              <button onClick={() => setQ('')} className={styles.clearBtn}>Ver todos</button>
-            </>
-          )}
-        </p>
+        {/* El total va en el encabezado; acá solo cuántos coinciden con la búsqueda */}
+        {q.trim() && (
+          <p className={styles.resultCount}>
+            {filtered.length} jugador{filtered.length !== 1 ? 'es' : ''}
+            {' para '}
+            <span className={styles.qLabel}>"{q}"</span>
+            {' · '}
+            <button onClick={() => setQ('')} className={styles.clearBtn}>Ver todos</button>
+          </p>
+        )}
 
         {filtered.length === 0 && (
           <p className={styles.empty}>No se encontraron jugadores.</p>

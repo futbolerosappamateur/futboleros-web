@@ -102,6 +102,9 @@ export default async function Jugadores({
           <div className={styles.heroInner}>
             <span className={styles.badge}>COMUNIDAD</span>
             <h1 className={styles.title}>JUGADORES</h1>
+            <p className={styles.contador}>
+              {jugadoresConStats.length} jugador{jugadoresConStats.length !== 1 ? 'es' : ''}
+            </p>
             <p className={styles.subtitle}>Encontrá jugadores, mirá sus figuritas y estadísticas.</p>
           </div>
         </ParallaxHero>

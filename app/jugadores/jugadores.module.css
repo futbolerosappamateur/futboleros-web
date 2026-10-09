@@ -38,9 +38,19 @@
   margin-bottom: 14px;
 }
 
+/* Cantidad total, debajo del título */
+.contador {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
 .subtitle {
   font-size: 1rem;
-  color: #c9a84c88;
+  color: rgba(240, 230, 208, 0.85);   /* claro: el dorado transparente se perdía con el fondo */
   line-height: 1.7;
 }
 

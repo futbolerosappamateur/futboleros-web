@@ -5,7 +5,7 @@ import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getRutasGrupos } from '@/lib/grupos'
-import GruposGrid, { type GrupoCard } from './GruposGrid'
+import GruposClient, { type GrupoCard } from './GruposClient'
 import styles from './grupos.module.css'
 
 export const revalidate = 60
@@ -25,20 +25,15 @@ export default async function Grupos({
 
   const supabase = createServiceClient()
 
-  let sb = supabase
+  // Todos los grupos activos: la búsqueda y el orden se hacen en el navegador, como en jugadores
+  const { data: raw } = await supabase
     .from('grupos')
     .select('id, nombre, descripcion, foto_url, creado_en, grupo_jugadores(count)')
     .eq('activo', true)
     .eq('grupo_jugadores.activo', true)
     .eq('grupo_jugadores.estado', 'aceptado')
     .order('creado_en', { ascending: false })
-    .limit(80)
-
-  if (query) {
-    sb = sb.ilike('nombre', `%${query}%`)
-  }
-
-  const { data: raw } = await sb
+    .limit(200)
   const ids = (raw ?? []).map((g: any) => g.id as string)
 
   // Partidos y goles de cada grupo contados desde los partidos terminados, como en la app
@@ -85,44 +80,18 @@ export default async function Grupos({
           <div className={styles.heroInner}>
             <span className={styles.badge}>COMUNIDAD</span>
             <h1 className={styles.title}>GRUPOS</h1>
+            <p className={styles.contador}>{lista.length} grupo{lista.length !== 1 ? 's' : ''}</p>
             <p className={styles.subtitle}>Equipos, ligas y peñas de toda la Argentina. Unite o creá el tuyo desde la app.</p>
-
-            <form method="GET" className={styles.searchForm}>
-              <div className={styles.searchWrap}>
-                <svg className={styles.searchIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                </svg>
-                <input
-                  name="q"
-                  type="search"
-                  defaultValue={query}
-                  placeholder="Buscá un grupo por nombre..."
-                  className={styles.searchInput}
-                  autoComplete="off"
-                />
-              </div>
-              <button type="submit" className={styles.searchBtn}>Buscar</button>
-            </form>
           </div>
         </ParallaxHero>
 
         <div className={styles.body}>
           <div className={styles.inner}>
-            {query && (
-              <p className={styles.resultCount}>
-                {lista.length > 0
-                  ? `${lista.length} resultado${lista.length !== 1 ? 's' : ''} para "${query}"`
-                  : `Sin resultados para "${query}"`}
-                {' · '}
-                <Link href="/grupos" className={styles.clearLink}>Ver todos</Link>
-              </p>
-            )}
-
-            {lista.length === 0 && !query && (
+            {lista.length === 0 ? (
               <p className={styles.empty}>Aún no hay grupos registrados.</p>
+            ) : (
+              <GruposClient grupos={lista} initialQ={query} />
             )}
-
-            <GruposGrid grupos={lista} />
 
             <div className={styles.cta}>
               <p className={styles.ctaText}>¿Tenés tu grupo de fútbol?</p>
