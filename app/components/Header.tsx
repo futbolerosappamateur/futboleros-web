@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { EVENTO_CHAT_LEIDO, contarNoLeidos } from '@/lib/chat'
 import styles from './Header.module.css'
 
 type UserInfo = {
@@ -18,6 +19,8 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [user, setUser] = useState<UserInfo | null>(null)
+  const [noLeidos, setNoLeidos] = useState(0)
+  const userId = user?.id
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -40,6 +43,24 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
         : { id: u.id, nombre: u.user_metadata?.nombre_completo ?? null, username: null, avatar_url: null, tienePerfil: false })
     })
   }, [])
+
+  // Globito del chat: mensajes sin leer cada 15 s, como en la app, y al momento cuando el chat los marca leídos
+  useEffect(() => {
+    if (!userId) return
+    const supabase = createClient()
+    let vigente = true
+    const cargar = () => {
+      contarNoLeidos(supabase, userId).then(n => { if (vigente) setNoLeidos(n) }).catch(() => {})
+    }
+    cargar()
+    const intervalo = setInterval(cargar, 15000)
+    window.addEventListener(EVENTO_CHAT_LEIDO, cargar)
+    return () => {
+      vigente = false
+      clearInterval(intervalo)
+      window.removeEventListener(EVENTO_CHAT_LEIDO, cargar)
+    }
+  }, [userId])
 
   return (
     <header className={`${styles.header} ${scrolled ? styles.headerScrolled : ''} ${darkLinks && !scrolled ? styles.headerDarkLinks : ''}`}>
@@ -71,6 +92,12 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
         </nav>
 
         <div className={styles.actions}>
+          {user && (
+            <Link href="/chat" className={styles.chatBtn} aria-label="Mensajes" title="Mensajes">
+              <span className={styles.chatIcono} />
+              {noLeidos > 0 && <span className={styles.chatBadge}>{noLeidos > 9 ? '9+' : noLeidos}</span>}
+            </Link>
+          )}
           {user ? (
             <div className={styles.userMenu}>
               <div className={styles.userChip}>

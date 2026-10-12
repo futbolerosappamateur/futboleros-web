@@ -248,6 +248,41 @@
   line-height: 1;
 }
 
+/* ── Chat (logueado): el ícono solo, a la izquierda del chip del usuario ── */
+.chatBtn {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  padding: 4px;
+}
+/* Ícono de la app teñido de dorado */
+.chatIcono {
+  width: 30px;
+  height: 30px;
+  background: var(--gold);
+  -webkit-mask: url('/ic-chat.webp') center / contain no-repeat;
+  mask: url('/ic-chat.webp') center / contain no-repeat;
+  transition: transform 0.2s;
+}
+.chatBtn:hover .chatIcono {
+  transform: scale(1.08);
+}
+.chatBadge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #e63946;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
 .hamburger {
   display: none;
   flex-direction: column;
