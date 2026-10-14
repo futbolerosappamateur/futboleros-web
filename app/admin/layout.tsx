@@ -8,13 +8,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!user) redirect('/login?next=/admin/slides')
 
+  // acceso_panel: entra al panel sin ser cuenta oficial (is_admin)
   const { data: perfil } = await supabase
     .from('perfiles')
-    .select('is_admin')
+    .select('is_admin, acceso_panel')
     .eq('id', user.id)
     .single()
 
-  if (!perfil?.is_admin) redirect('/')
+  if (!perfil?.is_admin && !perfil?.acceso_panel) redirect('/')
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
