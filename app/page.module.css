@@ -458,13 +458,38 @@
   color: #0a0a1a;
   padding: 16px 48px 13px 48px;
   border-radius: 8px;
-  margin-top: 8px;
   transition: background-color 0.2s, transform 0.15s;
 }
 
 .ctaPrimaryLarge:hover {
   background-color: var(--gold-light);
   transform: translateY(-1px);
+}
+
+/* Crear cuenta + Descargá la app, uno al lado del otro (uno abajo del otro si no entran) */
+.ctaBotones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.ctaSecondaryLarge {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  color: var(--gold-light);
+  padding: 15px 40px 12px;
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.ctaSecondaryLarge:hover {
+  background-color: var(--gold-dim);
+  border-color: var(--gold);
 }
 
 /* ── Partido en vivo ── */

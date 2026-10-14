@@ -62,6 +62,35 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
     }
   }, [userId])
 
+  const cerrarSesion = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    setUser(null)
+    setOpen(false)
+  }
+
+  // Chat y foto van en dos lugares: en la barra de la compu y, en el celular, en la barra y en el menú
+  const chat = (className: string) => (
+    <Link href="/chat" className={className} aria-label="Mensajes" title="Mensajes" onClick={() => setOpen(false)}>
+      <span className={styles.chatIcono} />
+      {noLeidos > 0 && <span className={styles.chatBadge}>{noLeidos > 9 ? '9+' : noLeidos}</span>}
+    </Link>
+  )
+  const avatar = user && (user.avatar_url ? (
+    <Image
+      src={user.avatar_url}
+      alt={user.nombre ?? ''}
+      width={32}
+      height={32}
+      className={styles.userAvatar}
+      unoptimized
+    />
+  ) : (
+    <span className={styles.userAvatarPh}>
+      {user.nombre?.charAt(0)?.toUpperCase() ?? '?'}
+    </span>
+  ))
+
   return (
     <header className={`${styles.header} ${scrolled ? styles.headerScrolled : ''} ${darkLinks && !scrolled ? styles.headerDarkLinks : ''}`}>
       <div className={styles.inner}>
@@ -89,32 +118,38 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
           <Link href="/grupos" className={styles.navLink} onClick={() => setOpen(false)}>Grupos</Link>
           <Link href="/novedades" className={styles.navLink} onClick={() => setOpen(false)}>Novedades</Link>
           <Link href="/plan10" className={styles.navLink} onClick={() => setOpen(false)}>Plan 10</Link>
+
+          {/* Celular: la cuenta va al final del menú, porque en la barra no entra */}
+          <div className={styles.navCuenta}>
+            {user ? (
+              <>
+                <div className={styles.navUsuario}>
+                  {avatar}
+                  <span className={styles.userNombre}>{user.nombre?.split(' ')[0]}</span>
+                </div>
+                {user.tienePerfil && (
+                  <Link href={`/jugadores/${user.username ?? user.id}`} className={styles.navLink} onClick={() => setOpen(false)}>
+                    Perfil
+                  </Link>
+                )}
+                <Link href="/editar-perfil" className={styles.navLink} onClick={() => setOpen(false)}>Editar perfil</Link>
+                <button className={styles.navLink} onClick={cerrarSesion}>Cerrar sesión</button>
+              </>
+            ) : (
+              <div className={styles.navBotones}>
+                <Link href="/login" className={styles.btnSecondary} onClick={() => setOpen(false)}>Ingresar</Link>
+                <Link href="/registro" className={styles.btnPrimary} onClick={() => setOpen(false)}>Registrarse</Link>
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className={styles.actions}>
-          {user && (
-            <Link href="/chat" className={styles.chatBtn} aria-label="Mensajes" title="Mensajes">
-              <span className={styles.chatIcono} />
-              {noLeidos > 0 && <span className={styles.chatBadge}>{noLeidos > 9 ? '9+' : noLeidos}</span>}
-            </Link>
-          )}
+          {user && chat(styles.chatBtn)}
           {user ? (
             <div className={styles.userMenu}>
               <div className={styles.userChip}>
-                {user.avatar_url ? (
-                  <Image
-                    src={user.avatar_url}
-                    alt={user.nombre ?? ''}
-                    width={32}
-                    height={32}
-                    className={styles.userAvatar}
-                    unoptimized
-                  />
-                ) : (
-                  <span className={styles.userAvatarPh}>
-                    {user.nombre?.charAt(0)?.toUpperCase() ?? '?'}
-                  </span>
-                )}
+                {avatar}
                 <span className={styles.userNombre}>{user.nombre?.split(' ')[0]}</span>
               </div>
               <div className={styles.userDropdown}>
@@ -131,14 +166,7 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
                   <Link href="/editar-perfil" className={styles.dropdownItem} onClick={() => setOpen(false)}>
                     Editar perfil
                   </Link>
-                  <button
-                    className={styles.dropdownItem}
-                    onClick={async () => {
-                      const supabase = createClient()
-                      await supabase.auth.signOut()
-                      setUser(null)
-                    }}
-                  >
+                  <button className={styles.dropdownItem} onClick={cerrarSesion}>
                     Cerrar sesión
                   </button>
                 </div>
@@ -152,10 +180,13 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
           )}
         </div>
 
+        {user && chat(`${styles.chatBtn} ${styles.chatMovil}`)}
+
         <button
           className={styles.hamburger}
           onClick={() => setOpen(o => !o)}
           aria-label="Menú"
+          aria-expanded={open}
         >
           <span /><span /><span />
         </button>

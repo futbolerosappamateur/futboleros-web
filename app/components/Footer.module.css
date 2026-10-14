@@ -29,6 +29,7 @@
 .footerNav {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;   /* el botón de la app es más alto que los links */
   gap: 12px 20px;
   justify-content: flex-end;
 }
@@ -43,6 +44,18 @@
 
 .footerNav a:hover {
   color: var(--gold);
+}
+
+/* Descargá la app: el único link con forma de botón */
+.footerNav a.footerApp {
+  color: var(--gold-light);
+  border: 1px solid var(--gold-border);
+  border-radius: 6px;
+  padding: 6px 12px 4px;
+}
+.footerNav a.footerApp:hover {
+  color: var(--gold);
+  border-color: var(--gold);
 }
 
 @media (max-width: 480px) {

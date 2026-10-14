@@ -1,0 +1,84 @@
+/* 404 y error: una pantalla con el fondo de jugadores, como el encabezado de las secciones */
+.hero {
+  background-color: #12120e;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 180px 24px 100px;
+  text-align: center;
+}
+
+.inner {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  background: #c9a84c15;
+  border: 1px solid var(--gold-border);
+  padding: 5px 18px 3px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 0.95;
+  color: #f0e6d0;
+  margin-bottom: 14px;
+}
+
+.texto {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(240, 230, 208, 0.85);
+  margin-bottom: 28px;
+}
+
+.acciones {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Mismos botones que Ingresar y Registrarse del encabezado */
+.btnPrimario,
+.btnSecundario {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 13px 22px 9px;
+  border-radius: 6px;
+  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
+  background-position: top left, top right, bottom left, bottom right;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btnPrimario {
+  color: #0a0a1a;
+  background-color: var(--gold);
+}
+.btnPrimario:hover { background-color: var(--gold-light); }
+
+.btnSecundario {
+  color: var(--gold);
+  border: 1px solid var(--gold-border);
+}
+.btnSecundario:hover { border-color: var(--gold); }
+
+@media (max-width: 600px) {
+  .hero { padding: 140px 16px 80px; }
+}

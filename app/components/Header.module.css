@@ -283,6 +283,12 @@
   text-align: center;
 }
 
+/* ── Celular: chat en la barra y la cuenta al final del menú (en la compu no se ven) ── */
+.chatMovil,
+.navCuenta {
+  display: none;
+}
+
 .hamburger {
   display: none;
   flex-direction: column;
@@ -339,5 +345,43 @@
 
   .navOpen {
     display: flex;
+  }
+
+  /* El menú abierto tiene fondo claro: los links van oscuros aunque el encabezado sea transparente */
+  .nav .navLink {
+    color: var(--text);
+    text-shadow: none;
+  }
+  .nav .navLink:hover {
+    color: var(--gold);
+  }
+
+  .chatMovil {
+    display: flex;
+    margin-left: auto;
+  }
+  .chatMovil + .hamburger {
+    margin-left: 14px;
+  }
+
+  .navCuenta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding-top: 20px;
+    border-top: 1px solid var(--gold-border);
+  }
+
+  .navUsuario {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .navBotones {
+    display: flex;
+    gap: 12px;
   }
 }

@@ -7,6 +7,7 @@ import BloquePublicidad from './components/BloquePublicidad'
 import Footer from './components/Footer'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { URL_GOOGLE_PLAY } from '@/lib/sitio'
 import styles from './page.module.css'
 
 async function getSlides() {
@@ -233,7 +234,12 @@ export default async function Home() {
         <div className={styles.ctaInner}>
           <h2 className={styles.ctaTitle}>¿LISTO PARA JUGAR?</h2>
           <p className={styles.ctaSub}>Creá tu cuenta, armá tu grupo y empezá a organizar.</p>
-          <Link href="/registro" className={styles.ctaPrimaryLarge}>Crear cuenta gratis</Link>
+          <div className={styles.ctaBotones}>
+            <Link href="/registro" className={styles.ctaPrimaryLarge}>Crear cuenta gratis</Link>
+            <a href={URL_GOOGLE_PLAY} target="_blank" rel="noopener noreferrer" className={styles.ctaSecondaryLarge}>
+              Descargá la app
+            </a>
+          </div>
         </div>
       </section>
 
