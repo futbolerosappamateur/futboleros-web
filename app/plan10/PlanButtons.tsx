@@ -1,74 +1,54 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { AHORRO_ANUAL, DESCUENTO_ANUAL, PRECIOS, pesos, type TipoPlan } from '@/lib/plan10'
 import styles from './plan10.module.css'
 
-export default function PlanButtons() {
-  const [loading, setLoading] = useState<'mensual' | 'anual' | null>(null)
-  const [error, setError] = useState('')
-  const router = useRouter()
+type Props = {
+  // En /pagar el plan se elige ahí mismo; en /plan10 cada tarjeta lleva a /pagar
+  elegido?: TipoPlan
+  onElegir?: (tipo: TipoPlan) => void
+}
 
-  const handlePlan = async (tipo: 'mensual' | 'anual') => {
-    setLoading(tipo)
-    setError('')
-    try {
-      const res = await fetch('/api/mp/crear-preferencia', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.push('/login?next=/plan10')
-          return
-        }
-        setError(data.error ?? 'Ocurrió un error. Intentá de nuevo.')
-        return
-      }
-      window.location.href = data.init_point
-    } catch {
-      setError('No se pudo conectar. Intentá de nuevo.')
-    } finally {
-      setLoading(null)
-    }
-  }
+export default function PlanButtons({ elegido, onElegir }: Props) {
+  const tarjeta = (tipo: TipoPlan, clase: string, contenido: React.ReactNode) =>
+    onElegir ? (
+      <button
+        type="button"
+        className={`${clase} ${elegido === tipo ? styles.planCardSel : ''}`}
+        onClick={() => onElegir(tipo)}
+        aria-pressed={elegido === tipo}
+      >
+        {contenido}
+      </button>
+    ) : (
+      <Link href={`/pagar?tipo=${tipo}`} className={clase}>{contenido}</Link>
+    )
 
   return (
     <div className={styles.plans}>
-      {error && <p className={styles.errorMsg}>{error}</p>}
-
-      <button
-        className={styles.planCard}
-        onClick={() => handlePlan('mensual')}
-        disabled={loading !== null}
-      >
+      {tarjeta('mensual', styles.planCard, <>
         <div className={styles.planInfo}>
           <p className={styles.planName}>Mensual</p>
           <p className={styles.planDesc}>Renovación automática cada mes</p>
         </div>
         <div className={styles.planPrice}>
-          <p className={styles.planAmount}>{loading === 'mensual' ? '...' : '$4.900'}</p>
+          <p className={styles.planAmount}>{pesos(PRECIOS.mensual)}</p>
           <p className={styles.planPeriod}>/mes</p>
         </div>
-      </button>
+      </>)}
 
-      <button
-        className={`${styles.planCard} ${styles.planCardFeatured}`}
-        onClick={() => handlePlan('anual')}
-        disabled={loading !== null}
-      >
-        <span className={styles.planSavingBadge}>50% OFF — AHORRÁS $29.400</span>
+      {tarjeta('anual', `${styles.planCard} ${styles.planCardFeatured}`, <>
+        <span className={styles.planSavingBadge}>{DESCUENTO_ANUAL}% OFF — AHORRÁS {pesos(AHORRO_ANUAL)}</span>
         <div className={styles.planInfo}>
           <p className={`${styles.planName} ${styles.planFeaturedName}`}>Anual</p>
           <p className={styles.planDesc}>Pago único, 12 meses de Plan 10</p>
         </div>
         <div className={styles.planPrice}>
-          <p className={`${styles.planAmount} ${styles.planFeaturedAmount}`}>{loading === 'anual' ? '...' : '$29.400'}</p>
+          <p className={`${styles.planAmount} ${styles.planFeaturedAmount}`}>{pesos(PRECIOS.anual)}</p>
           <p className={styles.planPeriod}>/año</p>
         </div>
-      </button>
+      </>)}
     </div>
   )
 }

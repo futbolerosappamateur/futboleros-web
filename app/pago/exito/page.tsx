@@ -15,7 +15,7 @@ export default function PagoExito() {
             </svg>
           </div>
           <h1 className={styles.title}>¡PAGO EXITOSO!</h1>
-          <p className={styles.body}>Tu Plan 10 ya está activo. En unos segundos se refleja en tu cuenta.</p>
+          <p className={styles.body}>En unos minutos tu Plan 10 queda activo, en la app y en la web. Si venís de la app, ya podés volver.</p>
           <Link href="/" className={styles.cta}>Volver al inicio</Link>
         </div>
       </main>

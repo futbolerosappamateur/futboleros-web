@@ -1,0 +1,90 @@
+/* Lo que /pagar agrega a plan10.module.css */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--gold-border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.panelArriba {
+  margin: 0 0 32px;
+}
+
+.estado {
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.estado strong { font-weight: 800; }
+
+.label {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Como el botón dorado de /pago */
+.pagarBtn {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  background-color: var(--gold);
+  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
+  background-position: top left, top right, bottom left, bottom right;
+  background-repeat: no-repeat;
+  background-size: 20px 20px;
+  color: #12120e;
+  padding: 16px 36px 13px;
+  border-radius: 8px;
+  margin-top: 4px;
+  transition: background-color 0.2s;
+}
+
+.pagarBtn:hover { background-color: var(--gold-light); }
+.pagarBtn:disabled { opacity: 0.6; cursor: default; }
+
+.bajaBtn {
+  align-self: flex-start;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: #d62828;
+  border: 1px solid #d6282855;
+  border-radius: 8px;
+  padding: 12px 20px 9px;
+  transition: background-color 0.2s;
+}
+
+.bajaBtn:hover { background-color: #d628280f; }
+.bajaBtn:disabled { opacity: 0.6; cursor: default; }

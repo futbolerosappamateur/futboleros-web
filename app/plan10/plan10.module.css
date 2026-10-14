@@ -145,6 +145,13 @@
   background: #c9a84c08;
 }
 
+/* El plan elegido en /pagar */
+.planCardSel,
+.planCardSel:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold);
+}
+
 .planSavingBadge {
   position: absolute;
   top: -14px;
