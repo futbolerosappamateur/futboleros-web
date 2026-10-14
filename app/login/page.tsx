@@ -1,81 +1,18 @@
-'use client'
+import LoginForm from './LoginForm'
 
-import { useState, useTransition } from 'react'
-import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import Footer from '../components/Footer'
-import BotonGoogle from '../components/BotonGoogle'
-import styles from '../auth.module.css'
-
-export default function Login() {
-  const searchParams = useSearchParams()
-  const pedido = searchParams.get('next') || '/'
-  const next = /^\/(?![/\\])/.test(pedido) ? pedido : '/'   // solo rutas internas
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState(
-    searchParams.get('error') === 'google' ? 'No se pudo ingresar con Google. Probá de nuevo.' : ''
-  )
-  const [isPending, startTransition] = useTransition()
-  const router = useRouter()
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    startTransition(async () => {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        setError('Email o contraseña incorrectos.')
-        return
-      }
-      router.push(next)
-      router.refresh()
-    })
-  }
-
+// ?next= y ?error= se leen acá, en el servidor: con useSearchParams en el cliente la página
+// no se puede pre-armar y next build falla. Así además llega con el formulario ya dibujado.
+export default async function Login({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[]; error?: string | string[] }>
+}) {
+  const { next, error } = await searchParams
+  const pedido = typeof next === 'string' && next ? next : '/'
   return (
-    <>
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>INGRESAR</h1>
-        <BotonGoogle texto="INGRESAR CON GOOGLE" next={next} />
-        <p className={styles.separador}>o con tu email</p>
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.field}>
-            <label className={styles.label}>EMAIL</label>
-            <input
-              className={styles.input}
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label}>CONTRASEÑA</label>
-            <input
-              className={styles.input}
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          {error && <p className={styles.error}>{error}</p>}
-          <button className={styles.btnPrimary} type="submit" disabled={isPending}>
-            {isPending ? 'INGRESANDO...' : 'INGRESAR'}
-          </button>
-        </form>
-        <p className={styles.footer}>
-          ¿No tenés cuenta? <Link href="/registro" className={styles.link}>Registrarse</Link>
-        </p>
-      </div>
-    </div>
-    <Footer />
-    </>
+    <LoginForm
+      next={/^\/(?![/\\])/.test(pedido) ? pedido : '/'}   // solo rutas internas
+      errorGoogle={error === 'google'}
+    />
   )
 }
