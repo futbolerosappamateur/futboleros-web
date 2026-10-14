@@ -116,10 +116,6 @@
   padding: 12px 16px 8px 16px;
   border: 1px solid var(--gold-border);
   border-radius: 6px;
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 18px 18px;
   transition: background-color 0.2s, border-color 0.2s;
 }
 

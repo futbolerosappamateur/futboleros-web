@@ -1005,10 +1005,6 @@
   line-height: 1;
   padding: 13px 22px 9px;
   border-radius: 6px;
-  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
-  background-position: top left, top right, bottom left, bottom right;
-  background-repeat: no-repeat;
-  background-size: 18px 18px;
   transition: background-color 0.2s, border-color 0.2s;
 }
 
@@ -1018,7 +1014,12 @@
 }
 .btnIngresar:hover { border-color: var(--gold); }
 
+/* Registrarse lleva el filete en las esquinas; Ingresar no */
 .btnRegistrarse {
+  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
+  background-position: top left, top right, bottom left, bottom right;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
   color: #0a0a1a;
   background-color: var(--gold);
 }
