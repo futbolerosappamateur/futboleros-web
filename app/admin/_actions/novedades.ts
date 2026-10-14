@@ -1,13 +1,13 @@
 'use server'
 
-import { createServiceClient } from '@/lib/supabase/service'
+import { clienteAdmin } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 export async function subirImagenNovedad(formData: FormData): Promise<string> {
   const file = formData.get('file') as File
   if (!file) throw new Error('No file')
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const ext = file.name.split('.').pop()
   const filename = `${Date.now()}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
@@ -20,7 +20,7 @@ export async function subirImagenNovedad(formData: FormData): Promise<string> {
 }
 
 export async function crearNovedad(formData: FormData) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const { error } = await supabase.from('novedades').insert({
     titulo: formData.get('titulo') as string,
     slug: formData.get('slug') as string,
@@ -37,7 +37,7 @@ export async function crearNovedad(formData: FormData) {
 }
 
 export async function editarNovedad(id: string, formData: FormData) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const { error } = await supabase.from('novedades').update({
     titulo: formData.get('titulo') as string,
     slug: formData.get('slug') as string,
@@ -56,7 +56,7 @@ export async function editarNovedad(id: string, formData: FormData) {
 }
 
 export async function eliminarNovedad(id: string) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   await supabase.from('novedades').delete().eq('id', id)
   revalidatePath('/novedades')
   revalidatePath('/admin/novedades')

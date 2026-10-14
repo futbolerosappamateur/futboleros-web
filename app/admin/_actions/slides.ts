@@ -1,13 +1,13 @@
 'use server'
 
-import { createServiceClient } from '@/lib/supabase/service'
+import { clienteAdmin } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 export async function subirImagenSlide(formData: FormData): Promise<string> {
   const file = formData.get('file') as File
   if (!file) throw new Error('No file')
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const ext = file.name.split('.').pop()
   const filename = `${Date.now()}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
@@ -20,7 +20,7 @@ export async function subirImagenSlide(formData: FormData): Promise<string> {
 }
 
 export async function crearSlide(formData: FormData) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const { error } = await supabase.from('slides').insert({
     titulo: formData.get('titulo') as string,
     subtitulo: (formData.get('subtitulo') as string) || null,
@@ -37,7 +37,7 @@ export async function crearSlide(formData: FormData) {
 }
 
 export async function editarSlide(id: string, formData: FormData) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const { error } = await supabase.from('slides').update({
     titulo: formData.get('titulo') as string,
     subtitulo: (formData.get('subtitulo') as string) || null,
@@ -54,7 +54,7 @@ export async function editarSlide(id: string, formData: FormData) {
 }
 
 export async function eliminarSlide(id: string) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   await supabase.from('slides').delete().eq('id', id)
   revalidatePath('/')
   revalidatePath('/admin/slides')

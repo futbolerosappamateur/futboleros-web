@@ -1,6 +1,6 @@
 'use server'
 
-import { createServiceClient } from '@/lib/supabase/service'
+import { clienteAdmin } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -12,7 +12,7 @@ const BUCKET = 'marcas'
 export async function subirImagenPublicidad(formData: FormData): Promise<string> {
   const file = formData.get('file') as File
   if (!file) throw new Error('No file')
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const ext = file.name.split('.').pop()
   const filename = `${Date.now()}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
@@ -25,7 +25,7 @@ export async function subirImagenPublicidad(formData: FormData): Promise<string>
 }
 
 export async function crearPublicidad(formData: FormData) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const { error } = await supabase.from('publicidades').insert({
     slot:        formData.get('slot') as string,
     titulo:      (formData.get('titulo') as string) || null,
@@ -42,7 +42,7 @@ export async function crearPublicidad(formData: FormData) {
 }
 
 export async function editarPublicidad(id: string, formData: FormData) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   const updates: Record<string, unknown> = {
     slot:        formData.get('slot') as string,
     titulo:      (formData.get('titulo') as string) || null,
@@ -61,13 +61,13 @@ export async function editarPublicidad(id: string, formData: FormData) {
 }
 
 export async function toggleActiva(id: string, activa: boolean) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   await supabase.from('publicidades').update({ activa }).eq('id', id)
   PATHS.forEach(p => revalidatePath(p))
 }
 
 export async function eliminarPublicidad(id: string) {
-  const supabase = createServiceClient()
+  const supabase = await clienteAdmin()
   await supabase.from('publicidades').delete().eq('id', id)
   PATHS.forEach(p => revalidatePath(p))
 }
