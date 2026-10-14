@@ -270,7 +270,13 @@
   border-radius: 8px;
 }
 .integrante { transition: border-color 0.2s; }
-.integrante:hover { border-color: var(--tostado); }
+a.integrante:hover { border-color: var(--tostado); }   /* los perfiles privados vistos sin cuenta no son link */
+
+/* Perfil privado visto sin cuenta: en lugar del nombre */
+.privado {
+  color: var(--text-muted);
+  font-style: italic;
+}
 
 .avatar {
   width: 40px;

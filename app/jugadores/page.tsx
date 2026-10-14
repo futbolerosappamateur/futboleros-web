@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
 import { createServiceClient } from '@/lib/supabase/service'
+import { hayUsuario } from '@/lib/privacidad'
 import JugadoresClient, { type JugadorConStats } from './JugadoresClient'
 import styles from './jugadores.module.css'
-
-export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Jugadores',
@@ -31,12 +31,16 @@ export default async function Jugadores({
   const query = q?.trim() ?? ''
 
   const supabase = createServiceClient()
+  const logueado = await hayUsuario()
 
-  const { data: jugadores } = await supabase
+  let consulta = supabase
     .from('perfiles')
     .select('id, nombre, apodo, username, avatar_url, imagen_ia, es_pro')
     .not('nombre', 'is', null)
     .neq('nombre', '')
+  // Sin cuenta, solo los perfiles públicos
+  if (!logueado) consulta = consulta.eq('perfil_publico', true)
+  const { data: jugadores } = await consulta
     .order('nombre', { ascending: true })
     .limit(200)
 
@@ -106,6 +110,11 @@ export default async function Jugadores({
               {jugadoresConStats.length} jugador{jugadoresConStats.length !== 1 ? 'es' : ''}
             </p>
             <p className={styles.subtitle}>Encontrá jugadores, mirá sus figuritas y estadísticas.</p>
+            {!logueado && (
+              <p className={styles.soloPublicos}>
+                Ves solo los perfiles públicos. <Link href="/login?next=/jugadores">Ingresá</Link> para ver a todos los jugadores.
+              </p>
+            )}
           </div>
         </ParallaxHero>
         <JugadoresClient jugadores={jugadoresConStats} initialQ={query} />

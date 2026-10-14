@@ -54,6 +54,19 @@
   line-height: 1.7;
 }
 
+/* Sin cuenta: la lista tiene solo los perfiles públicos */
+.soloPublicos {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: rgba(240, 230, 208, 0.85);
+}
+.soloPublicos a {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ── Body ── */
 .body {
   padding: 20px 24px 80px;   /* filtros a 20 px del encabezado, igual en jugadores, grupos y novedades */

@@ -36,6 +36,7 @@ export type PerfilEditable = {
   numero_camiseta: number | null
   domicilio: string | null
   es_pro: boolean | null
+  perfil_publico: boolean | null
 }
 
 type Props = {
@@ -69,6 +70,7 @@ function datosIniciales(p: PerfilEditable | null): DatosPerfil {
     nombreCamiseta: p?.nombre_camiseta ?? '',
     numeroCamiseta: p?.numero_camiseta?.toString() ?? '',
     domicilio: p?.domicilio ?? '',
+    perfilPublico: p?.perfil_publico ?? false,
   }
 }
 
@@ -564,6 +566,24 @@ export default function EditarPerfilForm({ userId, perfil, fondoUrl, tienePasswo
             </div>
           ))}
         </div>
+      </section>
+
+      {/* ── Privacidad ── */}
+      <section className={styles.seccion}>
+        <TituloSeccion icono="/ic-pdp.webp">Privacidad</TituloSeccion>
+        <label className={styles.switchFila}>
+          <span className={styles.switchTexto}>
+            <span className={styles.switchTitulo}>Perfil público en la web</span>
+            <span className={styles.ayuda}>
+              Cualquiera puede ver tu perfil en la web, aunque no tenga cuenta. Apagado, solo lo ven los jugadores registrados.
+            </span>
+          </span>
+          <input
+            type="checkbox" role="switch" className={styles.switchInput}
+            checked={d.perfilPublico} onChange={e => set('perfilPublico', e.target.checked)}
+          />
+          <span className={styles.switch} aria-hidden="true" />
+        </label>
       </section>
 
       {/* ── Datos para sorteos ── */}

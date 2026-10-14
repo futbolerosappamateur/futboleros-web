@@ -25,6 +25,7 @@ export type DatosPerfil = {
   nombreCamiseta: string
   numeroCamiseta: string
   domicilio: string
+  perfilPublico: boolean   // se ve en la web sin tener cuenta
 }
 
 export type ResultadoGuardar = { error: string; campo?: keyof DatosPerfil } | { ruta: string }
@@ -132,6 +133,7 @@ export async function guardarPerfil(d: DatosPerfil): Promise<ResultadoGuardar> {
     nombre_camiseta: d.nombreCamiseta.trim().slice(0, 20) || null,
     numero_camiseta: numeroCamiseta ? parseInt(numeroCamiseta, 10) : null,
     domicilio: d.domicilio.trim().slice(0, 150) || null,
+    perfil_publico: d.perfilPublico === true,
     actualizado_en: new Date().toISOString(),
   })
 

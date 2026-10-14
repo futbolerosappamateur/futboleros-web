@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   robots: { index: false },
 }
 
-const CAMPOS = 'id, nombre, apodo, username, avatar_url, fecha_nacimiento, altura, peso, whatsapp, sexo, pais, hincha_de, idolo, estilo_juego, caracteristicas, redes, talle_remera, talle_pantalon, talle_calzado, nombre_camiseta, numero_camiseta, domicilio, es_pro'
+const CAMPOS = 'id, nombre, apodo, username, avatar_url, fecha_nacimiento, altura, peso, whatsapp, sexo, pais, hincha_de, idolo, estilo_juego, caracteristicas, redes, talle_remera, talle_pantalon, talle_calzado, nombre_camiseta, numero_camiseta, domicilio, es_pro, perfil_publico'
 
 export default async function EditarPerfil() {
   // Con la sesión del usuario (no service role): lee y guarda con los mismos permisos que la app

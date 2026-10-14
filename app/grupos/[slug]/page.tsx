@@ -9,9 +9,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { FONDO_GRUPO } from '@/lib/perfil-opciones'
 import { resolverGrupo } from '@/lib/grupos'
 import { formatoRating } from '@/lib/formato'
+import { hayUsuario, perfilVisible } from '@/lib/privacidad'
 import styles from './grupo.module.css'
-
-export const revalidate = 60
 
 // Página pública del grupo, solo lectura: todo sale de lo que se carga en la app
 const getGrupo = cache(async (id: number) => {
@@ -39,7 +38,7 @@ function fechaCorta(fecha?: string | null) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : ''
 }
 
-type Perfil = { id: string; nombre: string | null; apodo: string | null; username: string | null; avatar_url: string | null; es_pro: boolean | null }
+type Perfil = { id: string; nombre: string | null; apodo: string | null; username: string | null; avatar_url: string | null; es_pro: boolean | null; perfil_publico: boolean | null; oculto?: boolean }
 type Rating = { usuario_id: string; partidos_jugados: number | null; total_goles: number | null; total_asistencias: number | null; rating: number | string | null }
 
 const linkJugador = (p: Perfil) => `/jugadores/${p.username ?? p.id}`
@@ -89,10 +88,17 @@ export default async function GrupoPage({ params }: { params: Promise<{ slug: st
     grupo.admin_id,
     ...[...figuraDe.values()].filter(u => !u.startsWith('invitado_')),
   ].filter(Boolean))]
-  const { data: perfilesData } = perfilIds.length
-    ? await supabase.from('perfiles').select('id, nombre, apodo, username, avatar_url, es_pro').in('id', perfilIds)
-    : { data: [] }
-  const perfilDe = new Map(((perfilesData ?? []) as Perfil[]).map(p => [p.id, p]))
+  const [{ data: perfilesData }, logueado] = await Promise.all([
+    perfilIds.length
+      ? supabase.from('perfiles').select('id, nombre, apodo, username, avatar_url, es_pro, perfil_publico').in('id', perfilIds)
+      : Promise.resolve({ data: [] }),
+    hayUsuario(),
+  ])
+  // Sin cuenta, los jugadores con perfil privado aparecen sin nombre, foto ni link
+  const perfilDe = new Map(((perfilesData ?? []) as Perfil[]).map(p => [
+    p.id,
+    perfilVisible(p, logueado) ? p : { ...p, nombre: null, apodo: null, username: null, avatar_url: null, es_pro: null, oculto: true },
+  ]))
   const admin = perfilDe.get(grupo.admin_id)
 
   // Stats de cada integrante en este grupo. Los invitados también tienen fila en ratings, pero no cuentan.
@@ -152,7 +158,7 @@ export default async function GrupoPage({ params }: { params: Promise<{ slug: st
             <div className={styles.idRow}>
               {admin && (
                 <p className={styles.meta}>
-                  Admin: <Link href={linkJugador(admin)} className={styles.link}>{admin.nombre}</Link>
+                  Admin: <Jugador perfil={admin} />
                 </p>
               )}
               {desde && <p className={styles.meta}>En Futboleros desde {desde}</p>}
@@ -194,25 +200,30 @@ export default async function GrupoPage({ params }: { params: Promise<{ slug: st
                     <ul className={styles.lista}>
                       {integrantes.map(p => {
                         const r = ratingDe.get(p.id)
+                        const fila = (
+                          <>
+                            <Avatar perfil={p} />
+                            <div className={styles.filaInfo}>
+                              <p className={styles.filaTitulo}>
+                                {p.oculto ? <span className={styles.privado}>Perfil privado</span> : p.nombre}
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                {p.es_pro && <img src="/ic-10.webp" alt="Plan 10" className={styles.plan10} />}
+                              </p>
+                              {p.apodo && <p className={styles.filaMeta}>"{p.apodo}"</p>}
+                            </div>
+                            <div className={styles.filaStats}>
+                              <span><b>{r?.partidos_jugados ?? 0}</b>PJ</span>
+                              <span><b>{r?.total_goles ?? 0}</b>G</span>
+                              <span><b>{r?.total_asistencias ?? 0}</b>A</span>
+                              <span><b>{r?.rating != null && (r.partidos_jugados ?? 0) > 0 ? formatoRating(Number(r.rating) / 10) : '—'}</b>RAT</span>
+                            </div>
+                          </>
+                        )
                         return (
                           <li key={p.id}>
-                            <Link href={linkJugador(p)} className={styles.integrante}>
-                              <Avatar perfil={p} />
-                              <div className={styles.filaInfo}>
-                                <p className={styles.filaTitulo}>
-                                  {p.nombre}
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  {p.es_pro && <img src="/ic-10.webp" alt="Plan 10" className={styles.plan10} />}
-                                </p>
-                                {p.apodo && <p className={styles.filaMeta}>"{p.apodo}"</p>}
-                              </div>
-                              <div className={styles.filaStats}>
-                                <span><b>{r?.partidos_jugados ?? 0}</b>PJ</span>
-                                <span><b>{r?.total_goles ?? 0}</b>G</span>
-                                <span><b>{r?.total_asistencias ?? 0}</b>A</span>
-                                <span><b>{r?.rating != null && (r.partidos_jugados ?? 0) > 0 ? formatoRating(Number(r.rating) / 10) : '—'}</b>RAT</span>
-                              </div>
-                            </Link>
+                            {p.oculto
+                              ? <div className={styles.integrante}>{fila}</div>
+                              : <Link href={linkJugador(p)} className={styles.integrante}>{fila}</Link>}
                           </li>
                         )
                       })}
@@ -238,9 +249,7 @@ export default async function GrupoPage({ params }: { params: Promise<{ slug: st
                             {uid && (
                               <p className={styles.figura} title="La figura del partido">
                                 <Icono src="/ic-figura.webp" className={styles.figuraIcono} />
-                                {figura ? (
-                                  <Link href={linkJugador(figura)} className={styles.link}>{figura.nombre}</Link>
-                                ) : 'Invitado'}
+                                {figura ? <Jugador perfil={figura} /> : 'Invitado'}
                               </p>
                             )}
                           </li>
@@ -285,7 +294,7 @@ function Premio({ icono, color, titulo, detalle, jugadores, valor }: {
             {jugadores.map((p, i) => (
               <span key={p.id}>
                 {i > 0 && ', '}
-                <Link href={linkJugador(p)} className={styles.link}>{p.nombre}</Link>
+                <Jugador perfil={p} />
               </span>
             ))}
           </p>
@@ -298,6 +307,13 @@ function Premio({ icono, color, titulo, detalle, jugadores, valor }: {
   )
 }
 
+// Nombre con link al perfil; un perfil privado visto sin cuenta queda sin nombre ni link
+function Jugador({ perfil }: { perfil: Perfil }) {
+  return perfil.oculto
+    ? <span className={styles.privado}>Perfil privado</span>
+    : <Link href={linkJugador(perfil)} className={styles.link}>{perfil.nombre}</Link>
+}
+
 function Avatar({ perfil }: { perfil: Perfil }) {
   return (
     <span className={styles.avatar}>
@@ -305,7 +321,7 @@ function Avatar({ perfil }: { perfil: Perfil }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={perfil.avatar_url} alt="" loading="lazy" />
       ) : (
-        <span>{perfil.nombre?.charAt(0)?.toUpperCase() ?? '?'}</span>
+        <span>{perfil.oculto ? '' : perfil.nombre?.charAt(0)?.toUpperCase() ?? '?'}</span>
       )}
     </span>
   )

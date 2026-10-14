@@ -13,11 +13,10 @@ import BloquePublicidad from '../../components/BloquePublicidad'
 import { createServiceClient } from '@/lib/supabase/service'
 import { FONDO_PERFIL, NOMBRE_PAIS, REDES, urlRed } from '@/lib/perfil-opciones'
 import { formatoRating } from '@/lib/formato'
+import { hayUsuario, perfilVisible } from '@/lib/privacidad'
 import styles from './jugador.module.css'
 
-export const revalidate = 60
-
-const PERFIL_FIELDS = 'id, nombre, nombre_figurita, apodo, username, avatar_url, imagen_ia, estilo_juego, caracteristicas, plan, pais, fecha_nacimiento, altura, hincha_de, idolo, es_pro, descripcion_propia, redes'
+const PERFIL_FIELDS = 'id, nombre, nombre_figurita, apodo, username, avatar_url, imagen_ia, estilo_juego, caracteristicas, plan, pais, fecha_nacimiento, altura, hincha_de, idolo, es_pro, descripcion_propia, redes, perfil_publico'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Try username first, fall back to id. Cached so generateMetadata and the page share one lookup.
@@ -34,6 +33,9 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params
   const perfil = await getPerfil(slug)
+  if (perfil && !perfilVisible(perfil, await hayUsuario())) {
+    return { title: 'Perfil privado', robots: { index: false } }
+  }
   const nombre = perfil?.nombre?.trim() || 'Jugador'
   return { title: nombre }
 }
@@ -68,6 +70,8 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
 
   const perfil = await getPerfil(slug)
   if (!perfil) notFound()
+  const logueado = await hayUsuario()
+  if (!perfilVisible(perfil, logueado)) return <PerfilPrivado slug={slug} />
   const id = perfil.id
   // Figuritas y testimonios son de Plan 10; sin plan, en lugar de testimonios va publicidad
   const esPro = !!perfil.es_pro
@@ -142,10 +146,14 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
   // Los autores van aparte, como en la app: testimonios no tiene clave foránea a perfiles y el join falla
   const autorIds = [...new Set((testimonios ?? []).map((t: any) => t.autor_id as string))]
   const { data: autores } = autorIds.length
-    ? await supabase.from('perfiles').select('id, nombre, avatar_url, username').in('id', autorIds)
+    ? await supabase.from('perfiles').select('id, nombre, avatar_url, username, perfil_publico').in('id', autorIds)
     : { data: [] }
   const autorPorId = new Map((autores ?? []).map((a: any) => [a.id, a]))
-  const tenis = (testimonios ?? []).map((t: any) => ({ ...t, autor: autorPorId.get(t.autor_id) })) as any[]
+  // Sin cuenta, un autor con perfil privado queda como "Jugador", sin foto ni link
+  const tenis = (testimonios ?? []).map((t: any) => {
+    const autor = autorPorId.get(t.autor_id)
+    return { ...t, autor: autor && perfilVisible(autor, logueado) ? autor : undefined }
+  }) as any[]
   const partidos = (historial ?? []) as any[]
 
   // Colección: la imagen fiel a la app la arma /api/figurita (la misma que la figurita PNG);
@@ -387,6 +395,28 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
             </div>
           </div>
         </div>
+      </main>
+      <Footer />
+    </>
+  )
+}
+
+// Perfil privado visto sin cuenta: ni nombre ni foto, solo la invitación a ingresar
+function PerfilPrivado({ slug }: { slug: string }) {
+  return (
+    <>
+      <Header />
+      <main className={styles.page}>
+        <ParallaxHero src={FONDO_PERFIL} className={styles.heroPrivado}>
+          <div className={styles.privado}>
+            <h1 className={styles.privadoTitulo}>PERFIL PRIVADO</h1>
+            <p className={styles.privadoTexto}>Este jugador eligió que su perfil lo vean solo quienes tienen cuenta en Futboleros.</p>
+            <div className={styles.privadoAcciones}>
+              <Link href={`/login?next=${encodeURIComponent(`/jugadores/${slug}`)}`} className={styles.btnIngresar}>Ingresar</Link>
+              <Link href="/registro" className={styles.btnRegistrarse}>Registrarse</Link>
+            </div>
+          </div>
+        </ParallaxHero>
       </main>
       <Footer />
     </>

@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { createServiceClient } from '@/lib/supabase/service'
+import { hayUsuario } from '@/lib/privacidad'
 import fs from 'fs'
 import path from 'path'
 
@@ -141,6 +142,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const supabase = createServiceClient()
+
+    // Perfil privado: la figurita solo la ven los usuarios con cuenta
+    const { data: dueno } = await supabase.from('perfiles').select('perfil_publico').eq('id', id).maybeSingle()
+    const publica = !!dueno?.perfil_publico
+    if (!publica && !(await hayUsuario())) {
+      return new Response('Not found', { status: 404 })
+    }
+
     const [p, marcoSrc] = await Promise.all([
       datosFigurita(supabase, id, busqueda.get('f')),
       getMarcoSrc(),
@@ -246,8 +255,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       ).arrayBuffer())
     }
 
-    // Las del historial no cambian: el navegador las puede guardar una semana
-    const cache = busqueda.get('f') ? 'public, max-age=604800, s-maxage=604800' : 'public, max-age=3600, s-maxage=3600'
+    // Las del historial no cambian: el navegador las puede guardar una semana.
+    // Las de perfiles privados, solo en el navegador de quien tiene cuenta (nada de cachés compartidos)
+    const segundos = busqueda.get('f') ? 604800 : 3600
+    const cache = publica ? `public, max-age=${segundos}, s-maxage=${segundos}` : `private, max-age=${segundos}`
 
     if (ancho) {
       const completa = await webpCompleta(JSON.stringify([id, busqueda.get('f'), p, edad]), dibujar)
