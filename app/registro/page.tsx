@@ -12,6 +12,7 @@ export default function Registro() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [nombre, setNombre] = useState('')
+  const [newsletter, setNewsletter] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -24,7 +25,8 @@ export default function Registro() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { nombre_completo: nombre } },
+        // newsletter viaja en los datos de la cuenta: el perfil se crea después (supabase/newsletter.sql)
+        options: { data: { nombre_completo: nombre, newsletter } },
       })
       if (error) {
         setError(error.message)
@@ -77,6 +79,10 @@ export default function Registro() {
               autoComplete="new-password"
             />
           </div>
+          <label className={styles.casilla}>
+            <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)} />
+            <span>Quiero recibir por email las novedades y promociones de Futboleros</span>
+          </label>
           {error && <p className={styles.error}>{error}</p>}
           <button className={styles.btnPrimary} type="submit" disabled={isPending}>
             {isPending ? 'CREANDO CUENTA...' : 'CREAR CUENTA'}

@@ -21,12 +21,17 @@ export default async function EditarPerfil() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/editar-perfil')
 
-  const [{ data: perfil }, { data: fondo }] = await Promise.all([
+  const [{ data: perfil }, { data: fondo }, { data: suscripcion }] = await Promise.all([
     supabase.from('perfiles').select(CAMPOS).eq('id', user.id).maybeSingle(),
     // Aparte: si la columna fondo_url todavía no existe, el resto del perfil se carga igual
     supabase.from('perfiles').select('fondo_url').eq('id', user.id).maybeSingle(),
+    // Igual con newsletter (supabase/newsletter.sql)
+    supabase.from('perfiles').select('newsletter').eq('id', user.id).maybeSingle(),
   ])
   const fondoUrl = (fondo as { fondo_url: string | null } | null)?.fondo_url ?? null
+  // Sin elección en el perfil (o sin perfil todavía), lo que marcó en la casilla del registro
+  const newsletter = (suscripcion as { newsletter: boolean | null } | null)?.newsletter
+    ?? user.user_metadata?.newsletter === true
   const tienePassword = user.identities?.some(i => i.provider === 'email') ?? false
 
   return (
@@ -47,6 +52,7 @@ export default async function EditarPerfil() {
             perfil={perfil as PerfilEditable | null}
             fondoUrl={fondoUrl}
             tienePassword={tienePassword}
+            newsletter={newsletter}
           />
         </div>
       </main>

@@ -26,6 +26,7 @@ export type DatosPerfil = {
   numeroCamiseta: string
   domicilio: string
   perfilPublico: boolean   // se ve en la web sin tener cuenta
+  newsletter: boolean      // recibe novedades y promociones por email
 }
 
 export type ResultadoGuardar = { error: string; campo?: keyof DatosPerfil } | { ruta: string }
@@ -139,6 +140,9 @@ export async function guardarPerfil(d: DatosPerfil): Promise<ResultadoGuardar> {
 
   if (error?.code === '23505') return { error: 'Ese nombre de usuario ya está en uso, elegí otro.', campo: 'username' }
   if (error || !guardado) return { error: 'No se pudo guardar el perfil. Probá de nuevo.' }
+
+  // Aparte, como el fondo: si la columna todavía no existe (supabase/newsletter.sql), el perfil se guarda igual
+  await supabase.from('perfiles').update({ newsletter: d.newsletter === true }).eq('id', user.id)
 
   revalidarPerfiles()
   return { ruta: `/jugadores/${username ?? user.id}` }

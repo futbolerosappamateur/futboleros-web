@@ -44,11 +44,12 @@ type Props = {
   perfil: PerfilEditable | null
   fondoUrl: string | null
   tienePassword: boolean
+  newsletter: boolean
 }
 
 type ErrorForm = { mensaje: string; campo?: string }
 
-function datosIniciales(p: PerfilEditable | null): DatosPerfil {
+function datosIniciales(p: PerfilEditable | null, newsletter: boolean): DatosPerfil {
   return {
     nombre: p?.nombre ?? '',
     apodo: p?.apodo ?? '',
@@ -71,6 +72,7 @@ function datosIniciales(p: PerfilEditable | null): DatosPerfil {
     numeroCamiseta: p?.numero_camiseta?.toString() ?? '',
     domicilio: p?.domicilio ?? '',
     perfilPublico: p?.perfil_publico ?? false,
+    newsletter,
   }
 }
 
@@ -107,9 +109,9 @@ function achicarFondo(archivo: File): Promise<Blob> {
   })
 }
 
-export default function EditarPerfilForm({ userId, perfil, fondoUrl, tienePassword }: Props) {
+export default function EditarPerfilForm({ userId, perfil, fondoUrl, tienePassword, newsletter }: Props) {
   const router = useRouter()
-  const [d, setD] = useState<DatosPerfil>(() => datosIniciales(perfil))
+  const [d, setD] = useState<DatosPerfil>(() => datosIniciales(perfil, newsletter))
   const [error, setError] = useState<ErrorForm | null>(null)
   const [guardando, startGuardar] = useTransition()
 
@@ -581,6 +583,19 @@ export default function EditarPerfilForm({ userId, perfil, fondoUrl, tienePasswo
           <input
             type="checkbox" role="switch" className={styles.switchInput}
             checked={d.perfilPublico} onChange={e => set('perfilPublico', e.target.checked)}
+          />
+          <span className={styles.switch} aria-hidden="true" />
+        </label>
+        <label className={styles.switchFila}>
+          <span className={styles.switchTexto}>
+            <span className={styles.switchTitulo}>Novedades por email</span>
+            <span className={styles.ayuda}>
+              Promociones y novedades de Futboleros. Te podés dar de baja cuando quieras, desde acá o desde cualquier mail.
+            </span>
+          </span>
+          <input
+            type="checkbox" role="switch" className={styles.switchInput}
+            checked={d.newsletter} onChange={e => set('newsletter', e.target.checked)}
           />
           <span className={styles.switch} aria-hidden="true" />
         </label>

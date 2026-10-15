@@ -362,6 +362,8 @@
   cursor: pointer;
 }
 
+.switchFila + .switchFila { margin-top: 22px; }
+
 .switchTexto {
   display: flex;
   flex-direction: column;

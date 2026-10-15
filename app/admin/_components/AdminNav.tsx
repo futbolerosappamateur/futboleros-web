@@ -48,6 +48,14 @@ export default function AdminNav() {
         }}>
           PUBLICIDADES
         </Link>
+        <Link href="/admin/newsletter" style={{
+          fontFamily: 'var(--font-display)',
+          color: 'var(--text-muted)',
+          fontSize: '1rem',
+          letterSpacing: '0.06em',
+        }}>
+          NEWSLETTER
+        </Link>
       </div>
     </nav>
   )

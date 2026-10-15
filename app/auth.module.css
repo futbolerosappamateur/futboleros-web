@@ -71,6 +71,25 @@
   border-color: var(--gold);
 }
 
+/* Casilla de la newsletter en el registro */
+.casilla {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.casilla input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
 .error {
   color: #ff6b6b;
   font-size: 0.875rem;
