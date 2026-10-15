@@ -630,17 +630,34 @@
   text-overflow: ellipsis;
 }
 
+/* Círculo partido con los dos colores del club, delante del nombre */
+.hinchaColores {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 9px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c1, var(--gold)) 50%, var(--c2, var(--gold)) 50%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
 .hinchaBarra {
-  height: 6px;
-  border-radius: 3px;
+  height: 9px;
+  border-radius: 5px;
   background: var(--gold-dim);
   overflow: hidden;
 }
+/* Bufanda con los colores del club (--c1/--c2, de lib/colores-clubes.ts); sin colores conocidos, dorada.
+   El borde finito hace que se vean las rayas blancas sobre el fondo claro */
 .hinchaBarra span {
   display: block;
   height: 100%;
-  border-radius: 3px;
-  background: var(--gold);
+  border-radius: 5px;
+  background: repeating-linear-gradient(135deg,
+    var(--c1, var(--gold)) 0 8px,
+    var(--c2, var(--gold)) 8px 16px);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
   transform-origin: left;
   transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--retraso, 0s) + 0.3s);
 }

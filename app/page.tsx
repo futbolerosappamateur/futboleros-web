@@ -13,6 +13,7 @@ import FiguritaBrillante from './components/FiguritaBrillante'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { URL_GOOGLE_PLAY } from '@/lib/sitio'
+import { coloresClub } from '@/lib/colores-clubes'
 import styles from './page.module.css'
 
 async function getSlides() {
@@ -324,12 +325,23 @@ export default async function Home() {
             <p className={styles.sectionSub} data-revelar>Los clubes con más hinchas entre los jugadores de Futboleros.</p>
             <Filete className={styles.fileteSeccion} />
             <ol className={styles.hinchasLista} style={{ gridTemplateRows: `repeat(${Math.ceil(hinchas.length / 2)}, auto)` }}>
-              {hinchas.map((h, i) => (
+              {hinchas.map((h, i) => {
+                // Los colores del club pintan la barra como una bufanda y el círculo junto al nombre
+                // (sin colores conocidos quedan dorados)
+                const colores = coloresClub(h.club)
+                const estilo = {
+                  '--retraso': `${i * 0.06}s`,
+                  ...(colores ? { '--c1': colores[0], '--c2': colores[1] } : {}),
+                } as React.CSSProperties
+                return (
                 // Cada fila entra un poco después de la anterior y su barra se llena al aparecer
-                <li key={h.club} className={styles.hinchaFila} data-revelar style={{ '--retraso': `${i * 0.06}s` } as React.CSSProperties}>
+                <li key={h.club} className={styles.hinchaFila} data-revelar style={estilo}>
                   <span className={styles.hinchaPos}>{i + 1}</span>
                   <div className={styles.hinchaInfo}>
-                    <p className={styles.hinchaClub}>{h.club}</p>
+                    <p className={styles.hinchaClub}>
+                      <span className={styles.hinchaColores} aria-hidden="true" />
+                      {h.club}
+                    </p>
                     <div className={styles.hinchaBarra}>
                       <span style={{ width: `${(h.hinchas / maxHinchas) * 100}%` }} />
                     </div>
@@ -339,7 +351,8 @@ export default async function Home() {
                     <span>{h.hinchas === 1 ? 'hincha' : 'hinchas'}</span>
                   </p>
                 </li>
-              ))}
+                )
+              })}
             </ol>
           </div>
         )}
