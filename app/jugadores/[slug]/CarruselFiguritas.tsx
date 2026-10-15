@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import FiguritaBrillante from '../../components/FiguritaBrillante'
 import styles from './jugador.module.css'
 
 type Figurita = {
@@ -115,8 +116,11 @@ export default function CarruselFiguritas({ figuritas, subtitulo, alt }: Props) 
             aria-label={`Ver en grande la figurita ${i + 1} de ${total}`}
             data-i={i}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={i <= hasta ? f.src : undefined} alt="" />
+            {/* Brilla con el mouse encima; sin destello: con cinco a la vista quedaba recargado */}
+            <FiguritaBrillante inclinacion={10} destello={false}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={i <= hasta ? f.src : undefined} alt="" />
+            </FiguritaBrillante>
           </button>
         ))}
       </div>
@@ -129,19 +133,22 @@ export default function CarruselFiguritas({ figuritas, subtitulo, alt }: Props) 
           )}
           {/* Abre al instante con la miniatura (ya descargada) y la grande aparece encima cuando llega */}
           <div className={styles.figuGrande} onClick={e => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={figuritas[abierta].src} alt="" aria-hidden="true" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              key={figuritas[abierta].key}
-              src={figuritas[abierta].grande}
-              alt={`${alt} (${abierta + 1} de ${total})`}
-              className={`${styles.capaGrande} ${cargadas.has(figuritas[abierta].key) ? styles.capaLista : ''}`}
-              onLoad={() => {
-                const key = figuritas[abierta].key
-                setCargadas(prev => new Set(prev).add(key))
-              }}
-            />
+            {/* En grande brilla con todo: se inclina, reflejo, tornasolado y el destello en celular */}
+            <FiguritaBrillante className={styles.figuGrandeBrillo}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={figuritas[abierta].src} alt="" aria-hidden="true" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                key={figuritas[abierta].key}
+                src={figuritas[abierta].grande}
+                alt={`${alt} (${abierta + 1} de ${total})`}
+                className={`${styles.capaGrande} ${cargadas.has(figuritas[abierta].key) ? styles.capaLista : ''}`}
+                onLoad={() => {
+                  const key = figuritas[abierta].key
+                  setCargadas(prev => new Set(prev).add(key))
+                }}
+              />
+            </FiguritaBrillante>
           </div>
           {total > 1 && (
             <button type="button" className={`${styles.modalFlecha} ${styles.modalSiguiente}`} onClick={pasar(1)} aria-label="Figurita siguiente">›</button>

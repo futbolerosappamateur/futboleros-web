@@ -396,6 +396,62 @@
   padding: 48px 24px 100px;
 }
 
+/* Fila de figuritas de la comunidad: de borde a borde (se come el relleno de la sección), pasando sola.
+   Se frena con el mouse encima para poder mirarlas y hacerlas brillar */
+.album {
+  margin: 90px -24px 0;
+  overflow: hidden;
+}
+
+.albumTitulo {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.albumPista {
+  display: flex;
+  width: max-content;
+  padding-block: 14px;   /* aire para la figurita inclinada y su sombra */
+  animation: zocalo 48s linear infinite;   /* la duración real va en el style, según cuántas haya */
+}
+.album:hover .albumPista { animation-play-state: paused; }
+
+.albumGrupo {
+  display: flex;
+  list-style: none;
+  gap: 22px;
+  padding: 0 11px;   /* 11 + 11 entre las dos copias = el mismo espacio que entre figuritas */
+}
+
+.albumLink {
+  display: block;
+  width: 170px;
+  filter: drop-shadow(0 12px 22px #00000080);
+  transition: transform 0.25s ease;
+}
+.albumLink:hover { transform: translateY(-6px); }
+.albumLink img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 629 / 907;
+  background: #022232;   /* mientras se dibuja */
+}
+
+@media (max-width: 640px) {
+  .album { margin-top: 64px; }
+  .albumLink { width: 130px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .albumPista { animation: none; }
+  .album { overflow-x: auto; }
+}
+
 /* Filete con flor entre dos líneas doradas, separando la figurita de la sección de arriba */
 .separador {
   max-width: 1100px;

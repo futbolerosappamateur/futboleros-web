@@ -9,6 +9,7 @@ import Filete from './components/Filete'
 import ContadorAnimado from './components/ContadorAnimado'
 import WidgetEnVivo from './components/WidgetEnVivo'
 import AnimarAlScroll from './components/AnimarAlScroll'
+import FiguritaBrillante from './components/FiguritaBrillante'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { URL_GOOGLE_PLAY } from '@/lib/sitio'
@@ -47,6 +48,23 @@ async function getStats() {
 }
 
 const plural = (n: number, uno: string, varios: string) => `${n.toLocaleString('es-AR')} ${n === 1 ? uno : varios}`
+
+// Jugadores con perfil público y figurita, para la fila de figuritas (las imágenes las arma /api/figurita,
+// igual que en el perfil). Sin caché: se ve enseguida cuando alguien pone su perfil público
+async function getFiguritasPublicas() {
+  const supabase = createServiceClient()
+  const { data } = await supabase
+    .from('perfiles')
+    .select('id, username, nombre, nombre_figurita')
+    .eq('perfil_publico', true)
+    .not('imagen_ia', 'is', null)
+    .order('actualizado_en', { ascending: false, nullsFirst: false })
+    .limit(24)
+  return (data ?? []) as { id: string; username: string | null; nombre: string | null; nombre_figurita: string | null }[]
+}
+
+const MINIMO_FIGURITAS = 3   // con menos, la fila no se muestra
+const FIGURITAS_POR_VUELTA = 8   // se repiten hasta llenar el ancho de una pantalla grande
 
 // Pantallas reales de la app (public/app, sacadas de capturas del celular sin la barra de Android)
 const CELULARES = [
@@ -97,8 +115,11 @@ const getHinchas = unstable_cache(async () => {
 }, ['home-hinchas'], { revalidate: 600 })
 
 export default async function Home() {
-  const [slides, stats, hinchas] = await Promise.all([getSlides(), getStats(), getHinchas()])
+  const [slides, stats, hinchas, figuritas] = await Promise.all([getSlides(), getStats(), getHinchas(), getFiguritasPublicas()])
   const maxHinchas = hinchas[0]?.hinchas ?? 1
+  const figuritasFila = figuritas.length >= MINIMO_FIGURITAS
+    ? Array.from({ length: Math.ceil(FIGURITAS_POR_VUELTA / figuritas.length) }, () => figuritas).flat()
+    : []
 
   // Zócalo: datos de la comunidad pasando como en la tele (los que dan 0 no se muestran)
   const zocalo = [
@@ -234,6 +255,39 @@ export default async function Home() {
 
           <FiguritaStack />
         </div>
+
+        {/* Fila de figuritas de jugadores con perfil público: pasan solas, brillan con el mouse y llevan al
+            perfil. La lista va dos veces seguidas para que la vuelta no se note */}
+        {figuritasFila.length > 0 && (
+          <div className={styles.album} data-revelar>
+            <p className={styles.albumTitulo}>Las figuritas de la comunidad</p>
+            <div className={styles.albumPista} style={{ animationDuration: `${figuritasFila.length * 6}s` }}>
+              {[0, 1].map(copia => (
+                <ul key={copia} className={styles.albumGrupo} aria-hidden={copia === 1 || undefined}>
+                  {figuritasFila.map((f, i) => {
+                    const repetida = copia === 1 || i >= figuritas.length
+                    const nombre = f.nombre_figurita?.trim() || f.nombre?.trim().split(' ')[0] || 'un jugador'
+                    return (
+                      <li key={i} aria-hidden={repetida || undefined}>
+                        <Link
+                          href={`/jugadores/${f.username ?? f.id}`}
+                          className={styles.albumLink}
+                          aria-label={`Figurita de ${nombre}`}
+                          tabIndex={repetida ? -1 : undefined}
+                        >
+                          <FiguritaBrillante inclinacion={10} destello={false}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={`/api/figurita/${f.id}?ancho=320`} alt="" width={320} height={461} loading="lazy" />
+                          </FiguritaBrillante>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ── Partido en vivo ── */}

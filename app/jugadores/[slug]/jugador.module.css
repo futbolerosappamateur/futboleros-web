@@ -734,6 +734,12 @@
   width: 100%;
   height: 100%;
 }
+/* El envoltorio brillante ocupa toda la figurita grande (con .figuGrande adelante le gana al
+   position: relative del componente, cargue antes o después) */
+.figuGrande .figuGrandeBrillo {
+  position: absolute;
+  inset: 0;
+}
 
 /* La versión grande aparece encima de la miniatura cuando termina de cargar */
 .capaGrande {
