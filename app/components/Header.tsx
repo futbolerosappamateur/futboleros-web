@@ -98,8 +98,8 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
           <Image
             src="/logo.webp"
             alt="Futboleros"
-            width={128}
-            height={141}
+            width={155}
+            height={169}
             priority
             className={`${styles.logoShield} ${scrolled ? styles.logoHidden : styles.logoVisible}`}
           />

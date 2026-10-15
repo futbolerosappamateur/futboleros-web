@@ -41,6 +41,8 @@
 }
 
 
+/* El escudo arranca 10px abajo del borde, como cuando medía 141px: al agrandarlo crece hacia abajo
+   y no se corta arriba. Va absoluto, así que no mueve el resto del encabezado */
 .logo {
   position: absolute;
   left: 50%;
@@ -48,12 +50,13 @@
   bottom: 0;
   transform: translateX(-50%);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 10px;
 }
 
 .logoShield {
-  height: 141px;
+  height: 169px;   /* 141px + 20% */
   width: auto;
   object-fit: contain;
   display: block;
@@ -320,10 +323,12 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    align-items: center;   /* en celular entra en la barra: centrado */
+    padding-top: 0;
   }
 
   .logoShield {
-    height: 52px;
+    height: 62px;   /* 52px + 20% */
   }
 
   .nav {
