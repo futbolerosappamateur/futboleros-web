@@ -36,7 +36,12 @@
 .subtitle {
   font-size: 0.95rem;
   color: var(--text-muted);
-  margin-bottom: 48px;
+}
+
+/* El filete de la bajada, alineado a la izquierda como el título; deja el espacio antes de las tarjetas.
+   Con .inner adelante le gana al margen del componente, cargue antes o después */
+.inner .filete {
+  margin: 14px 0 48px;
 }
 
 .grid {

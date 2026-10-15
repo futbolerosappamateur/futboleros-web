@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
+import Filete from '../components/Filete'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getRutasGrupos } from '@/lib/grupos'
 import GruposClient, { type GrupoCard } from './GruposClient'
@@ -82,6 +83,7 @@ export default async function Grupos({
             <h1 className={styles.title}>GRUPOS</h1>
             <p className={styles.contador}>{lista.length} grupo{lista.length !== 1 ? 's' : ''}</p>
             <p className={styles.subtitle}>Equipos, ligas y peñas de toda la Argentina. Unite o creá el tuyo desde la app.</p>
+            <Filete />
           </div>
         </ParallaxHero>
 

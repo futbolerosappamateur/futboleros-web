@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
+import Filete from '../components/Filete'
 import { createServiceClient } from '@/lib/supabase/service'
 import { hayUsuario } from '@/lib/privacidad'
 import JugadoresClient, { type JugadorConStats } from './JugadoresClient'
@@ -110,6 +111,7 @@ export default async function Jugadores({
               {jugadoresConStats.length} jugador{jugadoresConStats.length !== 1 ? 'es' : ''}
             </p>
             <p className={styles.subtitle}>Encontrá jugadores, mirá sus figuritas y estadísticas.</p>
+            <Filete />
             {!logueado && (
               <p className={styles.soloPublicos}>
                 Ves solo los perfiles públicos. <Link href="/login?next=/jugadores">Ingresá</Link> para ver a todos los jugadores.

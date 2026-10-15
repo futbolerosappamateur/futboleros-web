@@ -1,0 +1,12 @@
+/* La imagen mide 257 × 35 px: más ancha se vería borrosa */
+.filete {
+  display: block;
+  width: 220px;
+  max-width: 70%;
+  height: auto;
+  margin: 14px auto 0;
+}
+
+@media (max-width: 640px) {
+  .filete { width: 180px; }
+}

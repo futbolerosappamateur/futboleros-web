@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
+import Filete from '../components/Filete'
 import { createClient } from '@/lib/supabase/server'
 import { FONDO_PERFIL } from '@/lib/perfil-opciones'
 import EditarPerfilForm, { type PerfilEditable } from './EditarPerfilForm'
@@ -43,6 +44,7 @@ export default async function EditarPerfil() {
             <span className={styles.badge}>TU CUENTA</span>
             <h1 className={styles.title}>EDITAR PERFIL</h1>
             <p className={styles.subtitle}>Lo que cambies acá también se ve en la app.</p>
+            <Filete />
           </div>
         </ParallaxHero>
 

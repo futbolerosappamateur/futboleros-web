@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import ParallaxHero from '../components/ParallaxHero'
+import Filete from '../components/Filete'
 import { createServiceClient } from '@/lib/supabase/service'
 import NovedadesClient, { type NovedadItem } from './NovedadesClient'
 import styles from './novedades.module.css'
@@ -54,6 +55,7 @@ export default async function Novedades() {
             <span className={styles.badge}>BLOG</span>
             <h1 className={styles.title}>NOVEDADES</h1>
             <p className={styles.subtitle}>Actualizaciones, mejoras y noticias de Futboleros.</p>
+            <Filete />
           </div>
         </ParallaxHero>
 
