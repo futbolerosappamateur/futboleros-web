@@ -50,3 +50,19 @@ button {
   background: none;
   font-family: inherit;
 }
+
+/* Aparecer al bajar (components/AnimarAlScroll): solo se esconde lo que está fuera de la pantalla al
+   cargar. --retraso escalona elementos que entran juntos */
+[data-revelar] {
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--retraso, 0s);
+}
+[data-revelar].revelar-oculto {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-revelar] { transition: none; }
+  [data-revelar].revelar-oculto { opacity: 1; transform: none; }
+}
