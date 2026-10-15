@@ -222,9 +222,11 @@
   font-family: var(--font-display);
   font-size: clamp(2rem, 5vw, 3.2rem);
   letter-spacing: 0.08em;
+  line-height: 1.05;   /* en dos renglones (celular) no queda tan separado */
   color: var(--gold);
   text-align: center;
   margin-bottom: 16px;
+  text-wrap: balance;
 }
 
 .sectionSub {
@@ -299,6 +301,93 @@
   color: rgba(240, 230, 208, 0.78);
   font-size: 0.95rem;
   line-height: 1.7;
+}
+
+/* ── La app: celulares con pantallas reales ── */
+.app {
+  padding: 100px 24px 110px;
+  background: radial-gradient(ellipse at 50% 62%, #f4ecda 0%, #ffffff 62%);
+  overflow: hidden;   /* en celular los de los costados se cortan en el borde en vez de correr la página */
+}
+
+.appInner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.app .fileteSeccion { margin: 18px auto 64px; }
+
+/* El del medio adelante y más alto; los de los costados, más chicos, inclinados y montados atrás */
+.celulares {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.celularLugar { position: relative; flex-shrink: 0; }
+.centro { z-index: 2; width: clamp(200px, 24vw, 300px); }
+.izquierda,
+.derecha { z-index: 1; width: clamp(170px, 20vw, 250px); margin-top: 56px; }
+.izquierda { margin-right: -34px; --giro: -7deg; --flota: 0s; }
+.derecha { margin-left: -34px; --giro: 7deg; --flota: -3s; }
+.centro { --giro: 0deg; --flota: -1.5s; }
+
+/* Marco de celular: borde oscuro, esquinas redondeadas y la cámara arriba al medio */
+.celular {
+  position: relative;
+  background: #0d0d0b;
+  padding: 9px;
+  border-radius: 38px;
+  box-shadow: 0 30px 60px rgba(26, 20, 6, 0.32), inset 0 0 0 2px #2c2a22;
+  transform: rotate(var(--giro));
+  animation: flota 6s ease-in-out var(--flota) infinite;
+}
+.celular::after {
+  content: '';
+  position: absolute;
+  top: 19px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background: #000;
+  box-shadow: 0 0 0 2px #1d1c17;
+}
+.celular img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 30px;
+}
+
+@keyframes flota {
+  0%, 100% { transform: rotate(var(--giro)) translateY(0); }
+  50% { transform: rotate(var(--giro)) translateY(-12px); }
+}
+
+.appBotones {
+  display: flex;
+  justify-content: center;
+  margin-top: 64px;
+}
+
+@media (max-width: 640px) {
+  .app { padding: 72px 16px 80px; }
+  .app .fileteSeccion { margin-bottom: 44px; }
+  .centro { width: 46vw; }
+  .izquierda,
+  .derecha { width: 36vw; margin-top: 32px; }
+  .izquierda { margin-right: -9vw; }
+  .derecha { margin-left: -9vw; }
+  .celular { padding: 6px; border-radius: 26px; }
+  .celular img { border-radius: 21px; }
+  .celular::after { top: 12px; width: 8px; height: 8px; margin-left: -4px; }
+  .appBotones { margin-top: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celular { animation: none; }
 }
 
 /* ── Figurita ── */

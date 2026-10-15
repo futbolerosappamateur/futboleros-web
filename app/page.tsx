@@ -48,6 +48,13 @@ async function getStats() {
 
 const plural = (n: number, uno: string, varios: string) => `${n.toLocaleString('es-AR')} ${n === 1 ? uno : varios}`
 
+// Pantallas reales de la app (public/app, sacadas de capturas del celular sin la barra de Android)
+const CELULARES = [
+  { src: '/app/estadisticas.webp', alt: 'Tus estadísticas en la app', lugar: 'izquierda' },
+  { src: '/app/inicio.webp', alt: 'Inicio de la app con la cuenta regresiva al próximo partido', lugar: 'centro' },
+  { src: '/app/figurita.webp', alt: 'Tu figurita en la app', lugar: 'derecha' },
+] as const
+
 const FEATURES = [
   {
     icono: '/ic-cal.webp',
@@ -168,6 +175,37 @@ export default async function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── La app: tres pantallas reales en celulares que flotan ── */}
+      <section className={styles.app}>
+        <div className={styles.appInner}>
+          <h2 className={styles.sectionTitle} data-revelar>LA APP DEL FULBITO Y LOS DOLORES</h2>
+          <p className={styles.sectionSub} data-revelar>
+            Tu próximo partido, tus estadísticas y tu figurita, siempre a mano.
+          </p>
+          <Filete className={styles.fileteSeccion} />
+          <div className={styles.celulares}>
+            {CELULARES.map((c, i) => (
+              <div
+                key={c.src}
+                className={`${styles.celularLugar} ${styles[c.lugar]}`}
+                data-revelar
+                style={{ '--retraso': `${[0.15, 0, 0.3][i]}s` } as React.CSSProperties}
+              >
+                <div className={styles.celular}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={c.src} alt={c.alt} width={720} height={1528} loading="lazy" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className={styles.appBotones} data-revelar>
+            <a href={URL_GOOGLE_PLAY} target="_blank" rel="noopener noreferrer" className={styles.ctaPrimaryLarge}>
+              Descargá la app
+            </a>
           </div>
         </div>
       </section>
