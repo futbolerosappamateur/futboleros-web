@@ -1,9 +1,14 @@
+/* La pila se inclina en 3D hacia el mouse (--rx/--ry los pone FiguritaStack.tsx). Mientras el mouse está
+   encima sigue al puntero rápido; al salir vuelve despacio */
 .stack {
   position: relative;
   width: 590px;
   height: 470px;
   flex-shrink: 0;
+  transform: perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+.stack.activa { transition-duration: 0.12s; }
 
 .card1,
 .card2,
@@ -23,6 +28,67 @@
 .card3 { z-index: 1; }
 .card2 { z-index: 2; }
 .card1 { z-index: 3; }
+
+/* ── Figurita brillante (la de adelante) ── */
+.holo,
+.brillo,
+.destello {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* Tornasolado: franjas finas de colores que se corren con el mouse, como el foil de una figurita brillante.
+   Solo brillan cerca de donde está la luz (máscara alrededor del mouse) */
+.holo {
+  background: repeating-linear-gradient(115deg,
+    rgba(255, 80, 170, 0.8) 0px,
+    rgba(80, 225, 255, 0.8) 22px,
+    rgba(255, 235, 100, 0.8) 44px,
+    rgba(120, 255, 160, 0.8) 66px,
+    rgba(255, 80, 170, 0.8) 88px);
+  background-position: calc(var(--hx, 0.5) * 260px) calc(var(--hy, 0.5) * 120px);
+  mix-blend-mode: color-dodge;
+  -webkit-mask-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.3) 35%, transparent 65%);
+          mask-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.3) 35%, transparent 65%);
+}
+
+/* Reflejo de luz donde está el mouse */
+.brillo {
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.65),
+    rgba(255, 255, 255, 0.12) 28%,
+    transparent 55%);
+  mix-blend-mode: overlay;
+}
+
+.activa .holo { opacity: 0.3; }
+.activa .brillo { opacity: 1; }
+
+/* Sin el mouse encima (y en pantallas táctiles), cada tanto la cruza un destello solo */
+.destello {
+  background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.5) 50%, transparent 62%);
+  background-size: 260% 100%;
+  background-position: 130% 0;
+  mix-blend-mode: overlay;
+}
+.visible .destello {
+  opacity: 1;
+  animation: destella 5s ease-in-out 3s infinite;
+}
+.activa .destello { opacity: 0; }
+
+@keyframes destella {
+  0% { background-position: 130% 0; }
+  35%, 100% { background-position: -30% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stack { transform: none; transition: none; }
+  .visible .destello { animation: none; opacity: 0; }
+}
 
 /* ── Animations triggered when .visible is added ── */
 
