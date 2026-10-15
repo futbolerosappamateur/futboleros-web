@@ -40,19 +40,18 @@
   transition: opacity 0.4s ease;
 }
 
-/* Tornasolado: franjas finas de colores que se corren con el mouse, como el foil de una figurita brillante.
-   Solo brillan cerca de donde está la luz (máscara alrededor del mouse) */
+/* Tornasolado: bandas amplias y difusas de colores que se corren con el mouse y cubren casi toda la
+   figurita, como el foil de una figurita brillante */
 .holo {
-  background: repeating-linear-gradient(115deg,
-    rgba(255, 80, 170, 0.8) 0px,
-    rgba(80, 225, 255, 0.8) 22px,
-    rgba(255, 235, 100, 0.8) 44px,
-    rgba(120, 255, 160, 0.8) 66px,
-    rgba(255, 80, 170, 0.8) 88px);
-  background-position: calc(var(--hx, 0.5) * 260px) calc(var(--hy, 0.5) * 120px);
+  background: linear-gradient(115deg,
+    transparent 22%,
+    rgba(255, 80, 170, 0.6) 36%,
+    rgba(80, 225, 255, 0.6) 47%,
+    rgba(255, 235, 100, 0.6) 58%,
+    transparent 72%);
+  background-size: 260% 260%;
+  background-position: var(--mx, 50%) var(--my, 50%);
   mix-blend-mode: color-dodge;
-  -webkit-mask-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.3) 35%, transparent 65%);
-          mask-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.3) 35%, transparent 65%);
 }
 
 /* Reflejo de luz donde está el mouse */
@@ -64,7 +63,7 @@
   mix-blend-mode: overlay;
 }
 
-.activa .holo { opacity: 0.3; }
+.activa .holo { opacity: 0.42; }
 .activa .brillo { opacity: 1; }
 
 /* Sin el mouse encima (y en pantallas táctiles), cada tanto la cruza un destello solo */

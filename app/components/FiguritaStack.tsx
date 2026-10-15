@@ -38,12 +38,8 @@ export default function FiguritaStack() {
     el.style.setProperty('--ry', `${((x - 0.5) * 18).toFixed(2)}deg`)
     // El reflejo va donde está el mouse sobre la carta de adelante (puede quedar un poco afuera)
     const c = carta.getBoundingClientRect()
-    const cx = (e.clientX - c.left) / c.width
-    const cy = (e.clientY - c.top) / c.height
-    el.style.setProperty('--mx', `${(cx * 100).toFixed(1)}%`)
-    el.style.setProperty('--my', `${(cy * 100).toFixed(1)}%`)
-    el.style.setProperty('--hx', cx.toFixed(3))   // corre las franjas del tornasolado
-    el.style.setProperty('--hy', cy.toFixed(3))
+    el.style.setProperty('--mx', `${(((e.clientX - c.left) / c.width) * 100).toFixed(1)}%`)
+    el.style.setProperty('--my', `${(((e.clientY - c.top) / c.height) * 100).toFixed(1)}%`)
     el.classList.add(styles.activa)
   }
 
