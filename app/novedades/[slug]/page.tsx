@@ -79,10 +79,14 @@ export default async function NovedadPage({ params }: { params: Promise<{ slug: 
       <main className={styles.page}>
 
         <div className={styles.body}>
-          <div className={styles.inner}>
-            {/* La imagen de la nota arriba de todo, al ancho del texto y con su proporción original */}
-            {novedad.imagen_url && <ImagenNota src={novedad.imagen_url} alt={novedad.titulo} />}
+          {/* La imagen de la nota arriba de todo, más ancha que la columna del texto y con su proporción original */}
+          {novedad.imagen_url && (
+            <div className={styles.imagenAncha}>
+              <ImagenNota src={novedad.imagen_url} alt={novedad.titulo} />
+            </div>
+          )}
 
+          <div className={styles.inner}>
             <BackLink href="/novedades" className={styles.back}>Novedades</BackLink>
 
             <article className={styles.article}>

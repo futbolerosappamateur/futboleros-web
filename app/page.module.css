@@ -102,14 +102,11 @@
   border-color: var(--gold);
 }
 
-/* ── Zócalo: datos que pasan solos debajo del slider, como en la tele ── */
+/* ── Zócalo: datos que pasan solos debajo del slider, como en la tele (no se frena nunca) ── */
 .zocalo {
   background: #12120e;
   border-top: 1px solid var(--gold-border);
   overflow: hidden;
-  /* Se esfuma en los bordes */
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
-          mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
 }
 
 .zocaloPista {
@@ -117,7 +114,6 @@
   width: max-content;
   animation: zocalo 80s linear infinite;
 }
-.zocalo:hover .zocaloPista { animation-play-state: paused; }
 
 .zocaloGrupo {
   display: flex;
@@ -433,8 +429,9 @@
 }
 
 /* ── Los más hinchados ── */
+/* Abajo, el mismo espacio que hay entre los clubes y la publicidad (60 px) */
 .hinchas {
-  padding: 100px 24px;
+  padding: 100px 24px 60px;
 }
 
 .hinchasInner {
@@ -530,7 +527,7 @@
 .hinchasInner + .hinchasPubli { margin-top: 60px; }
 
 @media (max-width: 700px) {
-  .hinchas { padding: 64px 16px; }
+  .hinchas { padding: 64px 16px 40px; }
   .hinchasInner + .hinchasPubli { margin-top: 40px; }
   /* Una sola columna, en orden */
   .hinchasLista {

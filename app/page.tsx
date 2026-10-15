@@ -146,7 +146,7 @@ export default async function Home() {
       </section>
 
       {/* ── Publicidad principal ── */}
-      <section style={{ padding: '30px 24px 0', maxWidth: 1100, margin: '0 auto' }}>
+      <section style={{ padding: '30px 24px', maxWidth: 1100, margin: '0 auto' }}>
         <BloquePublicidad slot="home_principal" />
       </section>
 

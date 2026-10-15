@@ -1,10 +1,11 @@
 .page { min-height: 100svh; background: var(--bg); }
 
-/* Body: sin foto de fondo, deja lugar para el menú fijo (como contacto) */
-.body { padding: 190px 24px 80px; }
+/* Body: sin foto de fondo, deja lugar para el menú fijo. El escudo del encabezado termina a los 179 px */
+.body { padding: 230px 24px 80px; }
 .inner { max-width: 720px; margin: 0 auto; }
 
-/* Imagen de la nota: al ancho de la columna del texto, con su proporción original */
+/* Imagen de la nota: más ancha que la columna del texto (720 px), con su proporción original */
+.imagenAncha { max-width: 1000px; margin: 0 auto; }
 .imagenBtn {
   display: block;
   width: 100%;
