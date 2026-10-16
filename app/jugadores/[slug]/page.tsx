@@ -14,6 +14,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { FONDO_PERFIL, NOMBRE_PAIS, REDES, urlRed } from '@/lib/perfil-opciones'
 import { formatoRating } from '@/lib/formato'
 import { hayUsuario, perfilVisible } from '@/lib/privacidad'
+import { OG_IMAGEN } from '@/lib/sitio'
 import styles from './jugador.module.css'
 
 const PERFIL_FIELDS = 'id, nombre, nombre_figurita, apodo, username, avatar_url, imagen_ia, estilo_juego, caracteristicas, plan, pais, fecha_nacimiento, altura, hincha_de, idolo, es_pro, descripcion_propia, redes, perfil_publico'
@@ -37,7 +38,30 @@ export async function generateMetadata(
     return { title: 'Perfil privado', robots: { index: false } }
   }
   const nombre = perfil?.nombre?.trim() || 'Jugador'
-  return { title: nombre }
+  if (!perfil) return { title: nombre }
+
+  const apodo = perfil.apodo?.trim()
+  const descripcion = `${apodo ? `"${apodo}" · ` : ''}Estadísticas, partidos y figurita de ${nombre} en Futboleros.`
+  // Al compartir el link se ve su figurita, en JPG liviano (WhatsApp no muestra las imágenes pesadas).
+  // La ruta da 404 si el perfil es privado: WhatsApp entra sin cuenta, así que ahí no hay imagen
+  const imagen = perfil.imagen_ia
+    ? { url: `/api/figurita/${perfil.id}?ancho=600&formato=jpg`, width: 600, height: 865, alt: `Figurita de ${nombre}` }
+    : OG_IMAGEN
+  return {
+    title: nombre,
+    description: descripcion,
+    openGraph: {
+      type: 'profile',
+      siteName: 'Futboleros',
+      locale: 'es_AR',
+      title: `${nombre} · Futboleros`,
+      description: descripcion,
+      url: `/jugadores/${slug}`,
+      images: [imagen],
+    },
+    // La figurita es vertical: en X va como tarjeta chica
+    twitter: { card: perfil.imagen_ia ? 'summary' : 'summary_large_image' },
+  }
 }
 
 // "2026-09-26T00:00:00" → "26/09/2026" (a mano: con new Date() se puede correr un día por zona horaria)

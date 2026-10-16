@@ -10,6 +10,7 @@ import { FONDO_GRUPO } from '@/lib/perfil-opciones'
 import { resolverGrupo } from '@/lib/grupos'
 import { formatoRating } from '@/lib/formato'
 import { hayUsuario, perfilVisible } from '@/lib/privacidad'
+import { OG_IMAGEN } from '@/lib/sitio'
 import styles from './grupo.module.css'
 
 // Página pública del grupo, solo lectura: todo sale de lo que se carga en la app
@@ -29,7 +30,26 @@ export async function generateMetadata(
   const { slug } = await params
   const ruta = await resolverGrupo(slug)
   const grupo = ruta ? await getGrupo(ruta.id) : null
-  return { title: grupo?.nombre?.trim() || 'Grupo' }
+  const nombre = grupo?.nombre?.trim() || 'Grupo'
+  if (!grupo || !ruta) return { title: nombre }
+
+  const descripcion = (grupo.descripcion?.trim() || `${nombre}: integrantes, partidos y estadísticas del grupo en Futboleros.`).slice(0, 200)
+  // Al compartir el link se ve la foto del grupo; sin foto, la imagen de Futboleros
+  const imagen = grupo.foto_url ? { url: grupo.foto_url, alt: nombre } : OG_IMAGEN
+  return {
+    title: nombre,
+    description: descripcion,
+    openGraph: {
+      type: 'website',
+      siteName: 'Futboleros',
+      locale: 'es_AR',
+      title: `${nombre} · Futboleros`,
+      description: descripcion,
+      url: `/grupos/${ruta.ruta}`,
+      images: [imagen],
+    },
+    twitter: { card: grupo.foto_url ? 'summary' : 'summary_large_image' },
+  }
 }
 
 // "2026-09-26T00:00:00" → "26/09/2026" (a mano: con new Date() se puede correr un día por zona horaria)

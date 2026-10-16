@@ -135,10 +135,12 @@ async function achicar(webp: Buffer, ancho: number) {
 
 // ?f=<id de figuritas_generadas>: una figurita del historial
 // ?ancho=<px>: WebP achicado (para mostrar en la web; el PNG completo pesa más de 1 MB)
+// ?formato=jpg (junto con ancho): JPEG sobre blanco, para la vista previa al compartir el perfil
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const busqueda = new URL(req.url).searchParams
   const ancho = Number(busqueda.get('ancho')) || null
+  const jpg = busqueda.get('formato') === 'jpg'
 
   try {
     const supabase = createServiceClient()
@@ -263,6 +265,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (ancho) {
       const completa = await webpCompleta(JSON.stringify([id, busqueda.get('f'), p, edad]), dibujar)
       const salida = ancho >= W ? completa : await achicar(completa, ancho)
+      if (jpg) {
+        const sharp = (await import('sharp')).default
+        const jpeg = await sharp(salida).flatten({ background: '#ffffff' }).jpeg({ quality: 82, mozjpeg: true }).toBuffer()
+        return new Response(new Uint8Array(jpeg), { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': cache } })
+      }
       return new Response(new Uint8Array(salida), { headers: { 'Content-Type': 'image/webp', 'Cache-Control': cache } })
     }
 
