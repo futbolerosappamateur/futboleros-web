@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import BackLink from '../components/BackLink'
 import Filete from '../components/Filete'
 import PlanButtons from './PlanButtons'
 import styles from './plan10.module.css'
@@ -40,9 +39,7 @@ export default function Plan10() {
       <Header darkLinks />
       <main className={styles.page}>
         <div className={styles.inner}>
-          <BackLink href="/" className={styles.back}>Inicio</BackLink>
-
-          <div className={styles.hero}>
+          <div className={`${styles.hero} ${styles.heroSinVolver}`}>
             <span className={styles.badge}>PLAN 10</span>
             <h1 className={styles.title}>LLEVÁ TU JUEGO<br />AL SIGUIENTE NIVEL</h1>
             <p className={styles.subtitle}>Todo lo que necesitás para destacarte en la cancha y fuera de ella.</p>
