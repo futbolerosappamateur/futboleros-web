@@ -2,7 +2,6 @@ import Link from 'next/link'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import BackLink from '../components/BackLink'
-import Filete from '../components/Filete'
 import styles from './contacto.module.css'
 
 const OPCIONES = [
@@ -65,7 +64,6 @@ export default function Contacto() {
           <BackLink href="/" className={styles.back}>Inicio</BackLink>
           <h1 className={styles.title}>CONTACTO</h1>
           <p className={styles.subtitle}>¿En qué te podemos ayudar?</p>
-          <Filete className={styles.filete} />
           <div className={styles.grid}>
             {OPCIONES.map(op => (
               <a key={op.titulo} href={op.href} target={op.href.startsWith('mailto') ? undefined : '_blank'} rel="noopener noreferrer" className={styles.card}>
