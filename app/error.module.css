@@ -80,5 +80,5 @@
 .btnSecundario:hover { border-color: var(--gold); }
 
 @media (max-width: 600px) {
-  .hero { padding: 140px 16px 80px; }
+  .hero { padding: 156px 16px 80px; }   /* debajo del escudo, que en el celular mide 124 px */
 }

@@ -314,8 +314,9 @@
     display: none;
   }
 
+  /* Arriba de todo la barra mide lo que el escudo; al bajar se achica a 68 px como en la compu */
   .inner {
-    height: 72px;
+    height: 136px;
     padding: 0 16px;
   }
 
@@ -328,13 +329,13 @@
   }
 
   .logoShield {
-    height: 62px;   /* 52px + 20% */
+    height: 124px;   /* el doble de los 62 px de antes */
   }
 
   .nav {
     display: none;
     position: fixed;
-    top: 72px;
+    top: 136px;
     left: 0;
     right: 0;
     background: var(--surface);
@@ -342,6 +343,10 @@
     padding: 24px;
     gap: 20px;
     border-bottom: 1px solid var(--gold-border);
+  }
+
+  .headerScrolled .nav {
+    top: 68px;
   }
 
   .navOpen {

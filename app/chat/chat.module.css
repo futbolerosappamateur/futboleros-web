@@ -564,7 +564,7 @@
 }
 
 @media (max-width: 600px) {
-  .hero { padding: 140px 16px 36px; }
+  .hero { padding: 156px 16px 36px; }   /* debajo del escudo, que en el celular mide 124 px */
   .body { padding: 16px 12px 32px; }
   .chat { border-radius: 12px; }
   .mensajes { padding: 14px 12px 10px; }

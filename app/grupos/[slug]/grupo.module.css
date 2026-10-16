@@ -393,7 +393,7 @@ a.integrante:hover { border-color: var(--tostado); }   /* los perfiles privados 
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .page { --col-izq: 150px; --col-gap: 18px; --avatar-overlap: 54px; }
-  .hero { padding: 120px 16px 0; }
+  .hero { padding: 150px 16px 0; }   /* debajo del escudo, que en el celular mide 124 px */
   .body { padding: 14px 16px 60px; }
   .heroInfo { padding-bottom: 8px; }
   .fotoCircle { border-width: 6px; }

@@ -550,7 +550,7 @@
 
 /* ── Responsive ── */
 @media (max-width: 600px) {
-  .hero { padding: 140px 16px 40px; }
+  .hero { padding: 156px 16px 40px; }   /* debajo del escudo, que en el celular mide 124 px */
   .body { padding: 24px 16px 32px; }
   .seccion { padding: 22px 18px 24px; }
   .grid { grid-template-columns: minmax(0, 1fr); }

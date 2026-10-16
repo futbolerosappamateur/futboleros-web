@@ -59,3 +59,9 @@
   line-height: 1.8;
   white-space: pre-line;
 }
+
+/* En el celular el encabezado mide 136 px: el contenido arranca cerca del escudo */
+@media (max-width: 640px) {
+  .page { padding-top: 136px; }
+  .inner { padding-top: 24px; }
+}

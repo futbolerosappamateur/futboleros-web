@@ -68,3 +68,8 @@
 }
 
 .ctaSecondary:hover { color: var(--gold); }
+
+/* En el celular la tarjeta centrada no tiene que quedar debajo del escudo del encabezado */
+@media (max-width: 640px) {
+  .page { padding-top: 150px; }
+}
