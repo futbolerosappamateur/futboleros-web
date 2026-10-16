@@ -30,6 +30,7 @@ export async function crearPublicidad(formData: FormData) {
     slot:        formData.get('slot') as string,
     titulo:      (formData.get('titulo') as string) || null,
     imagen_url:  formData.get('imagen_url') as string,
+    imagen_mobile_url: (formData.get('imagen_mobile_url') as string) || null,
     url_destino: (formData.get('url_destino') as string) || null,
     para_free:   formData.get('para_free') === 'on',
     para_plan10: formData.get('para_plan10') === 'on',
@@ -46,6 +47,8 @@ export async function editarPublicidad(id: string, formData: FormData) {
   const updates: Record<string, unknown> = {
     slot:        formData.get('slot') as string,
     titulo:      (formData.get('titulo') as string) || null,
+    // Vacía = sin versión para celular (el formulario la manda siempre, así se puede quitar)
+    imagen_mobile_url: (formData.get('imagen_mobile_url') as string) || null,
     url_destino: (formData.get('url_destino') as string) || null,
     para_free:   formData.get('para_free') === 'on',
     para_plan10: formData.get('para_plan10') === 'on',

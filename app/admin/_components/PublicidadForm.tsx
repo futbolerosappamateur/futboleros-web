@@ -9,6 +9,7 @@ interface Publicidad {
   slot: string
   titulo: string | null
   imagen_url: string
+  imagen_mobile_url?: string | null
   url_destino: string | null
   para_free: boolean
   para_plan10: boolean
@@ -45,23 +46,24 @@ const SLOTS = [
 
 export default function PublicidadForm({ pub }: { pub?: Publicidad }) {
   const [imageUrl, setImageUrl] = useState(pub?.imagen_url || '')
+  const [mobileUrl, setMobileUrl] = useState(pub?.imagen_mobile_url || '')
   const [uploading, setUploading] = useState(false)
+  const [uploadingMobile, setUploadingMobile] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const subir = async (e: React.ChangeEvent<HTMLInputElement>, setUrl: (url: string) => void, setSubiendo: (v: boolean) => void) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploading(true)
+    setSubiendo(true)
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const url = await subirImagenPublicidad(fd)
-      setImageUrl(url)
+      setUrl(await subirImagenPublicidad(fd))
     } catch {
       alert('Error subiendo imagen')
     } finally {
-      setUploading(false)
+      setSubiendo(false)
     }
   }
 
@@ -69,6 +71,7 @@ export default function PublicidadForm({ pub }: { pub?: Publicidad }) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     formData.set('imagen_url', imageUrl)
+    formData.set('imagen_mobile_url', mobileUrl)
     startTransition(async () => {
       if (pub) {
         await editarPublicidad(pub.id, formData)
@@ -100,7 +103,7 @@ export default function PublicidadForm({ pub }: { pub?: Publicidad }) {
         <input
           type="file"
           accept="image/*"
-          onChange={handleImageUpload}
+          onChange={e => subir(e, setImageUrl, setUploading)}
           style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}
         />
         {uploading && <p style={{ color: 'var(--gold)', fontSize: '0.85rem' }}>Subiendo imagen...</p>}
@@ -109,6 +112,43 @@ export default function PublicidadForm({ pub }: { pub?: Publicidad }) {
         )}
         {!imageUrl && pub && (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Dejá vacío para mantener la imagen actual.</p>
+        )}
+      </div>
+
+      <div style={field}>
+        <label style={label}>IMAGEN PARA CELULAR (OPCIONAL)</label>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: 1.5 }}>
+          Se muestra en pantallas angostas en lugar de la de arriba. Mejor cuadrada (1080 × 1080) o vertical (1080 × 1350).
+          Si no la cargás, en el celular se ve la de arriba entera, más chica.
+        </p>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={e => subir(e, setMobileUrl, setUploadingMobile)}
+          style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}
+        />
+        {uploadingMobile && <p style={{ color: 'var(--gold)', fontSize: '0.85rem' }}>Subiendo imagen...</p>}
+        {mobileUrl && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginTop: 8 }}>
+            <img src={mobileUrl} alt="Vista previa para celular" style={{ width: 160, borderRadius: 8 }} />
+            <button
+              type="button"
+              onClick={() => setMobileUrl('')}
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.85rem',
+                letterSpacing: '0.08em',
+                background: 'none',
+                color: 'var(--text-muted)',
+                padding: '8px 14px',
+                borderRadius: 6,
+                border: '1px solid var(--gold-border)',
+                cursor: 'pointer',
+              }}
+            >
+              QUITAR
+            </button>
+          </div>
         )}
       </div>
 
@@ -158,7 +198,7 @@ export default function PublicidadForm({ pub }: { pub?: Publicidad }) {
       <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
         <button
           type="submit"
-          disabled={isPending || uploading || (!imageUrl && !pub)}
+          disabled={isPending || uploading || uploadingMobile || (!imageUrl && !pub)}
           style={{
             fontFamily: 'var(--font-display)',
             fontSize: '1rem',

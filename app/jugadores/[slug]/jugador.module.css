@@ -910,7 +910,7 @@
 /* Columna derecha angosta: partidos y testimonios (o publicidad) uno debajo del otro */
 @container (max-width: 640px) {
   .cierre { grid-template-columns: minmax(0, 1fr); }
-  .publicidad { contain: none; }   /* debajo de los partidos: con su alto natural */
+  .publicidad { contain: none; min-height: 0; }   /* debajo de los partidos: con su alto natural */
 }
 
 /* Celular: menos figuritas a la vista, se desliza con el dedo */

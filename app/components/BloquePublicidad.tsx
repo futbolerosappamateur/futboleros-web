@@ -12,16 +12,19 @@ export default async function BloquePublicidad({ slot, esPro = false, className 
   const supabase = createServiceClient()
   const planField = esPro ? 'para_plan10' : 'para_free'
 
+  // Con * no falla si todavía no se corrió publicidades_mobile.sql (la versión para celular es opcional)
   const { data } = await supabase
     .from('publicidades')
-    .select('id, imagen_url, url_destino, titulo')
+    .select('*')
     .eq('slot', slot)
     .eq('activa', true)
     .eq(planField, true)
     .order('orden')
     .limit(1)
 
-  const pub = data?.[0]
+  const pub = data?.[0] as
+    | { id: string; imagen_url: string; imagen_mobile_url?: string | null; url_destino: string | null; titulo: string | null }
+    | undefined
   const extra = className ? ` ${className}` : ''
 
   if (!pub) {
@@ -39,18 +42,22 @@ export default async function BloquePublicidad({ slot, esPro = false, className 
   const inner = (
     <aside className={`${styles.bloque} ${styles.bloqueImagen}${conEnlace ? '' : extra}`} aria-label="Publicidad">
       <span className={styles.etiqueta}>Publicidad</span>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={pub.imagen_url}
-        alt={pub.titulo ?? 'Publicidad'}
-        className={styles.imagen}
-      />
+      {/* En el celular va la versión para celular si la cargaron; si no, la ancha entera */}
+      <picture className={styles.picture}>
+        {pub.imagen_mobile_url && <source media="(max-width: 640px)" srcSet={pub.imagen_mobile_url} />}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={pub.imagen_url}
+          alt={pub.titulo ?? 'Publicidad'}
+          className={styles.imagen}
+        />
+      </picture>
     </aside>
   )
 
   if (conEnlace) {
     return (
-      <a href={pub.url_destino} target="_blank" rel="noopener noreferrer" className={`${styles.enlace}${extra}`}>
+      <a href={pub.url_destino ?? undefined} target="_blank" rel="noopener noreferrer" className={`${styles.enlace}${extra}`}>
         {inner}
       </a>
     )
