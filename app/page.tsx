@@ -115,8 +115,29 @@ const getHinchas = unstable_cache(async () => {
     .map(([club, hinchas]) => ({ club, hinchas }))
 }, ['home-hinchas'], { revalidate: 600 })
 
+// Las últimas novedades, debajo de los clubes: la más nueva grande y las dos anteriores al costado.
+// Con menos publicadas el bloque no se muestra. Sin caché: aparece apenas se publica
+const NOVEDADES_HOME = 3
+async function getUltimasNovedades() {
+  const supabase = createServiceClient()
+  const { data } = await supabase
+    .from('novedades')
+    .select('id, titulo, slug, resumen, imagen_url, categoria, creado_en')
+    .eq('publicado', true)
+    .order('creado_en', { ascending: false })
+    .limit(NOVEDADES_HOME)
+  const novedades = (data ?? []) as {
+    id: string; titulo: string; slug: string; resumen: string | null; imagen_url: string | null; categoria: string | null; creado_en: string
+  }[]
+  // La fecha en hora argentina, como en /novedades: 15/09/2026
+  return novedades.map(n => ({
+    ...n,
+    fecha: new Date(n.creado_en).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
+  }))
+}
+
 export default async function Home() {
-  const [slides, stats, hinchas, figuritas] = await Promise.all([getSlides(), getStats(), getHinchas(), getFiguritasPublicas()])
+  const [slides, stats, hinchas, figuritas, novedades] = await Promise.all([getSlides(), getStats(), getHinchas(), getFiguritasPublicas(), getUltimasNovedades()])
   const maxHinchas = hinchas[0]?.hinchas ?? 1
   const figuritasFila = figuritas.length >= MINIMO_FIGURITAS
     ? Array.from({ length: Math.ceil(FIGURITAS_POR_VUELTA / figuritas.length) }, () => figuritas).flat()
@@ -360,6 +381,40 @@ export default async function Home() {
           <BloquePublicidad slot="home_hinchas" />
         </div>
       </section>
+
+      {/* ── Últimas novedades: la más nueva grande a la izquierda y las dos anteriores a la derecha
+          (en el celular, la grande arriba y las otras dos abajo) ── */}
+      {novedades.length === NOVEDADES_HOME && (
+        <section className={styles.novedades}>
+          <div className={styles.novedadesInner}>
+            <h2 className={styles.sectionTitle} data-revelar>ÚLTIMAS NOVEDADES</h2>
+            <p className={styles.sectionSub} data-revelar>Actualizaciones, mejoras y noticias de Futboleros.</p>
+            <Filete className={styles.fileteSeccion} />
+            <div className={styles.novedadesGrid}>
+              {novedades.map((n, i) => (
+                <Link
+                  key={n.id}
+                  href={`/novedades/${n.slug}`}
+                  className={i === 0 ? `${styles.novedad} ${styles.novedadPrincipal}` : styles.novedad}
+                  data-revelar
+                  style={{ '--retraso': `${i * 0.12}s` } as React.CSSProperties}
+                >
+                  {/* Sin foto, la del encabezado de /novedades */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={n.imagen_url || '/fondos/novedades.webp'} alt="" loading="lazy" className={styles.novedadImg} />
+                  {n.categoria && <span className={styles.novedadCategoria}>{n.categoria}</span>}
+                  <time className={styles.novedadFecha} dateTime={n.creado_en}>{n.fecha}</time>
+                  <h3 className={styles.novedadTitulo}>{n.titulo}</h3>
+                  {i === 0 && n.resumen && <p className={styles.novedadResumen}>{n.resumen}</p>}
+                </Link>
+              ))}
+            </div>
+            <div className={styles.novedadesBotones} data-revelar>
+              <Link href="/novedades" className={styles.ctaPrimaryLarge}>Ver todas las novedades</Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── CTA: sobre una foto de cancha con el fondo fijo, como "¿Qué es Futboleros?" ── */}
       <section className={styles.cta}>
