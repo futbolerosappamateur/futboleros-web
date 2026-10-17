@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { SITE_URL, OG_IMAGEN } from '@/lib/sitio'
+import { SITE_URL, OG_IMAGEN, SITIO_EN_PRUEBA } from '@/lib/sitio'
 import './globals.css'
 
 const DESCRIPCION = 'Organizá partidos, seguí tus estadísticas y conectá con jugadores de tu zona.'
@@ -22,6 +22,8 @@ export const metadata: Metadata = {
     images: [OG_IMAGEN],
   },
   twitter: { card: 'summary_large_image' },
+  // Web en prueba: ninguna página se indexa (además del robots.txt)
+  ...(SITIO_EN_PRUEBA ? { robots: { index: false, follow: false } } : {}),
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
