@@ -188,9 +188,10 @@ export default function ArmarMail({ novedades, sitio, googlePlay }: { novedades:
             {copiado ? '¡COPIADO!' : 'COPIAR EL HTML'}
           </button>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            Pesa {peso} KB (Gmail corta los mails de más de 102 KB). En el plugin, creá una newsletter con el editor
-            de HTML, pegalo, poné el asunto y mandate una prueba antes de enviarla. El link para darse de baja y el de
-            «ver en el navegador» los completa el plugin.
+            Pesa {peso} KB (Gmail corta los mails de más de 102 KB). En el plugin, creá la newsletter con la opción
+            «Raw HTML» y pegalo ahí: en el editor de bloques el código de arriba aparece como texto. Poné el asunto y
+            mandate una prueba antes de enviarla. El link para darse de baja y el de «ver en el navegador» los
+            completa el plugin.
           </p>
         </div>
       </div>
