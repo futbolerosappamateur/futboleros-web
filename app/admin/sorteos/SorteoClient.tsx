@@ -56,9 +56,10 @@ export default function SorteoClient({ mesInicial }: { mesInicial: string }) {
     setOcupado(false)
     if (!r.ok) return alert(r.error)
     const quien = ganador.nombre || ganador.apodo || 'el ganador'
+    const domicilio = r.faltaDomicilio ? ' El aviso le pide que cargue su domicilio en Editar perfil.' : ''
     alert(r.alCelular
-      ? `¡Listo! Se le avisó a ${quien} en la app y en el celular.`
-      : `¡Listo! El aviso le quedó a ${quien} en la app. Al celular no le llegó: no tiene los avisos activados o no abrió la app hace mucho.`)
+      ? `¡Listo! Se le avisó a ${quien} en la app y en el celular.${domicilio}`
+      : `¡Listo! El aviso le quedó a ${quien} en la app. Al celular no le llegó: no tiene los avisos activados o no abrió la app hace mucho.${domicilio}`)
     setGanador(null)
     setPremio('')
     router.refresh()   // para que aparezca en el historial

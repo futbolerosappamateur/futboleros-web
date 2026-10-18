@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
 import SorteoClient from './SorteoClient'
 
@@ -9,6 +10,7 @@ type Sorteo = {
   descripcion_mes: string
   estado: string
   aprobado_en: string | null
+  ganador_id: string | null
   ganador: { nombre: string | null; apodo: string | null; domicilio: string | null } | null
 }
 
@@ -16,7 +18,7 @@ type Sorteo = {
 export default async function SorteosAdmin() {
   const { data } = await createServiceClient()
     .from('sorteos')
-    .select('id, nombre_premio, descripcion_mes, estado, aprobado_en, ganador:ganador_id(nombre, apodo, domicilio)')
+    .select('id, nombre_premio, descripcion_mes, estado, aprobado_en, ganador_id, ganador:ganador_id(nombre, apodo, domicilio)')
     .order('created_at', { ascending: false })
     .limit(20)
   const sorteos = (data ?? []) as unknown as Sorteo[]
@@ -53,7 +55,20 @@ export default async function SorteosAdmin() {
               {s.ganador?.nombre || s.ganador?.apodo || '(cuenta borrada)'}
             </p>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Premio: {s.nombre_premio}</p>
-            {s.ganador?.domicilio && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Domicilio: {s.ganador.domicilio}</p>}
+            {/* El domicilio se lee del perfil: aparece solo cuando el ganador lo carga */}
+            {s.ganador && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
+                {s.ganador.domicilio?.trim()
+                  ? <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Domicilio: {s.ganador.domicilio}</p>
+                  : <p style={{ fontSize: '0.85rem', color: '#c62828' }}>Falta el domicilio</p>}
+                <Link
+                  href={`/chat?con=${s.ganador_id}`}
+                  style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', letterSpacing: '0.06em', color: '#8a6d1a', border: '1px solid #8a6d1a55', borderRadius: 6, padding: '6px 12px 4px' }}
+                >
+                  MENSAJE AL GANADOR
+                </Link>
+              </div>
+            )}
           </div>
         ))}
       </div>

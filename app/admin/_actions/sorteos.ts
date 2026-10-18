@@ -24,8 +24,9 @@ export async function sortearGanador(): Promise<{ ok: true; ganador: Ganador } |
 }
 
 // Guarda el sorteo y le avisa al ganador como crearNotificacion de la app: la fila en notificaciones y el push
-// de Expo al celular (antes quedaba solo en la lista de avisos). alCelular: si el push salió
-export async function aprobarSorteo(ganadorId: string, premio: string, mes: string): Promise<Resultado & { alCelular?: boolean }> {
+// de Expo al celular (antes quedaba solo en la lista de avisos). Si no tiene domicilio, el aviso se lo pide y
+// lleva falta_domicilio: la app lo abre en Editar perfil, en ese campo. alCelular: si el push salió
+export async function aprobarSorteo(ganadorId: string, premio: string, mes: string): Promise<Resultado & { alCelular?: boolean; faltaDomicilio?: boolean }> {
   const supabase = await clienteAdmin()
   if (!premio.trim() || !mes.trim()) return { ok: false, error: 'Completá el premio y el mes.' }
   const { data: sorteo, error } = await supabase
@@ -41,14 +42,18 @@ export async function aprobarSorteo(ganadorId: string, premio: string, mes: stri
     .single()
   if (error) return { ok: false, error: error.message }
 
+  // El domicilio nunca va en el aviso: se ve en la pantalla bloqueada del celular
+  const { data: perfil } = await supabase.from('perfiles').select('expo_push_token, domicilio').eq('id', ganadorId).maybeSingle()
+  const faltaDomicilio = !perfil?.domicilio?.trim()
   const titulo = `🏆 Ganaste el sorteo de ${mes.trim()}`
-  const mensaje = `Tu premio es ${premio.trim()} y te llegará a tu domicilio. ¡Felicitaciones!`
-  const datos = { sorteo_id: sorteo.id }
+  const mensaje = faltaDomicilio
+    ? `Tu premio es ${premio.trim()}. Para mandártelo, cargá tu domicilio en Editar perfil. ¡Felicitaciones!`
+    : `Tu premio es ${premio.trim()} y te llegará a tu domicilio. ¡Felicitaciones!`
+  const datos = faltaDomicilio ? { sorteo_id: sorteo.id, falta_domicilio: true } : { sorteo_id: sorteo.id }
   const { error: errorAviso } = await supabase.from('notificaciones').insert({ usuario_id: ganadorId, tipo: 'sorteo', titulo, mensaje, datos })
   if (errorAviso) return { ok: false, error: `El sorteo quedó guardado, pero no se pudo avisar al ganador: ${errorAviso.message}` }
 
-  const { data: perfil } = await supabase.from('perfiles').select('expo_push_token').eq('id', ganadorId).maybeSingle()
-  if (!perfil?.expo_push_token) return { ok: true, alCelular: false }
+  if (!perfil?.expo_push_token) return { ok: true, alCelular: false, faltaDomicilio }
   try {
     const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
@@ -65,8 +70,8 @@ export async function aprobarSorteo(ganadorId: string, premio: string, mes: stri
     })
     // Expo contesta 200 aunque el celular ya no exista: el estado de cada aviso viene en data.status
     const respuesta = await res.json().catch(() => null)
-    return { ok: true, alCelular: res.ok && respuesta?.data?.status === 'ok' }
+    return { ok: true, alCelular: res.ok && respuesta?.data?.status === 'ok', faltaDomicilio }
   } catch {
-    return { ok: true, alCelular: false }
+    return { ok: true, alCelular: false, faltaDomicilio }
   }
 }
