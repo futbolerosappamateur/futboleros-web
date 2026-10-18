@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export const revalidate = 0
@@ -77,6 +78,14 @@ export default async function AdminNewsletter() {
           </div>
         </div>
       )}
+
+      <div style={{ ...tarjeta, marginTop: 16 }}>
+        <span style={titulo}>EL MAIL</span>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          Armalo con las secciones de la home y las últimas novedades, y copialo para pegarlo en el plugin.
+        </p>
+        <Link href="/admin/newsletter/mail" style={boton}>ARMAR EL MAIL</Link>
+      </div>
     </>
   )
 }
