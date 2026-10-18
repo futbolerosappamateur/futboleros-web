@@ -12,34 +12,47 @@ export type NovedadMail = {
   fecha: string   // 17/10/2026
 }
 
-export type SeccionesMail = {
-  queEs: boolean
-  comoFunciona: boolean
-  app: boolean
-  figurita: boolean
-  enVivo: boolean
-  cierre: boolean
-}
+// Las secciones que van entre la apertura y el pie, en el orden que se elige en el admin
+export type ClaveSeccion = 'queEs' | 'comoFunciona' | 'app' | 'figurita' | 'enVivo' | 'novedades' | 'bloque' | 'cierre'
 
-// Una cabecera subida desde el admin (la de siempre, el vestuario, está en public/mail)
-export type CabeceraMail = { url: string; ancho: number; alto: number }
+// Una imagen subida desde el admin, para la cabecera o el bloque libre (la cabecera de siempre, el vestuario,
+// está en public/mail)
+export type ImagenMail = { url: string; ancho: number; alto: number }
 
-// Las cabeceras subidas van al bucket público de novedades, carpeta mail/: las URL tienen que durar para
+// Las imágenes subidas van al bucket público de novedades, carpeta mail/: las URL tienen que durar para
 // siempre porque los mails ya enviados las siguen pidiendo. El nombre lleva la medida
-// (cabecera-<fecha>-1200x600.jpg) para poner el alto en el mail sin abrir la imagen
-export const CABECERAS = { bucket: 'novedades', carpeta: 'mail' }
-export function medidaCabecera(nombre: string) {
-  const m = nombre.match(/^cabecera-\d+-(\d+)x(\d+)\.jpg$/)
+// (imagen-<fecha>-1200x600.jpg; las primeras se llamaron cabecera-…) para poner el alto sin abrir la imagen
+export const IMAGENES_MAIL = { bucket: 'novedades', carpeta: 'mail' }
+export function medidaImagen(nombre: string) {
+  const m = nombre.match(/^(?:imagen|cabecera)-\d+-(\d+)x(\d+)\.jpg$/)
   return m ? { ancho: Number(m[1]), alto: Number(m[2]) } : null
 }
 
+export type BotonMail = { texto: string; url: string }
+
+// Bloque libre, para promociones: imagen de borde a borde arriba, título, texto y botón, sobre uno de los
+// fondos del mail. Todo es opcional
+export type FondoBloque = 'oscuro' | 'blanco' | 'dorado'
+export type BloqueLibre = { imagen: ImagenMail | null; titulo: string; texto: string; boton: BotonMail; fondo: FondoBloque }
+
 export type ContenidoMail = {
   vistaPrevia: string   // el renglón que muestra la bandeja de entrada al lado del asunto
-  cabecera: CabeceraMail | null   // null: el vestuario
+  cabecera: ImagenMail | null   // null: el vestuario
   titulo: string
   texto: string         // los párrafos van separados por una línea en blanco
-  secciones: SeccionesMail
-  novedades: NovedadMail[]   // la primera va grande
+  botones: BotonMail[]  // los de la apertura: el primero dorado y el segundo con borde
+  secciones: ClaveSeccion[]   // las que van, en orden
+  novedades: NovedadMail[]    // la primera va grande
+  bloque: BloqueLibre
+}
+
+// Link de un botón: también vale "/plan10", "futboleros.com.ar/plan10" o un tag del plugin como {email_url}
+export function normalizarLink(url: string, sitio: string) {
+  const u = url.trim()
+  if (!u) return ''
+  if (/^(https?:|mailto:)/i.test(u) || /^\{[a-z_]+\}$/i.test(u)) return u
+  if (u.startsWith('/')) return sitio + u
+  return `https://${u}`
 }
 
 export type EnlacesMail = {
@@ -61,8 +74,9 @@ const ROJO = '#e63946'
 // Bebas Neue y Montserrat cargan en Apple Mail y en otros. Gmail y Outlook usan las de la compu: Bebas Neue si
 // está instalada, si no Bahnschrift Condensed (Windows 10 y 11), Arial Narrow (Mac), Roboto Condensed (Android)
 // o Arial. Va en negrita porque la familia Bebas Neue que se instala en una compu trae Bold y su Regular es
-// fina. Impact no va: no tiene Bold y en negrita el navegador la engorda y se deforma
-const TITULOS = "font-family:'Bebas Neue','Bahnschrift Condensed','Arial Narrow','Roboto Condensed',sans-serif-condensed,Arial,sans-serif;font-weight:bold;"
+// fina. Impact no va: no tiene Bold y en negrita el navegador la engorda y se deforma. En mayúsculas: Bebas Neue
+// no tiene minúsculas y así lo escrito en el admin (o el título de una novedad) se ve igual con las de respaldo
+const TITULOS = "font-family:'Bebas Neue','Bahnschrift Condensed','Arial Narrow','Roboto Condensed',sans-serif-condensed,Arial,sans-serif;font-weight:bold;text-transform:uppercase;"
 const CUERPO = 'Montserrat,Arial,Helvetica,sans-serif'
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -73,11 +87,16 @@ const parrafos = (texto: string, estilo: string) =>
   texto.trim().split(/\n\s*\n/).filter(p => p.trim())
     .map(p => `<p style="${estilo}">${esc(p.trim()).replace(/\n/g, '<br>')}</p>`).join('')
 
+// lleno: dorado. contorno: borde dorado. oscuro: para fondos dorados, donde uno dorado no se vería.
 // border-collapse separate: con collapse (el de todas las tablas) no se redondean las esquinas
-function boton(texto: string, url: string, contorno = false) {
+type VarianteBoton = 'lleno' | 'contorno' | 'oscuro'
+function boton(texto: string, url: string, variante: VarianteBoton = 'lleno') {
+  const fondo = variante === 'lleno' ? DORADO : variante === 'oscuro' ? OSCURO : 'transparent'
+  const borde = variante === 'oscuro' ? OSCURO : DORADO
+  const color = variante === 'lleno' ? '#0a0a1a' : DORADO
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;border-collapse:separate;"><tr>`
-    + `<td style="border-radius:8px;border:2px solid ${DORADO};background:${contorno ? 'transparent' : DORADO};mso-padding-alt:12px 26px;">`
-    + `<a href="${url}" target="_blank" style="display:inline-block;padding:12px 26px;${TITULOS}font-size:20px;line-height:20px;letter-spacing:2px;color:${contorno ? DORADO : '#0a0a1a'};text-decoration:none;">${texto}</a>`
+    + `<td style="border-radius:8px;border:2px solid ${borde};background:${fondo};mso-padding-alt:12px 26px;">`
+    + `<a href="${esc(url)}" target="_blank" style="display:inline-block;padding:12px 26px;${TITULOS}font-size:20px;line-height:20px;letter-spacing:2px;color:${color};text-decoration:none;">${esc(texto)}</a>`
     + `</td></tr></table>`
 }
 
@@ -124,8 +143,12 @@ type Bloque = { fondo: string; relleno: string; html: string; px?: false }
 
 // ── Secciones: los textos son los de la home ──
 
+// Los botones sin texto o sin link no van; el primero que queda es dorado y el segundo, con borde
 function apertura(c: ContenidoMail, e: Required<EnlacesMail>): Bloque | null {
-  if (!c.titulo.trim() && !c.texto.trim()) return null
+  const lista = c.botones
+    .map(b => ({ texto: b.texto.trim(), url: normalizarLink(b.url, e.sitio) }))
+    .filter(b => b.texto && b.url)
+  if (!c.titulo.trim() && !c.texto.trim() && !lista.length) return null
   return {
     fondo: OSCURO,
     relleno: '36px 40px 44px',
@@ -133,8 +156,7 @@ function apertura(c: ContenidoMail, e: Required<EnlacesMail>): Bloque | null {
       ? `<h1 class="apertura" style="margin:0;${TITULOS}font-size:48px;line-height:50px;letter-spacing:2px;color:#ffffff;text-align:center;">${esc(c.titulo.trim())}</h1>`
       : '')
       + parrafos(c.texto, `margin:16px 0 0;font-family:${CUERPO};font-size:16px;line-height:25px;color:${CLARO};text-align:center;`)
-      + espacio(24)
-      + botones(boton('DESCARGÁ LA APP', e.googlePlay), boton('ENTRÁ A LA WEB', e.sitio, true)),
+      + (lista.length ? espacio(24) + botones(...lista.map((b, i) => boton(b.texto, b.url, i === 0 ? 'lleno' : 'contorno'))) : ''),
   }
 }
 
@@ -276,8 +298,31 @@ function cierre(img: string, e: Required<EnlacesMail>): Bloque {
       + titulo('¿LISTO PARA JUGAR?', '#ffffff')
       + bajada('Creá tu cuenta, armá tu grupo y empezá a organizar.', CLARO)
       + espacio(24)
-      + botones(boton('CREAR CUENTA GRATIS', `${e.sitio}/registro`), boton('DESCARGÁ LA APP', e.googlePlay, true))
+      + botones(boton('CREAR CUENTA GRATIS', `${e.sitio}/registro`), boton('DESCARGÁ LA APP', e.googlePlay, 'contorno'))
       + `</div>`,
+  }
+}
+
+const COLORES_BLOQUE: Record<FondoBloque, { fondo: string; titulo: string; texto: string; boton: VarianteBoton }> = {
+  oscuro: { fondo: OSCURO, titulo: '#ffffff', texto: CLARO, boton: 'lleno' },
+  blanco: { fondo: '#ffffff', titulo: DORADO, texto: TEXTO_SUAVE, boton: 'lleno' },
+  dorado: { fondo: DORADO, titulo: OSCURO, texto: '#2b2716', boton: 'oscuro' },
+}
+
+// La imagen va de borde a borde, como la del cierre, y lleva al link del botón (aunque el botón no tenga texto)
+function bloqueLibre(b: BloqueLibre, e: Required<EnlacesMail>): Bloque | null {
+  const colores = COLORES_BLOQUE[b.fondo]
+  const link = normalizarLink(b.boton.url, e.sitio)
+  const contenido = (b.titulo.trim() ? titulo(esc(b.titulo.trim()), colores.titulo) : '')
+    + parrafos(b.texto, `margin:14px 0 0;font-family:${CUERPO};font-size:15px;line-height:23px;color:${colores.texto};text-align:center;`)
+    + (b.boton.texto.trim() && link ? espacio(24) + botones(boton(b.boton.texto.trim(), link, colores.boton)) : '')
+  if (!b.imagen) return contenido ? { fondo: colores.fondo, relleno: '44px 40px 48px', html: contenido } : null
+  const foto = imagen(b.imagen.url, 600, Math.round((600 * b.imagen.alto) / b.imagen.ancho), b.titulo.trim() || 'Futboleros', link || undefined)
+  return {
+    fondo: colores.fondo,
+    relleno: contenido ? '0 0 48px' : '0',
+    px: false,
+    html: foto + (contenido ? `<div class="px" style="padding:32px 40px 0;">${contenido}</div>` : ''),
   }
 }
 
@@ -311,19 +356,20 @@ export function armarMail(c: ContenidoMail, enlaces: EnlacesMail): string {
   const cabecera = c.cabecera
     ? imagen(c.cabecera.url, 600, Math.round((600 * c.cabecera.alto) / c.cabecera.ancho), c.titulo.trim() || 'Futboleros', e.sitio)
     : imagen(`${img}/mail/cabecera.jpg`, 600, 300, 'Futboleros: la app del fulbito y los dolores', e.sitio)
-  const s = c.secciones
 
-  const bloques = [
-    apertura(c, e),
-    s.queEs && queEs(img),
-    s.comoFunciona && comoFunciona(),
-    s.app && app(img, e),
-    s.figurita && figurita(img, e),
-    s.enVivo && enVivo(img),
-    c.novedades.length > 0 && novedades(c.novedades, e),
-    s.cierre && cierre(img, e),
-    pie(img, e),
-  ].filter((b): b is Bloque => !!b)
+  // La apertura va siempre primero y el pie al final; lo del medio, en el orden elegido
+  const seccion: Record<ClaveSeccion, () => Bloque | null> = {
+    queEs: () => queEs(img),
+    comoFunciona: () => comoFunciona(),
+    app: () => app(img, e),
+    figurita: () => figurita(img, e),
+    enVivo: () => enVivo(img),
+    novedades: () => (c.novedades.length > 0 ? novedades(c.novedades, e) : null),
+    bloque: () => bloqueLibre(c.bloque, e),
+    cierre: () => cierre(img, e),
+  }
+  const bloques = [apertura(c, e), ...c.secciones.map(k => seccion[k]()), pie(img, e)]
+    .filter((b): b is Bloque => !!b)
 
   // Entre dos bloques oscuros seguidos va el filete, como entre las secciones de la home
   const filas = bloques.map((b, i) =>

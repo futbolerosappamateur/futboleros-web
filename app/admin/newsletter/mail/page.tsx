@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
 import { SITE_URL, URL_GOOGLE_PLAY } from '@/lib/sitio'
-import { CABECERAS, medidaCabecera, type CabeceraMail, type NovedadMail } from '@/lib/newsletter-mail'
+import { IMAGENES_MAIL, medidaImagen, type ImagenMail, type NovedadMail } from '@/lib/newsletter-mail'
 import ArmarMail from './ArmarMail'
 
 export const revalidate = 0
@@ -17,15 +17,15 @@ export default async function MailNewsletter() {
       .eq('publicado', true)
       .order('creado_en', { ascending: false })
       .limit(12),
-    // Las cabeceras que ya se subieron, la más nueva primero
+    // Las imágenes que ya se subieron (cabeceras y bloques libres), la más nueva primero
     supabase.storage
-      .from(CABECERAS.bucket)
-      .list(CABECERAS.carpeta, { limit: 50, sortBy: { column: 'created_at', order: 'desc' } }),
+      .from(IMAGENES_MAIL.bucket)
+      .list(IMAGENES_MAIL.carpeta, { limit: 60, sortBy: { column: 'created_at', order: 'desc' } }),
   ])
-  const cabeceras: CabeceraMail[] = (archivos ?? []).flatMap(a => {
-    const medida = medidaCabecera(a.name)
+  const imagenes: ImagenMail[] = (archivos ?? []).flatMap(a => {
+    const medida = medidaImagen(a.name)
     if (!medida) return []
-    const { data: publica } = supabase.storage.from(CABECERAS.bucket).getPublicUrl(`${CABECERAS.carpeta}/${a.name}`)
+    const { data: publica } = supabase.storage.from(IMAGENES_MAIL.bucket).getPublicUrl(`${IMAGENES_MAIL.carpeta}/${a.name}`)
     return [{ url: publica.publicUrl, ...medida }]
   })
 
@@ -50,7 +50,7 @@ export default async function MailNewsletter() {
       <p style={{ color: 'var(--text-muted)', marginBottom: 28 }}>
         Elegí qué lleva, mirá cómo queda y copiá el HTML para pegarlo en el plugin.
       </p>
-      <ArmarMail novedades={novedades} cabeceras={cabeceras} sitio={SITE_URL} googlePlay={URL_GOOGLE_PLAY} />
+      <ArmarMail novedades={novedades} imagenes={imagenes} sitio={SITE_URL} googlePlay={URL_GOOGLE_PLAY} />
     </>
   )
 }
