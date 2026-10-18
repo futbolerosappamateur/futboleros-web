@@ -21,8 +21,21 @@ export type SeccionesMail = {
   cierre: boolean
 }
 
+// Una cabecera subida desde el admin (la de siempre, el vestuario, está en public/mail)
+export type CabeceraMail = { url: string; ancho: number; alto: number }
+
+// Las cabeceras subidas van al bucket público de novedades, carpeta mail/: las URL tienen que durar para
+// siempre porque los mails ya enviados las siguen pidiendo. El nombre lleva la medida
+// (cabecera-<fecha>-1200x600.jpg) para poner el alto en el mail sin abrir la imagen
+export const CABECERAS = { bucket: 'novedades', carpeta: 'mail' }
+export function medidaCabecera(nombre: string) {
+  const m = nombre.match(/^cabecera-\d+-(\d+)x(\d+)\.jpg$/)
+  return m ? { ancho: Number(m[1]), alto: Number(m[2]) } : null
+}
+
 export type ContenidoMail = {
   vistaPrevia: string   // el renglón que muestra la bandeja de entrada al lado del asunto
+  cabecera: CabeceraMail | null   // null: el vestuario
   titulo: string
   texto: string         // los párrafos van separados por una línea en blanco
   secciones: SeccionesMail
@@ -45,8 +58,11 @@ const CLARO = '#ece6d8'          // texto sobre oscuro
 const CLARO_SUAVE = '#a9a291'
 const ROJO = '#e63946'
 
-// Bebas Neue y Montserrat cargan en Apple Mail y en otros; Gmail y Outlook usan las de respaldo
-const TITULOS = "'Bebas Neue',Impact,'Arial Narrow','Roboto Condensed',sans-serif-condensed,Arial,sans-serif"
+// Bebas Neue y Montserrat cargan en Apple Mail y en otros. Gmail y Outlook usan las de la compu: Bebas Neue si
+// está instalada, si no Bahnschrift Condensed (Windows 10 y 11), Arial Narrow (Mac), Roboto Condensed (Android)
+// o Arial. Va en negrita porque la familia Bebas Neue que se instala en una compu trae Bold y su Regular es
+// fina. Impact no va: no tiene Bold y en negrita el navegador la engorda y se deforma
+const TITULOS = "font-family:'Bebas Neue','Bahnschrift Condensed','Arial Narrow','Roboto Condensed',sans-serif-condensed,Arial,sans-serif;font-weight:bold;"
 const CUERPO = 'Montserrat,Arial,Helvetica,sans-serif'
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -61,7 +77,7 @@ const parrafos = (texto: string, estilo: string) =>
 function boton(texto: string, url: string, contorno = false) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;border-collapse:separate;"><tr>`
     + `<td style="border-radius:8px;border:2px solid ${DORADO};background:${contorno ? 'transparent' : DORADO};mso-padding-alt:12px 26px;">`
-    + `<a href="${url}" target="_blank" style="display:inline-block;padding:12px 26px;font-family:${TITULOS};font-size:20px;line-height:20px;letter-spacing:2px;color:${contorno ? DORADO : '#0a0a1a'};text-decoration:none;">${texto}</a>`
+    + `<a href="${url}" target="_blank" style="display:inline-block;padding:12px 26px;${TITULOS}font-size:20px;line-height:20px;letter-spacing:2px;color:${contorno ? DORADO : '#0a0a1a'};text-decoration:none;">${texto}</a>`
     + `</td></tr></table>`
 }
 
@@ -75,7 +91,7 @@ function botones(...lista: string[]) {
 }
 
 const titulo = (texto: string, color: string) =>
-  `<h2 class="titulo" style="margin:0;font-family:${TITULOS};font-size:38px;line-height:40px;font-weight:normal;letter-spacing:2px;color:${color};text-align:center;">${texto}</h2>`
+  `<h2 class="titulo" style="margin:0;${TITULOS}font-size:38px;line-height:40px;letter-spacing:2px;color:${color};text-align:center;">${texto}</h2>`
 
 const bajada = (texto: string, color: string) =>
   `<p style="margin:10px 0 0;font-family:${CUERPO};font-size:15px;line-height:23px;color:${color};text-align:center;">${texto}</p>`
@@ -95,7 +111,7 @@ const lista = (items: string[], color: string, punto: string) =>
   + `</table>`
 
 const etiqueta = (texto: string, fondo: string, color: string, borde = fondo) =>
-  `<span style="display:inline-block;padding:5px 12px 3px;background:${fondo};border:1px solid ${borde};border-radius:4px;font-family:${TITULOS};font-size:15px;line-height:16px;letter-spacing:3px;color:${color};">${texto}</span>`
+  `<span style="display:inline-block;padding:5px 12px 3px;background:${fondo};border:1px solid ${borde};border-radius:4px;${TITULOS}font-size:15px;line-height:16px;letter-spacing:3px;color:${color};">${texto}</span>`
 
 // Las fotos de las novedades pesan hasta 2 MB: se piden achicadas al servicio de imágenes de Supabase
 function fotoNovedad(url: string, ancho: number, alto: number) {
@@ -114,7 +130,7 @@ function apertura(c: ContenidoMail, e: Required<EnlacesMail>): Bloque | null {
     fondo: OSCURO,
     relleno: '36px 40px 44px',
     html: (c.titulo.trim()
-      ? `<h1 class="apertura" style="margin:0;font-family:${TITULOS};font-size:48px;line-height:50px;font-weight:normal;letter-spacing:2px;color:#ffffff;text-align:center;">${esc(c.titulo.trim())}</h1>`
+      ? `<h1 class="apertura" style="margin:0;${TITULOS}font-size:48px;line-height:50px;letter-spacing:2px;color:#ffffff;text-align:center;">${esc(c.titulo.trim())}</h1>`
       : '')
       + parrafos(c.texto, `margin:16px 0 0;font-family:${CUERPO};font-size:16px;line-height:25px;color:${CLARO};text-align:center;`)
       + espacio(24)
@@ -139,7 +155,7 @@ function queEs(img: string): Bloque {
         `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;border-collapse:separate;background:#1c1b15;border:1px solid #4a4128;border-radius:10px;">`
         + `<tr><td width="68" valign="top" style="padding:20px 0 20px 20px;"><img src="${img}/mail/${f.icono}.png" width="48" height="48" alt="" style="display:block;border:0;width:48px;height:48px;"></td>`
         + `<td valign="top" style="padding:18px 20px 18px 16px;">`
-        + `<p style="margin:0;font-family:${TITULOS};font-size:22px;line-height:24px;letter-spacing:1px;color:${DORADO};">${f.titulo}</p>`
+        + `<p style="margin:0;${TITULOS}font-size:22px;line-height:24px;letter-spacing:1px;color:${DORADO};">${f.titulo}</p>`
         + `<p style="margin:6px 0 0;font-family:${CUERPO};font-size:14px;line-height:21px;color:${CLARO};">${f.texto}</p>`
         + `</td></tr></table>`).join(''),
   }
@@ -163,9 +179,9 @@ function comoFunciona(): Bloque {
       + espacio(14)
       + PASOS.map((p, i) =>
         `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;">`
-        + `<tr><td width="52" valign="top" style="font-family:${TITULOS};font-size:48px;line-height:46px;color:${DORADO};">${i + 1}</td>`
+        + `<tr><td width="52" valign="top" style="${TITULOS}font-size:48px;line-height:46px;color:${DORADO};">${i + 1}</td>`
         + `<td valign="top">`
-        + `<p style="margin:0;font-family:${TITULOS};font-size:22px;line-height:24px;letter-spacing:1px;color:${TEXTO};">${p.titulo}</p>`
+        + `<p style="margin:0;${TITULOS}font-size:22px;line-height:24px;letter-spacing:1px;color:${TEXTO};">${p.titulo}</p>`
         + `<p style="margin:4px 0 0;font-family:${CUERPO};font-size:14px;line-height:21px;color:${TEXTO_SUAVE};">${p.texto}</p>`
         + `</td></tr></table>`).join(''),
   }
@@ -224,9 +240,9 @@ function novedades(lista: NovedadMail[], e: Required<EnlacesMail>): Bloque {
     + (principal.imagen_url ? `<tr><td>${imagen(fotoNovedad(principal.imagen_url, 1040, 694), 520, 347, principal.titulo, url(principal))}</td></tr>` : '')
     + `<tr><td style="padding-top:14px;">`
     + `<p style="margin:0;font-family:${CUERPO};font-size:12px;line-height:18px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${DORADO};">${datos(principal)}</p>`
-    + `<p style="margin:4px 0 0;font-family:${TITULOS};font-size:30px;line-height:32px;letter-spacing:1px;"><a href="${url(principal)}" target="_blank" style="color:${TEXTO};text-decoration:none;">${esc(principal.titulo)}</a></p>`
+    + `<p style="margin:4px 0 0;${TITULOS}font-size:30px;line-height:32px;letter-spacing:1px;"><a href="${url(principal)}" target="_blank" style="color:${TEXTO};text-decoration:none;">${esc(principal.titulo)}</a></p>`
     + (principal.resumen ? `<p style="margin:8px 0 0;font-family:${CUERPO};font-size:15px;line-height:23px;color:${TEXTO_SUAVE};">${esc(principal.resumen)}</p>` : '')
-    + `<p style="margin:10px 0 0;font-family:${TITULOS};font-size:18px;line-height:20px;letter-spacing:2px;"><a href="${url(principal)}" target="_blank" style="color:${DORADO};text-decoration:none;">LEER LA NOTA &rarr;</a></p>`
+    + `<p style="margin:10px 0 0;${TITULOS}font-size:18px;line-height:20px;letter-spacing:2px;"><a href="${url(principal)}" target="_blank" style="color:${DORADO};text-decoration:none;">LEER LA NOTA &rarr;</a></p>`
     + `</td></tr></table>`
 
   const chicas = resto.map(n =>
@@ -235,8 +251,8 @@ function novedades(lista: NovedadMail[], e: Required<EnlacesMail>): Bloque {
     + (n.imagen_url ? `<td class="foto-chica" width="150" valign="top" style="padding-top:22px;"><a href="${url(n)}" target="_blank"><img src="${esc(fotoNovedad(n.imagen_url, 300, 220))}" width="150" height="110" alt="${esc(n.titulo)}" style="display:block;border:0;width:150px;height:110px;border-radius:6px;"></a></td>` : '')
     + `<td valign="top" style="padding:22px 0 0 ${n.imagen_url ? 18 : 0}px;">`
     + `<p style="margin:0;font-family:${CUERPO};font-size:11px;line-height:16px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${DORADO};">${datos(n)}</p>`
-    + `<p style="margin:4px 0 0;font-family:${TITULOS};font-size:22px;line-height:24px;letter-spacing:1px;"><a href="${url(n)}" target="_blank" style="color:${TEXTO};text-decoration:none;">${esc(n.titulo)}</a></p>`
-    + `<p style="margin:8px 0 0;font-family:${TITULOS};font-size:16px;line-height:18px;letter-spacing:2px;"><a href="${url(n)}" target="_blank" style="color:${DORADO};text-decoration:none;">LEER &rarr;</a></p>`
+    + `<p style="margin:4px 0 0;${TITULOS}font-size:22px;line-height:24px;letter-spacing:1px;"><a href="${url(n)}" target="_blank" style="color:${TEXTO};text-decoration:none;">${esc(n.titulo)}</a></p>`
+    + `<p style="margin:8px 0 0;${TITULOS}font-size:16px;line-height:18px;letter-spacing:2px;"><a href="${url(n)}" target="_blank" style="color:${DORADO};text-decoration:none;">LEER &rarr;</a></p>`
     + `</td></tr></table>`).join('')
 
   return {
@@ -290,6 +306,11 @@ function pie(img: string, e: Required<EnlacesMail>): Bloque {
 export function armarMail(c: ContenidoMail, enlaces: EnlacesMail): string {
   const e = { ...enlaces, imagenes: enlaces.imagenes ?? enlaces.sitio }
   const img = e.imagenes
+
+  // Se ve a 600 de ancho; el alto sale de la proporción de la imagen subida
+  const cabecera = c.cabecera
+    ? imagen(c.cabecera.url, 600, Math.round((600 * c.cabecera.alto) / c.cabecera.ancho), c.titulo.trim() || 'Futboleros', e.sitio)
+    : imagen(`${img}/mail/cabecera.jpg`, 600, 300, 'Futboleros: la app del fulbito y los dolores', e.sitio)
   const s = c.secciones
 
   const bloques = [
@@ -328,6 +349,8 @@ export function armarMail(c: ContenidoMail, enlaces: EnlacesMail): string {
   table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
   img { -ms-interpolation-mode: bicubic; }
   a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
+  /* La Bebas Neue de Google tiene un solo grosor: con la negrita pedida, que no la engorde de mentira */
+  * { font-synthesis: none; }
   /* Celulares (hasta 480 px; más ancho, la tabla de 600 se angosta sola) */
   @media only screen and (max-width: 480px) {
     .px { padding-left: 20px !important; padding-right: 20px !important; }
@@ -343,7 +366,7 @@ export function armarMail(c: ContenidoMail, enlaces: EnlacesMail): string {
 <tr><td align="center" style="padding:0;">
 <!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto;">
-<tr><td style="background:${OSCURO};padding:0;">${imagen(`${img}/mail/cabecera.jpg`, 600, 300, 'Futboleros: la app del fulbito y los dolores', e.sitio)}</td></tr>
+<tr><td style="background:${OSCURO};padding:0;">${cabecera}</td></tr>
 ${filas}
 </table>
 <!--[if mso]></td></tr></table><![endif]-->

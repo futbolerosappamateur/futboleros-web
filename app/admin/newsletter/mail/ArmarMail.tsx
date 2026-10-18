@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { armarMail, type NovedadMail, type SeccionesMail } from '@/lib/newsletter-mail'
+import { armarMail, type CabeceraMail, type NovedadMail, type SeccionesMail } from '@/lib/newsletter-mail'
+import { subirCabeceraMail } from '../../_actions/newsletter'
 
 type Modelo = { vistaPrevia: string; titulo: string; texto: string; secciones: SeccionesMail; novedades: number }
 
@@ -62,7 +63,22 @@ const botonChico = (activo: boolean): React.CSSProperties => ({
   color: activo ? '#0a0a1a' : 'var(--text-muted)',
 })
 
-export default function ArmarMail({ novedades, sitio, googlePlay }: { novedades: NovedadMail[]; sitio: string; googlePlay: string }) {
+const miniatura = (elegida: boolean): React.CSSProperties => ({
+  padding: 3,
+  borderRadius: 6,
+  border: `2px solid ${elegida ? 'var(--gold)' : 'transparent'}`,
+  background: 'none',
+})
+
+export default function ArmarMail({ novedades, cabeceras, sitio, googlePlay }: {
+  novedades: NovedadMail[]
+  cabeceras: CabeceraMail[]
+  sitio: string
+  googlePlay: string
+}) {
+  const [cabecera, setCabecera] = useState<CabeceraMail | null>(null)
+  const [subidas, setSubidas] = useState(cabeceras)
+  const [subiendo, setSubiendo] = useState(false)
   const [vistaPrevia, setVistaPrevia] = useState(LANZAMIENTO.vistaPrevia)
   const [titulo, setTitulo] = useState(LANZAMIENTO.titulo)
   const [texto, setTexto] = useState(LANZAMIENTO.texto)
@@ -86,7 +102,7 @@ export default function ArmarMail({ novedades, sitio, googlePlay }: { novedades:
   }
 
   // Las novedades van en el orden de la lista (la más nueva primero): la primera marcada sale grande
-  const contenido = { vistaPrevia, titulo, texto, secciones, novedades: novedades.filter(n => elegidas.includes(n.slug)) }
+  const contenido = { vistaPrevia, cabecera, titulo, texto, secciones, novedades: novedades.filter(n => elegidas.includes(n.slug)) }
   const html = armarMail(contenido, { sitio, googlePlay })
   const vista = origen ? armarMail(contenido, { sitio, googlePlay, imagenes: origen }) : ''
   const peso = Math.round(new Blob([html]).size / 1024)
@@ -97,6 +113,25 @@ export default function ArmarMail({ novedades, sitio, googlePlay }: { novedades:
     if (!w) return
     w.scrollTo(0, scroll.current)
     w.addEventListener('scroll', () => { scroll.current = w.scrollY })
+  }
+
+  // La imagen se achica y se pasa a JPG en el servidor; queda en la lista para los próximos mails
+  const subir = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0]
+    e.target.value = ''   // así se puede volver a elegir el mismo archivo
+    if (!archivo) return
+    setSubiendo(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', archivo)
+      const nueva = await subirCabeceraMail(fd)
+      setSubidas([nueva, ...subidas])
+      setCabecera(nueva)
+    } catch {
+      alert('No se pudo subir la imagen. Probá de nuevo.')
+    } finally {
+      setSubiendo(false)
+    }
   }
 
   const copiar = async () => {
@@ -116,6 +151,32 @@ export default function ArmarMail({ novedades, sitio, googlePlay }: { novedades:
           <span style={etiqueta}>EMPEZAR DESDE:</span>
           <button type="button" style={botonChico(false)} onClick={() => usar(LANZAMIENTO)}>LANZAMIENTO</button>
           <button type="button" style={botonChico(false)} onClick={() => usar(NOVEDADES)}>NOVEDADES</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={etiqueta}>CABECERA</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+            {[null, ...subidas].map(c => (
+              <button
+                key={c?.url ?? 'vestuario'}
+                type="button"
+                title={c ? 'Cabecera subida' : 'El vestuario (la de siempre)'}
+                onClick={() => setCabecera(c)}
+                style={miniatura(cabecera?.url === c?.url)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c?.url ?? '/mail/cabecera.jpg'} alt="" style={{ display: 'block', width: 104, height: 52, objectFit: 'cover', borderRadius: 3 }} />
+              </button>
+            ))}
+            <label style={{ ...botonChico(false), cursor: subiendo ? 'wait' : 'pointer' }}>
+              {subiendo ? 'SUBIENDO…' : '+ SUBIR'}
+              <input type="file" accept="image/*" onChange={subir} disabled={subiendo} style={{ display: 'none' }} />
+            </label>
+          </div>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Va arriba de todo, a lo ancho del mail. Ideal: horizontal, de 1200 px de ancho o más. Se guarda en JPG y,
+            si es más alta que ancha, se recorta al centro.
+          </span>
         </div>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
