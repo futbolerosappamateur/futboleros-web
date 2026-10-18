@@ -337,9 +337,9 @@ export function armarMail(c: ContenidoMail, enlaces: EnlacesMail): string {
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:${OSCURO};">
+<body style="margin:0;padding:0;background:#ffffff;">
 <div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;">${esc(c.vistaPrevia.trim())}${'&#847;&zwnj;&nbsp;'.repeat(80)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${OSCURO};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background:#ffffff;">
 <tr><td align="center" style="padding:0;">
 <!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto;">

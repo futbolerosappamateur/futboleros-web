@@ -207,7 +207,7 @@ export default function ArmarMail({ novedades, sitio, googlePlay }: { novedades:
             title="Vista previa del mail"
             srcDoc={vista}
             onLoad={alCargar}
-            style={{ width: ancho, maxWidth: '100%', height: 820, border: '1px solid var(--gold-border)', borderRadius: 10, background: '#12120e' }}
+            style={{ width: ancho, maxWidth: '100%', height: 820, border: '1px solid var(--gold-border)', borderRadius: 10, background: '#fff' }}
           />
         )}
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxWidth: 600 }}>
