@@ -928,15 +928,33 @@
 .liveMatch {
   background: #c9a84c;
   padding: 100px 24px;
+  overflow: hidden;   /* en celular los de los costados se cortan en el borde, como en "La app" */
 }
 
 .liveMatchInner {
   max-width: 1100px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 80px;
+  /* minmax(0, …): la fila de celulares es más ancha que la columna a propósito (en el celular se cortan
+     los de los costados) y con 1fr la columna se estiraba y el texto quedaba más ancho que la pantalla */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 64px;
   align-items: center;
+}
+
+/* Los celulares de "La app" (mismo marco y misma flotación), más chicos para entrar en media columna */
+.celularesVivo .centro { width: clamp(180px, 15vw, 220px); }
+.celularesVivo .izquierda,
+.celularesVivo .derecha { width: clamp(150px, 12.3vw, 178px); margin-top: 40px; }
+.celularesVivo .izquierda { margin-right: -30px; }
+.celularesVivo .derecha { margin-left: -30px; }
+
+@media (max-width: 640px) {
+  .celularesVivo .centro { width: 46vw; }
+  .celularesVivo .izquierda,
+  .celularesVivo .derecha { width: 36vw; margin-top: 32px; }
+  .celularesVivo .izquierda { margin-right: -9vw; }
+  .celularesVivo .derecha { margin-left: -9vw; }
 }
 
 .liveMatchText {
@@ -1013,10 +1031,9 @@
   flex-shrink: 0;
 }
 
-/* El partido de muestra tiene sus estilos en components/WidgetEnVivo.module.css */
 @media (max-width: 860px) {
   .liveMatchInner {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 48px;
   }
 }

@@ -7,7 +7,6 @@ import BloquePublicidad from './components/BloquePublicidad'
 import Footer from './components/Footer'
 import Filete from './components/Filete'
 import ContadorAnimado from './components/ContadorAnimado'
-import WidgetEnVivo from './components/WidgetEnVivo'
 import AnimarAlScroll from './components/AnimarAlScroll'
 import FiguritaBrillante from './components/FiguritaBrillante'
 import { createClient } from '@/lib/supabase/server'
@@ -72,6 +71,13 @@ const CELULARES = [
   { src: '/app/estadisticas.webp', alt: 'Tus estadísticas en la app', lugar: 'izquierda' },
   { src: '/app/inicio.webp', alt: 'Inicio de la app con la cuenta regresiva al próximo partido', lugar: 'centro' },
   { src: '/app/figurita.webp', alt: 'Tu figurita en la app', lugar: 'derecha' },
+] as const
+
+// Las del partido en vivo, con el mismo marco: la timeline, el partido y el cierre con los premios
+const CELULARES_VIVO = [
+  { src: '/app/timeline.webp', alt: 'La timeline del partido con cada gol, asistencia, tarjeta y cambio', lugar: 'izquierda' },
+  { src: '/app/vivo.webp', alt: 'El partido en vivo en la app: marcador, reloj y botones para registrar goles, asistencias y tarjetas', lugar: 'centro' },
+  { src: '/app/cierre.webp', alt: 'El cierre del partido: resultado final, premios y puntajes de los jugadores', lugar: 'derecha' },
 ] as const
 
 const FEATURES = [
@@ -315,8 +321,22 @@ export default async function Home() {
       {/* ── Partido en vivo ── */}
       <section className={styles.liveMatch}>
         <div className={styles.liveMatchInner}>
-          {/* Partido de muestra que corre solo, a la izquierda */}
-          <WidgetEnVivo />
+          {/* Pantallas reales del partido, a la izquierda */}
+          <div className={`${styles.celulares} ${styles.celularesVivo}`}>
+            {CELULARES_VIVO.map((c, i) => (
+              <div
+                key={c.src}
+                className={`${styles.celularLugar} ${styles[c.lugar]}`}
+                data-revelar
+                style={{ '--retraso': `${[0.15, 0, 0.3][i]}s` } as React.CSSProperties}
+              >
+                <div className={styles.celular}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={c.src} alt={c.alt} width={720} height={1528} loading="lazy" />
+                </div>
+              </div>
+            ))}
+          </div>
 
           {/* Texto derecha */}
           <div className={styles.liveMatchText} data-revelar>

@@ -211,7 +211,7 @@ function enVivo(img: string): Bloque {
       + bajada('Mientras juegan, el administrador registra goles, asistencias y eventos al instante desde el banco. Todos los jugadores siguen el partido desde sus teléfonos.', '#2b2716')
       + lista(['Marcador actualizado en tiempo real', 'Registro de goles y asistencias por jugador', 'Premios del partido: figura, tronco y leñador', 'Historial completo generado automáticamente al finalizar'], OSCURO, OSCURO)
       + espacio(26)
-      + imagen(`${img}/mail/en-vivo.jpg`, 340, 326, 'Un partido en vivo en la app: 2 a 1 con los goles de cada jugador'),
+      + imagen(`${img}/mail/en-vivo.jpg`, 520, 450, 'Tres pantallas del partido en la app: la timeline, el partido en vivo con el marcador y el cierre con los premios'),
   }
 }
 
