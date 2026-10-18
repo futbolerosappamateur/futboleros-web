@@ -11,6 +11,8 @@ interface Publicidad {
   imagen_url: string
   imagen_mobile_url?: string | null
   url_destino: string | null
+  desde?: string | null
+  hasta?: string | null
   para_free: boolean
   para_plan10: boolean
   activa: boolean
@@ -40,7 +42,6 @@ const selectStyle: React.CSSProperties = { ...input, cursor: 'pointer' }
 const SLOTS = [
   { value: 'home_principal', label: 'Home — Banner principal (ancho)' },
   { value: 'home_hinchas', label: 'Home — Debajo de los más hinchados (ancho)' },
-  { value: 'home_figurita', label: 'Home — Columna figurita (alto)' },
   { value: 'perfil_testimonios', label: 'Perfil jugador — Testimonios' },
 ]
 
@@ -72,6 +73,12 @@ export default function PublicidadForm({ pub }: { pub?: Publicidad }) {
     const formData = new FormData(e.currentTarget)
     formData.set('imagen_url', imageUrl)
     formData.set('imagen_mobile_url', mobileUrl)
+    const desde = formData.get('desde') as string
+    const hasta = formData.get('hasta') as string
+    if (desde && hasta && hasta < desde) {
+      alert('La fecha de fin es anterior a la de inicio.')
+      return
+    }
     startTransition(async () => {
       if (pub) {
         await editarPublicidad(pub.id, formData)
@@ -155,6 +162,23 @@ export default function PublicidadForm({ pub }: { pub?: Publicidad }) {
       <div style={field}>
         <label style={label}>URL DE DESTINO</label>
         <input style={input} name="url_destino" defaultValue={pub?.url_destino ?? ''} placeholder="https://... (opcional)" />
+      </div>
+
+      <div style={field}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={field}>
+            <label htmlFor="desde" style={label}>DESDE</label>
+            <input style={input} type="date" name="desde" id="desde" defaultValue={pub?.desde ?? ''} />
+          </div>
+          <div style={field}>
+            <label htmlFor="hasta" style={label}>HASTA</label>
+            <input style={input} type="date" name="hasta" id="hasta" defaultValue={pub?.hasta ?? ''} />
+          </div>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: 1.5 }}>
+          Opcionales. El aviso se ve desde el primer día hasta el último incluido, en hora argentina.
+          Sin fechas, se ve mientras esté activo.
+        </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'end' }}>

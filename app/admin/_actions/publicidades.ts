@@ -32,6 +32,8 @@ export async function crearPublicidad(formData: FormData) {
     imagen_url:  formData.get('imagen_url') as string,
     imagen_mobile_url: (formData.get('imagen_mobile_url') as string) || null,
     url_destino: (formData.get('url_destino') as string) || null,
+    desde:       (formData.get('desde') as string) || null,
+    hasta:       (formData.get('hasta') as string) || null,
     para_free:   formData.get('para_free') === 'on',
     para_plan10: formData.get('para_plan10') === 'on',
     activa:      formData.get('activa') === 'on',
@@ -50,6 +52,9 @@ export async function editarPublicidad(id: string, formData: FormData) {
     // Vacía = sin versión para celular (el formulario la manda siempre, así se puede quitar)
     imagen_mobile_url: (formData.get('imagen_mobile_url') as string) || null,
     url_destino: (formData.get('url_destino') as string) || null,
+    // Vacías = sin fecha (se ve mientras esté activa)
+    desde:       (formData.get('desde') as string) || null,
+    hasta:       (formData.get('hasta') as string) || null,
     para_free:   formData.get('para_free') === 'on',
     para_plan10: formData.get('para_plan10') === 'on',
     activa:      formData.get('activa') === 'on',

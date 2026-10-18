@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { SITE_URL, OG_IMAGEN, SITIO_EN_PRUEBA } from '@/lib/sitio'
 import './globals.css'
 
-const DESCRIPCION = 'Organizá partidos, seguí tus estadísticas y conectá con jugadores de tu zona.'
+const DESCRIPCION = 'Organizá partidos, seguí tus estadísticas y conectá con otros jugadores.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),   // las imágenes de la vista previa van con la dirección completa

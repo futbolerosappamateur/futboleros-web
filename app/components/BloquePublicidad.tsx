@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { createServiceClient } from '@/lib/supabase/service'
-import RecordarAviso from './RecordarAviso'
+import { hoyEnArgentina } from '@/lib/publicidades'
+import MarcoAviso from './MarcoAviso'
 import styles from './BloquePublicidad.module.css'
 
 interface Props {
@@ -14,7 +15,7 @@ export default async function BloquePublicidad({ slot, esPro = false, className 
   const supabase = createServiceClient()
   const planField = esPro ? 'para_plan10' : 'para_free'
 
-  // Con * no falla si todavía no se corrió publicidades_mobile.sql (la versión para celular es opcional)
+  // Con * no falla si todavía no se corrió publicidades_fechas_y_numeros.sql (sin esas columnas no hay fechas)
   const { data } = await supabase
     .from('publicidades')
     .select('*')
@@ -24,11 +25,17 @@ export default async function BloquePublicidad({ slot, esPro = false, className 
     .order('orden')
     .order('creado_en')
 
+  // Fechas de inicio y fin, opcionales: se ve desde el primer día hasta el último incluido (hora argentina)
+  const hoy = hoyEnArgentina()
+  const avisos = ((data ?? []) as {
+    id: string; imagen_url: string; imagen_mobile_url?: string | null; url_destino: string | null; titulo: string | null
+    desde?: string | null; hasta?: string | null
+  }[]).filter(a => (!a.desde || a.desde <= hoy) && (!a.hasta || a.hasta >= hoy))
+
   // Si hay varias en el mismo lugar se turnan: en cada carga va la que sigue a la que vio la vez anterior
-  // (RecordarAviso la anota en una cookie). La primera vez, una al azar, así ninguna sale siempre primera
-  const avisos = (data ?? []) as { id: string; imagen_url: string; imagen_mobile_url?: string | null; url_destino: string | null; titulo: string | null }[]
-  const vista = (await cookies()).get(`aviso_${slot}`)?.value
-  const anterior = avisos.findIndex(a => a.id === vista)
+  // (MarcoAviso la anota en una cookie). La primera vez, una al azar, así ninguna sale siempre primera
+  const ultima = (await cookies()).get(`aviso_${slot}`)?.value
+  const anterior = avisos.findIndex(a => a.id === ultima)
   const pub = avisos.length > 0
     ? avisos[anterior >= 0 ? (anterior + 1) % avisos.length : Math.floor(Math.random() * avisos.length)]
     : undefined
@@ -47,7 +54,7 @@ export default async function BloquePublicidad({ slot, esPro = false, className 
 
   const conEnlace = !!pub.url_destino
   const inner = (
-    <aside className={`${styles.bloque} ${styles.bloqueImagen}${conEnlace ? '' : extra}`} aria-label="Publicidad">
+    <MarcoAviso id={pub.id} slot={slot} className={`${styles.bloque} ${styles.bloqueImagen}${conEnlace ? '' : extra}`}>
       <span className={styles.etiqueta}>Publicidad</span>
       {/* En el celular va la versión para celular si la cargaron; si no, la ancha entera */}
       <picture className={styles.picture}>
@@ -59,8 +66,7 @@ export default async function BloquePublicidad({ slot, esPro = false, className 
           className={styles.imagen}
         />
       </picture>
-      <RecordarAviso slot={slot} id={pub.id} />
-    </aside>
+    </MarcoAviso>
   )
 
   if (conEnlace) {
