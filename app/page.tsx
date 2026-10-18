@@ -88,7 +88,7 @@ const FEATURES = [
   {
     icono: '/ic-contacts.webp',
     title: 'Conectá con jugadores',
-    body: 'Buscá jugadores por zona, mirá sus figuritas y sumá nuevos cracks a tu grupo cuando alguien no puede.',
+    body: 'Buscá jugadores, mirá sus figuritas y sumá nuevos cracks a tu grupo cuando alguien no puede.',
   },
 ]
 

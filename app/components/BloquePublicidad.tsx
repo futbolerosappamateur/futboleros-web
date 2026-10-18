@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { createServiceClient } from '@/lib/supabase/service'
+import RecordarAviso from './RecordarAviso'
 import styles from './BloquePublicidad.module.css'
 
 interface Props {
@@ -20,11 +22,16 @@ export default async function BloquePublicidad({ slot, esPro = false, className 
     .eq('activa', true)
     .eq(planField, true)
     .order('orden')
-    .limit(1)
+    .order('creado_en')
 
-  const pub = data?.[0] as
-    | { id: string; imagen_url: string; imagen_mobile_url?: string | null; url_destino: string | null; titulo: string | null }
-    | undefined
+  // Si hay varias en el mismo lugar se turnan: en cada carga va la que sigue a la que vio la vez anterior
+  // (RecordarAviso la anota en una cookie). La primera vez, una al azar, así ninguna sale siempre primera
+  const avisos = (data ?? []) as { id: string; imagen_url: string; imagen_mobile_url?: string | null; url_destino: string | null; titulo: string | null }[]
+  const vista = (await cookies()).get(`aviso_${slot}`)?.value
+  const anterior = avisos.findIndex(a => a.id === vista)
+  const pub = avisos.length > 0
+    ? avisos[anterior >= 0 ? (anterior + 1) % avisos.length : Math.floor(Math.random() * avisos.length)]
+    : undefined
   const extra = className ? ` ${className}` : ''
 
   if (!pub) {
@@ -52,6 +59,7 @@ export default async function BloquePublicidad({ slot, esPro = false, className 
           className={styles.imagen}
         />
       </picture>
+      <RecordarAviso slot={slot} id={pub.id} />
     </aside>
   )
 
