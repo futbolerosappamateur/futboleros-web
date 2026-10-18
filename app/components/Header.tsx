@@ -13,6 +13,7 @@ type UserInfo = {
   username: string | null
   avatar_url: string | null
   tienePerfil: boolean
+  esAdmin: boolean   // is_admin o acceso_panel, como "Panel Admin" en el menú de la app
 }
 
 export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
@@ -34,13 +35,20 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
       if (!u) return
       const { data: perfil } = await supabase
         .from('perfiles')
-        .select('id, nombre, username, avatar_url')
+        .select('id, nombre, username, avatar_url, is_admin, acceso_panel')
         .eq('id', u.id)
         .maybeSingle()
       // Cuenta sin perfil todavía (registrada en la web): igual se muestra el menú para que pueda completarlo
       setUser(perfil
-        ? { ...perfil, tienePerfil: true }
-        : { id: u.id, nombre: u.user_metadata?.nombre_completo ?? null, username: null, avatar_url: null, tienePerfil: false })
+        ? {
+            id: perfil.id,
+            nombre: perfil.nombre,
+            username: perfil.username,
+            avatar_url: perfil.avatar_url,
+            tienePerfil: true,
+            esAdmin: !!(perfil.is_admin || perfil.acceso_panel),
+          }
+        : { id: u.id, nombre: u.user_metadata?.nombre_completo ?? null, username: null, avatar_url: null, tienePerfil: false, esAdmin: false })
     })
   }, [])
 
@@ -133,6 +141,9 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
                   </Link>
                 )}
                 <Link href="/editar-perfil" className={styles.navLink} onClick={() => setOpen(false)}>Editar perfil</Link>
+                {user.esAdmin && (
+                  <Link href="/admin" className={styles.navLink} onClick={() => setOpen(false)}>Panel admin</Link>
+                )}
                 <button className={styles.navLink} onClick={cerrarSesion}>Cerrar sesión</button>
               </>
             ) : (
@@ -166,6 +177,12 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
                   <Link href="/editar-perfil" className={styles.dropdownItem} onClick={() => setOpen(false)}>
                     Editar perfil
                   </Link>
+                  {/* Solo para las cuentas con acceso al panel; el panel igual lo controla en el servidor */}
+                  {user.esAdmin && (
+                    <Link href="/admin" className={styles.dropdownItem} onClick={() => setOpen(false)}>
+                      Panel admin
+                    </Link>
+                  )}
                   <button className={styles.dropdownItem} onClick={cerrarSesion}>
                     Cerrar sesión
                   </button>
