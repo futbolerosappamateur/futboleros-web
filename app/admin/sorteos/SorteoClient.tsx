@@ -55,7 +55,10 @@ export default function SorteoClient({ mesInicial }: { mesInicial: string }) {
     const r = await aprobarSorteo(ganador.id, premio, mes)
     setOcupado(false)
     if (!r.ok) return alert(r.error)
-    alert(`¡Listo! Se le avisó a ${ganador.nombre || ganador.apodo || 'el ganador'}.`)
+    const quien = ganador.nombre || ganador.apodo || 'el ganador'
+    alert(r.alCelular
+      ? `¡Listo! Se le avisó a ${quien} en la app y en el celular.`
+      : `¡Listo! El aviso le quedó a ${quien} en la app. Al celular no le llegó: no tiene los avisos activados o no abrió la app hace mucho.`)
     setGanador(null)
     setPremio('')
     router.refresh()   // para que aparezca en el historial

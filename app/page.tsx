@@ -36,7 +36,8 @@ async function getStats() {
     supabase.from('grupos').select('*', { count: 'exact', head: true }).eq('activo', true),
     // fecha es timestamp sin zona: se compara solo el día
     supabase.from('partidos').select('*', { count: 'exact', head: true }).eq('estado', 'finalizado').gte('fecha', haceUnaSemana.slice(0, 10)),
-    supabase.from('perfiles').select('*', { count: 'exact', head: true }).gte('created_at', haceUnaSemana),
+    // perfiles no tiene created_at (con esa columna daba siempre 0): el alta es creado_en
+    supabase.from('perfiles').select('*', { count: 'exact', head: true }).gte('creado_en', haceUnaSemana),
   ])
   return {
     jugadores: jugadores ?? 0,
