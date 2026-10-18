@@ -6,7 +6,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login?next=/admin/slides')
+  if (!user) redirect('/login?next=/admin')
 
   // acceso_panel: entra al panel sin ser cuenta oficial (is_admin)
   const { data: perfil } = await supabase
