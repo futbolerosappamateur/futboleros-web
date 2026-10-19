@@ -51,7 +51,7 @@ export async function aprobarSorteo(ganadorId: string, premio: string, mes: stri
   if (error) return { ok: false, error: error.message }
 
   // El domicilio nunca va en el aviso: se ve en la pantalla bloqueada del celular
-  const { data: perfil } = await supabase.from('perfiles').select('expo_push_token, domicilio').eq('id', ganadorId).maybeSingle()
+  const { data: perfil } = await supabase.from('perfiles').select('domicilio').eq('id', ganadorId).maybeSingle()
   const faltaDomicilio = !perfil?.domicilio?.trim()
   const titulo = `🏆 Ganaste el sorteo de ${mes.trim()}`
   const mensaje = faltaDomicilio
@@ -61,13 +61,23 @@ export async function aprobarSorteo(ganadorId: string, premio: string, mes: stri
   const { error: errorAviso } = await supabase.from('notificaciones').insert({ usuario_id: ganadorId, tipo: 'sorteo', titulo, mensaje, datos })
   if (errorAviso) return { ok: false, error: `El sorteo quedó guardado, pero no se pudo avisar al ganador: ${errorAviso.message}` }
 
-  if (!perfil?.expo_push_token) return { ok: true, alCelular: false, faltaDomicilio }
+  // El token de Expo está en push_tokens desde el 19/10: en perfiles lo podían leer los compañeros de grupo
+  // (supabase/push_servidor.sql de la app). Si esa tabla todavía no está, se lee de perfiles como antes
+  const { data: fila, error: errorToken } = await supabase.from('push_tokens').select('token').eq('usuario_id', ganadorId).maybeSingle()
+  let token: string | null = fila?.token ?? null
+  if (errorToken) {
+    const { data: viejo } = await supabase.from('perfiles').select('expo_push_token').eq('id', ganadorId).maybeSingle()
+    token = viejo?.expo_push_token ?? null
+  }
+  if (!token) return { ok: true, alCelular: false, faltaDomicilio }
+  // Con la seguridad de push activada, Expo pide la clave de acceso (EXPO_ACCESS_TOKEN)
+  const claveExpo = process.env.EXPO_ACCESS_TOKEN
   try {
     const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(claveExpo ? { Authorization: `Bearer ${claveExpo}` } : {}) },
       body: JSON.stringify({
-        to: perfil.expo_push_token,
+        to: token,
         title: titulo,
         body: mensaje,
         data: { tipo: 'sorteo', ...datos },
