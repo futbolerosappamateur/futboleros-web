@@ -10,14 +10,22 @@ export type Ganador = { id: string; nombre: string | null; apodo: string | null;
 // al que sorteaba y la otra podía ganar. Todavía no se guarda nada: primero se aprueba
 export async function sortearGanador(): Promise<{ ok: true; ganador: Ganador } | { ok: false; error: string }> {
   const supabase = await clienteAdmin()
-  const { data, error } = await supabase
-    .from('perfiles')
-    .select('id, nombre, apodo, domicilio, is_admin, acceso_panel')
-    .eq('es_pro', true)
-    .not('nombre', 'is', null)
-  if (error) return { ok: false, error: error.message }
-  const participantes = ((data ?? []) as (Omit<Ganador, 'participantes'> & { is_admin: boolean | null; acceso_panel: boolean | null })[])
-    .filter(p => !p.is_admin && !p.acceso_panel)
+  // De a páginas: Supabase corta en 1000 filas sin avisar, y con más Plan 10 los que quedaban afuera nunca ganaban
+  type Fila = Omit<Ganador, 'participantes'> & { is_admin: boolean | null; acceso_panel: boolean | null }
+  const filas: Fila[] = []
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await supabase
+      .from('perfiles')
+      .select('id, nombre, apodo, domicilio, is_admin, acceso_panel')
+      .eq('es_pro', true)
+      .not('nombre', 'is', null)
+      .order('id')
+      .range(desde, desde + 999)
+    if (error) return { ok: false, error: error.message }
+    filas.push(...((data ?? []) as Fila[]))
+    if (!data || data.length < 1000) break
+  }
+  const participantes = filas.filter(p => !p.is_admin && !p.acceso_panel)
   if (!participantes.length) return { ok: false, error: 'No hay jugadores con Plan 10 para sortear.' }
   const { id, nombre, apodo, domicilio } = participantes[randomInt(participantes.length)]
   return { ok: true, ganador: { id, nombre, apodo, domicilio, participantes: participantes.length } }
