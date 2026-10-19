@@ -285,8 +285,30 @@ export default function ChatClient({ userId }: { userId: string }) {
           if (m.sender_id !== userId) recibir([m])
         },
       )
+      // El otro leyó un mensaje mío (desde la app o la web): pasa a doble tilde sin recargar la página
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'mensajes', filter: `conversacion_id=eq.${convId}` },
+        payload => {
+          const m = payload.new as Mensaje
+          if (m.sender_id === userId && m.leido) {
+            setMensajes(prev => prev.map(x => (x.id === m.id ? { ...x, leido: true } : x)))
+          }
+        },
+      )
       .subscribe()
     const intervalo = setInterval(async () => {
+      // Respaldo de la conexión en vivo: mis mensajes que el otro ya leyó
+      const misSinLeer = mensajesRef.current
+        .filter(m => m.sender_id === userId && !m.leido && !String(m.id).startsWith('temp-'))
+        .map(m => m.id)
+      if (misSinLeer.length) {
+        const { data: leidos } = await supabase.from('mensajes').select('id').in('id', misSinLeer).eq('leido', true)
+        if (leidos?.length) {
+          const ids = new Set(leidos.map(l => l.id))
+          setMensajes(prev => prev.map(x => (ids.has(x.id) ? { ...x, leido: true } : x)))
+        }
+      }
       const ultimoReal = [...mensajesRef.current].reverse().find(m => !String(m.id).startsWith('temp-'))
       let consulta = supabase
         .from('mensajes')
