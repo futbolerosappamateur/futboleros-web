@@ -125,7 +125,9 @@ async function darDeBajaDebito(supabase: SupabaseClient, uid: string) {
 export async function eliminarUsuario(id: string): Promise<Resultado> {
   const supabase = await clienteAdmin()
   // Las dos cuentas de administración no se borran desde acá
-  const { data: perfil } = await supabase.from('perfiles').select('is_admin, acceso_panel').eq('id', id).maybeSingle()
+  const { data: perfil, error: errorPerfil } = await supabase.from('perfiles').select('is_admin, acceso_panel').eq('id', id).maybeSingle()
+  // Si no se pudo leer, no se borra: podría ser una cuenta del panel
+  if (errorPerfil) return { ok: false, error: 'No se pudo revisar la cuenta. Probá de nuevo.' }
   if (perfil?.is_admin || perfil?.acceso_panel) return { ok: false, error: 'Las cuentas con acceso al panel no se borran desde acá.' }
   try {
     // Primero el débito y los archivos: si algo falla, todavía no se borró nada y se puede reintentar
