@@ -84,17 +84,17 @@ export const CLUBES = [
   'Arsenal de Sarandí','Riestra','Unión',
   // Argentina — Ascenso
   'All Boys','Almagro','Almirante Brown','Agropecuario','Acassuso','Armenio','Atlanta',
-  'Berazategui','Central Ballester','Central Español','Central Norte','Chacarita',
+  'Berazategui','Central Ballester','Central Norte','Centro Español','Chacarita',
   'Chaco For Ever','Ciudad Bolívar','Claypole','Colegiales','Comunicaciones',
   'Defensores de Belgrano','Defensores de Cambaceres','Deportivo Español',
-  'Deportivo Madryn','Deportivo Maipú','Deportivo Merlo','Dock Sud','El Porvenir',
+  'Deportivo Madryn','Deportivo Maipú','Deportivo Merlo','Deportivo Paraguayo','Dock Sud','El Porvenir',
   'Estrella del Sur','Excursionistas','Ferrocarril Oeste','Flandria','Güemes',
   'Juventud Unida','Laferrere','Lamadrid','Leandro N Alem','Leones','Liniers',
   'Los Andes','Luján','Lugano','Midland','Mitre','Morón','Muñiz','Nueva Chicago',
-  'Puerto Nuevo','Quilmes Atlético','Real Pilar','Recoleta FC','Sacachispas',
-  'San Miguel','San Telmo','SM Burzaco','Sportivo Barrancas','Sportivo Italiano',
-  'Temperley','Tristán Suárez','UAI Urquiza','Victoriano','Villa Calmines',
-  'Villa San Carlos','Yupanqui','2 de Mayo','Argentino de Merlo','Argentino de Rosario',
+  'Puerto Nuevo','Quilmes Atlético','Real Pilar','Sacachispas',
+  'San Miguel','San Telmo','SM Burzaco','Sportivo Barracas','Sportivo Italiano',
+  'Temperley','Tristán Suárez','UAI Urquiza','Victoriano','Villa Dálmine',
+  'Villa San Carlos','Yupanqui','Argentino de Merlo','Argentino de Rosario',
   'Justo José de Urquiza',
   // Brasil
   'Atlético Mineiro','Atlético Paranaense','Bahia','Botafogo','RB Bragantino',
@@ -103,10 +103,10 @@ export const CLUBES = [
   // Uruguay
   'Nacional','Peñarol','Boston River','Cerro Largo','Cerro','Danubio',
   'Defensor Sporting','Fénix','Juventud','Maldonado','Montevideo City','Progreso',
-  'Wanderers','Albion','Mercedes','Centro Español',
+  'Wanderers','Albion','Mercedes','Central Español',
   // Paraguay
   'Olimpia','Guaraní','Libertad','Cerro Porteño','Atlético Tembetary',
-  'Deportivo Paraguayo','General Caballero','Sportivo Ameliano',
+  'General Caballero','Sportivo Ameliano','Recoleta FC','2 de Mayo',
   'Sportivo Luqueño','Sportivo Trinidense',
   // Chile
   'Colo-Colo','Audax Italiano','Cobresal','Coquimbo Unido','Deportes Concepción',
