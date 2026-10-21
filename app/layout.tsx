@@ -27,9 +27,12 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // suppressHydrationWarning: hay extensiones del navegador que le agregan atributos al <body> antes de que
+  // cargue React (la "Screenshot Tool" de Chrome le pone location="localhost") y en desarrollo saltaba el
+  // aviso de hidratación. Solo ignora los atributos del <body>; lo de adentro se sigue chequeando.
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   )
 }
