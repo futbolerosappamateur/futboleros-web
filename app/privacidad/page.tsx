@@ -77,7 +77,7 @@ Futboleros podrá actualizar esta Política de Privacidad cuando resulte necesar
 
 12. Contacto
 
-Para consultas relacionadas con privacidad y protección de datos personales, el usuario podrá comunicarse a través del correo electrónico: contacto@futboleros.app o mediante los canales habilitados dentro de la aplicación.`
+Para consultas relacionadas con privacidad y protección de datos personales, el usuario podrá comunicarse a través del correo electrónico: contacto@futboleros.com.ar o mediante los canales habilitados dentro de la aplicación.`
 
 function parseSections(texto: string) {
   const parrafos = texto.split('\n\n').filter(Boolean)
