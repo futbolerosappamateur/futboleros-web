@@ -17,6 +17,7 @@ Podemos recopilar:
 - Datos deportivos y estadísticas.
 - Información sobre grupos y partidos.
 - Datos técnicos del dispositivo.
+- Token de notificaciones push del dispositivo.
 - Registros de acceso y uso de la plataforma.
 
 3. Finalidad del tratamiento
@@ -35,7 +36,10 @@ Los datos serán utilizados para:
 Futboleros no venderá datos personales a terceros. Los datos podrán compartirse únicamente:
 - Cuando sea necesario para prestar el servicio.
 - Por requerimiento legal.
-- Con proveedores tecnológicos que colaboren en la operación de la plataforma.
+- Con proveedores tecnológicos que colaboren en la operación de la plataforma (incluyendo infraestructura en la nube, servicios de notificaciones y generación de imágenes por inteligencia artificial).
+- Con el proveedor de pagos (actualmente Mercado Pago) cuando el usuario contrate el Plan 10, en la medida necesaria para procesar la suscripción.
+
+Los datos podrán ser almacenados y procesados en servidores ubicados fuera de la República Argentina. Dichas transferencias se realizan con proveedores que aplican estándares adecuados de seguridad y protección de datos.
 
 5. Seguridad
 
@@ -65,7 +69,7 @@ Los menores de 18 años deberán utilizar la plataforma bajo supervisión de sus
 
 Determinados datos del perfil tienen carácter público dentro de la comunidad de Futboleros y podrán ser visualizados por otros usuarios registrados. La información visible podrá incluir, entre otros datos, la fotografía de perfil, la figurita personalizada, el nombre o apodo, la posición de juego, las estadísticas deportivas, los grupos en los que participa y demás información vinculada a la actividad desarrollada dentro de la plataforma.
 
-Los datos del perfil serán visibles únicamente para los usuarios registrados de Futboleros. La plataforma no publica dichos perfiles para el acceso general de Internet, salvo que el usuario otorgue su consentimiento o que Futboleros incorpore en el futuro una funcionalidad específica que así lo permita.
+Los datos del perfil serán visibles únicamente para los usuarios registrados de Futboleros, salvo que el usuario habilite su perfil como público desde la configuración de la aplicación, en cuyo caso podrá ser accesible también desde la web.
 
 11. Cambios en esta política
 
@@ -73,7 +77,7 @@ Futboleros podrá actualizar esta Política de Privacidad cuando resulte necesar
 
 12. Contacto
 
-Para consultas relacionadas con privacidad y protección de datos personales, los usuarios podrán comunicarse a través de los canales oficiales de Futboleros.`
+Para consultas relacionadas con privacidad y protección de datos personales, el usuario podrá comunicarse a través del correo electrónico: contacto@futboleros.app o mediante los canales habilitados dentro de la aplicación.`
 
 function parseSections(texto: string) {
   const parrafos = texto.split('\n\n').filter(Boolean)
@@ -93,7 +97,7 @@ export default function Privacidad() {
         <div className={styles.inner}>
           <BackLink href="/" className={styles.back}>Inicio</BackLink>
           <h1 className={styles.title}>POLÍTICA DE PRIVACIDAD</h1>
-          <p className={styles.updated}>Última actualización: Julio de 2026</p>
+          <p className={styles.updated}>Última actualización: Octubre de 2026</p>
           {sections.map(s => (
             <div key={s.key} className={styles.section}>
               {s.title && <h2 className={styles.sectionTitle}>{s.title}</h2>}

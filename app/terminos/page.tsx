@@ -16,6 +16,17 @@ Futboleros es una plataforma digital destinada a la organización, gestión y se
 - Registrar estadísticas y resultados.
 - Organizar encuentros.
 - Interactuar con otros usuarios.
+- Visualizar publicidades de terceros según el plan contratado.
+
+2.1 Plan de suscripción
+
+Futboleros ofrece un plan de suscripción pago denominado Plan 10 que otorga acceso a funcionalidades adicionales dentro de la plataforma.
+
+El costo, las condiciones y los beneficios del plan podrán ser consultados dentro de la aplicación y están sujetos a modificaciones. Futboleros comunicará los cambios con anticipación razonable.
+
+El pago de la suscripción se realiza a través del proveedor de pagos habilitado (actualmente Mercado Pago). Al suscribirse, el usuario acepta también las condiciones de uso y privacidad del proveedor de pagos correspondiente.
+
+El usuario podrá cancelar su suscripción en cualquier momento desde la aplicación. La cancelación tendrá efecto al cierre del período de facturación vigente, conservándose el acceso hasta dicha fecha. Futboleros no efectúa reembolsos por períodos parciales de suscripción ya abonados, salvo que la legislación aplicable disponga lo contrario.
 
 3. Registro de usuarios
 
@@ -35,7 +46,7 @@ Futboleros podrá suspender o eliminar cuentas que incumplan estas normas.
 
 Al registrarse en Futboleros, el usuario reconoce y acepta que la plataforma funciona como una comunidad deportiva en la que los perfiles de los jugadores son visibles para los demás usuarios registrados.
 
-La información pública del perfil podrá ser visualizada por cualquier usuario que posea una cuenta activa en Futboleros. Dicha información no será accesible al público general a través de la plataforma, salvo que Futboleros incorpore en el futuro funcionalidades que permitan al usuario decidir lo contrario.
+La información pública del perfil podrá ser visualizada por cualquier usuario que posea una cuenta activa en Futboleros. El usuario podrá ajustar la visibilidad de su perfil desde la configuración de la aplicación.
 
 Entre la información que podrá visualizarse se incluye, según las funcionalidades disponibles en cada momento:
 - Nombre, apodo o nombre de usuario.
@@ -123,7 +134,7 @@ export default function Terminos() {
         <div className={styles.inner}>
           <BackLink href="/" className={styles.back}>Inicio</BackLink>
           <h1 className={styles.title}>TÉRMINOS Y CONDICIONES</h1>
-          <p className={styles.updated}>Última actualización: Julio de 2026</p>
+          <p className={styles.updated}>Última actualización: Octubre de 2026</p>
           {sections.map(s => (
             <div key={s.key} className={styles.section}>
               {s.title && <h2 className={styles.sectionTitle}>{s.title}</h2>}
