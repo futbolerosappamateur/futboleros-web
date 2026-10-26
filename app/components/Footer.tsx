@@ -16,6 +16,9 @@ export default function Footer() {
           <Link href="/contacto">Contacto</Link>
           <Link href="/terminos">Términos y condiciones</Link>
           <Link href="/privacidad">Política de privacidad</Link>
+          {/* Defensa del consumidor: en todas las páginas, empezando por el inicio, y a la vista */}
+          <Link href="/arrepentimiento" className={styles.footerConsumidor}>Botón de arrepentimiento</Link>
+          <Link href="/baja" className={styles.footerConsumidor}>Botón de baja</Link>
         </nav>
       </div>
     </footer>

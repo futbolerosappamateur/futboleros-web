@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { necesitaAceptarTerminos } from '@/lib/terminos'
 import Footer from '../components/Footer'
 import BotonGoogle from '../components/BotonGoogle'
 import styles from '../auth.module.css'
@@ -21,12 +22,17 @@ export default function LoginForm({ next, errorGoogle }: { next: string; errorGo
     setError('')
     startTransition(async () => {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
         setError('Email o contraseña incorrectos.')
         return
       }
-      router.push(next)
+      // Una cuenta nueva que no aceptó los textos al registrarse (por ejemplo, desde una app vieja): primero eso
+      const { data: perfil, error: errorTerminos } = await supabase
+        .from('perfiles').select('terminos_version').eq('id', data.user.id).maybeSingle()
+      const aceptar = !errorTerminos
+        && necesitaAceptarTerminos(data.user.created_at, perfil?.terminos_version ?? data.user.user_metadata?.terminos_version)
+      router.push(aceptar ? `/aceptar-terminos?next=${encodeURIComponent(next)}` : next)
       router.refresh()
     })
   }

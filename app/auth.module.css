@@ -168,3 +168,25 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Aceptar los textos (cuentas nuevas de Google): el pedido arriba de la casilla y la salida sin aceptar */
+.aviso {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.btnTexto {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  align-self: center;
+}
+.btnTexto:hover:not(:disabled) { color: var(--text); }
+.btnTexto:disabled { opacity: 0.6; cursor: not-allowed; }

@@ -13,6 +13,7 @@ const WEB = [
   { href: '/admin/novedades', texto: 'NOVEDADES' },
   { href: '/admin/publicidades', texto: 'PUBLICIDADES' },
   { href: '/admin/newsletter', texto: 'NEWSLETTER' },
+  { href: '/admin/solicitudes', texto: 'SOLICITUDES' },
 ]
 
 const enlace: React.CSSProperties = {

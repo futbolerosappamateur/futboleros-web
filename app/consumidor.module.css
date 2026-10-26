@@ -1,0 +1,34 @@
+/* Botones de arrepentimiento y de baja: lo que no está en legal.module.css */
+.subtitulo {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  margin: 48px 0 10px;
+}
+
+.estado {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+/* Link con forma de botón (Ingresar) */
+.boton {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  background: var(--gold);
+  color: #0a0a1a;
+  padding: 13px 28px 11px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.boton:hover { background: var(--gold-light); }
+
+/* El panel del débito (PagarForm) trae su propio ancho: que no se estire de más */
+.panel {
+  max-width: 520px;
+}

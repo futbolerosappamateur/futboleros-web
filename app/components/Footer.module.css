@@ -58,6 +58,15 @@
   border-color: var(--gold);
 }
 
+/* Botones de arrepentimiento y de baja: la norma pide que se destaquen. Más oscuros que el resto
+   (el dorado no llega a leerse bien sobre blanco) */
+.footerNav a.footerConsumidor {
+  color: var(--text);
+}
+.footerNav a.footerConsumidor:hover {
+  color: var(--gold-light);
+}
+
 @media (max-width: 480px) {
   .footerInner {
     flex-direction: column;

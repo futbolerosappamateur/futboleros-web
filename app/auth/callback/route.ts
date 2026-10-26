@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { necesitaAceptarTerminos } from '@/lib/terminos'
 
-// Vuelta del ingreso con Google: crea la sesión y, como hace la app, el perfil la primera vez
+// Vuelta del ingreso con Google: crea la sesión y, como hace la app, el perfil la primera vez. Con Google no
+// pasa por la casilla del registro: las cuentas nuevas aceptan los textos en /aceptar-terminos
 export async function GET(request: NextRequest) {
   // Detrás del hosting, request.url puede traer el host interno: se usa la URL pública del sitio
   const base = process.env.NEXT_PUBLIC_URL || request.nextUrl.origin
@@ -19,8 +21,11 @@ export async function GET(request: NextRequest) {
   const nombreGoogle: string = user.user_metadata?.full_name || user.user_metadata?.name || ''
   const avatarGoogle: string | null = user.user_metadata?.avatar_url || user.user_metadata?.picture || null
 
-  const { data: perfil } = await supabase
-    .from('perfiles').select('nombre, avatar_url').eq('id', user.id).maybeSingle()
+  const [{ data: perfil }, { data: terminos, error: errorTerminos }] = await Promise.all([
+    supabase.from('perfiles').select('nombre, avatar_url').eq('id', user.id).maybeSingle(),
+    // Aparte: si la columna todavía no existe (supabase/terminos_y_solicitudes.sql), el ingreso sigue igual
+    supabase.from('perfiles').select('terminos_version').eq('id', user.id).maybeSingle(),
+  ])
 
   if (!perfil) {
     await supabase.from('perfiles').insert({
@@ -30,8 +35,8 @@ export async function GET(request: NextRequest) {
       siguiendo: [],
       disponible_invitaciones: true,
     })
-    // Primera vez: a completar el perfil, igual que en la app
-    return NextResponse.redirect(`${base}/editar-perfil`)
+    // Primera vez: aceptar los textos (si es una cuenta nueva) y a completar el perfil, igual que en la app
+    return NextResponse.redirect(`${base}/aceptar-terminos?next=${encodeURIComponent('/editar-perfil')}`)
   }
 
   if (!perfil.nombre?.trim() && nombreGoogle) {
@@ -41,5 +46,8 @@ export async function GET(request: NextRequest) {
     }).eq('id', user.id)
   }
 
+  if (!errorTerminos && necesitaAceptarTerminos(user.created_at, terminos?.terminos_version)) {
+    return NextResponse.redirect(`${base}/aceptar-terminos?next=${encodeURIComponent(next)}`)
+  }
   return NextResponse.redirect(`${base}${next}`)
 }
