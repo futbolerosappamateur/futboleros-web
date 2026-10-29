@@ -62,17 +62,46 @@ export async function enviarSolicitud(tipo: TipoSolicitud, formData: FormData): 
   return { error: 'No se pudo registrar el pedido. Probá de nuevo o escribinos a contacto@futboleros.com.ar.' }
 }
 
-// Aviso a las cuentas del panel: la fila en notificaciones, y el push al celular lo manda la base al guardarla
-// (trigger push_de_notificacion). Si falla, el pedido igual quedó guardado
+// Aviso a las cuentas del panel: la fila en notificaciones y el push al celular. El push lo manda la web, como el
+// del sorteo: el trigger push_de_notificacion de la base solo manda los avisos que guarda un usuario, y estos los
+// guarda el servidor. Si algo falla, el pedido igual quedó guardado
 async function avisarAdmins(service: Service, tipo: TipoSolicitud, codigo: string, nombre: string, email: string) {
   const { data: admins } = await service.from('perfiles').select('id').or('is_admin.eq.true,acceso_panel.eq.true')
   if (!admins?.length) return
+  const titulo = `${TITULO_SOLICITUD[tipo]}: ${codigo}`
   const { error } = await service.from('notificaciones').insert(admins.map(a => ({
     usuario_id: a.id,
     tipo: 'solicitud_consumidor',
-    titulo: `${TITULO_SOLICITUD[tipo]}: ${codigo}`,
+    titulo,
     mensaje: `${nombre} (${email}). Atendelo desde futboleros.com.ar/admin/solicitudes`,
     datos: { codigo },
   })))
   if (error) console.error('[solicitud aviso]', error)
+
+  const { data: tokens } = await service.from('push_tokens').select('token').in('usuario_id', admins.map(a => a.id))
+  if (!tokens?.length) return
+  // Con la seguridad de push activada, Expo pide la clave de acceso (EXPO_ACCESS_TOKEN)
+  const claveExpo = process.env.EXPO_ACCESS_TOKEN
+  try {
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(claveExpo ? { Authorization: `Bearer ${claveExpo}` } : {}) },
+      // El email del que pide no va en el push: se ve en la pantalla bloqueada
+      body: JSON.stringify(tokens.map(t => ({
+        to: t.token,
+        title: titulo,
+        body: `${nombre}. Atendelo desde futboleros.com.ar/admin/solicitudes`,
+        data: { tipo: 'solicitud_consumidor', codigo },
+        sound: 'default',
+        channelId: 'default',
+        color: '#0c4344',
+      }))),
+    })
+    // Expo contesta 200 aunque un celular ya no exista: el estado de cada aviso viene en data
+    const respuesta = await res.json().catch(() => null)
+    const fallidos = (respuesta?.data ?? []).filter((t: { status?: string }) => t.status !== 'ok')
+    if (!res.ok || fallidos.length) console.error('[solicitud push]', res.status, JSON.stringify(respuesta?.errors ?? fallidos))
+  } catch (e) {
+    console.error('[solicitud push]', e)
+  }
 }

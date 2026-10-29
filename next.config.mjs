@@ -9,6 +9,10 @@ const nextConfig = {
     },
   },
   serverExternalPackages: ['sharp'],
+  // La página para borrar la cuenta del sitio anterior: es la dirección que puede tener cargada Google Play
+  async redirects() {
+    return [{ source: '/eliminar-cuenta.html', destination: '/eliminar-cuenta', permanent: true }]
+  },
   images: {
     remotePatterns: [
       {
