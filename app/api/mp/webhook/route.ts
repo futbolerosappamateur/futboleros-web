@@ -29,9 +29,18 @@ async function guardarSuscripcion(suscripcion: any) {
   if (error) throw error
 }
 
-// Cada pago aprobado extiende el Plan 10 (1 mes el débito, 12 el anual) una sola vez, aunque el aviso se repita
-async function acreditarPago(paymentId: string) {
+// Un pago devuelto, o desconocido con la tarjeta (contracargo), le saca al Plan 10 lo que había sumado
+const DESCONTAR = ['refunded', 'charged_back']
+
+// Cada pago aprobado extiende el Plan 10 (1 mes el débito, 12 el anual) una sola vez, aunque el aviso se repita.
+// Si después se devuelve o se desconoce, se descuenta también una sola vez
+async function procesarPago(paymentId: string) {
   const pago = await mp(`/v1/payments/${paymentId}`)
+  if (DESCONTAR.includes(pago.status)) {
+    const { error } = await createServiceClient().rpc('revertir_pago_plan10', { p_payment_id: String(pago.id) })
+    if (error) throw error
+    return
+  }
   if (pago.status !== 'approved') return
 
   // Los cobros del débito automático traen el id de la suscripción, y ahí está el usuario
@@ -72,11 +81,11 @@ export async function POST(req: NextRequest) {
 
   try {
     if (tipo === 'payment') {
-      await acreditarPago(id)
+      await procesarPago(id)
     } else if (tipo === 'subscription_authorized_payment') {
       // Cobro mensual del débito: se acredita por el pago que generó
       const cobro = await mp(`/authorized_payments/${id}`)
-      if (cobro.payment?.id) await acreditarPago(String(cobro.payment.id))
+      if (cobro.payment?.id) await procesarPago(String(cobro.payment.id))
     } else if (tipo === 'subscription_preapproval') {
       await guardarSuscripcion(await mp(`/preapproval/${id}`))
     }

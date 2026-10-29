@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { cerrarSolicitud, darDeBajaDebitoDe, revocarPlan10 } from '../_actions/solicitudes'
+import { cerrarSolicitud, darDeBajaDebitoDe, devolverPago, revocarPlan10 } from '../_actions/solicitudes'
 import type { Resultado } from '../_actions/usuarios'
 
 type Props = {
@@ -10,6 +10,7 @@ type Props = {
   esArrepentimiento: boolean
   debitoActivo: boolean
   tienePlan10: boolean
+  pagos: { id: string; texto: string }[]   // los últimos pagos que todavía no se devolvieron
 }
 
 const boton: React.CSSProperties = {
@@ -24,8 +25,8 @@ const boton: React.CSSProperties = {
   cursor: 'pointer',
 }
 
-// Lo que se puede hacer con un pedido pendiente. La devolución del pago se hace desde Mercado Pago
-export default function AccionesSolicitud({ id, usuarioId, esArrepentimiento, debitoActivo, tienePlan10 }: Props) {
+// Lo que se puede hacer con un pedido pendiente
+export default function AccionesSolicitud({ id, usuarioId, esArrepentimiento, debitoActivo, tienePlan10, pagos }: Props) {
   const [nota, setNota] = useState('')
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -41,8 +42,19 @@ export default function AccionesSolicitud({ id, usuarioId, esArrepentimiento, de
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-      {usuarioId && (debitoActivo || (esArrepentimiento && tienePlan10)) && (
+      {usuarioId && (debitoActivo || (esArrepentimiento && (tienePlan10 || pagos.length > 0))) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {esArrepentimiento && pagos.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              style={boton}
+              disabled={isPending}
+              onClick={() => correr(() => devolverPago(p.id), `¿Devolver ${p.texto} por Mercado Pago? Al Plan 10 se le descuenta lo que había sumado ese pago.`)}
+            >
+              DEVOLVER {p.texto.toUpperCase()}
+            </button>
+          ))}
           {debitoActivo && (
             <button
               type="button"

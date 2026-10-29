@@ -19,7 +19,7 @@ type Solicitud = {
   resuelto_en: string | null
 }
 type Perfil = { id: string; nombre: string | null; es_pro: boolean | null; plan_vence: string | null }
-type Pago = { usuario_id: string; tipo: string; monto: number; created_at: string }
+type Pago = { mp_payment_id: string; usuario_id: string; tipo: string; monto: number; created_at: string; revertido_en: string | null }
 
 const DIA = 24 * 60 * 60 * 1000
 const ZONA = 'America/Argentina/Buenos_Aires'
@@ -69,7 +69,11 @@ export default async function AdminSolicitudes() {
     const [p, d, g] = await Promise.all([
       supabase.from('perfiles').select('id, nombre, es_pro, plan_vence').in('id', ids),
       supabase.from('suscripciones_plan10').select('usuario_id, estado').in('usuario_id', ids),
-      supabase.from('pagos_plan10').select('usuario_id, tipo, monto, created_at').in('usuario_id', ids).order('created_at', { ascending: false }),
+      supabase
+        .from('pagos_plan10')
+        .select('mp_payment_id, usuario_id, tipo, monto, created_at, revertido_en')
+        .in('usuario_id', ids)
+        .order('created_at', { ascending: false }),
     ])
     perfiles = (p.data ?? []) as Perfil[]
     debitos = d.data ?? []
@@ -83,7 +87,8 @@ export default async function AdminSolicitudes() {
       </h1>
       <p style={{ ...dato, marginBottom: 28, maxWidth: 720 }}>
         Pedidos de los botones de arrepentimiento y de baja de la web. <strong>Arrepentimiento:</strong> devolvé el pago
-        desde Mercado Pago, dale de baja el débito y quitale el Plan 10. <strong>Baja:</strong> dale de baja el débito.
+        (le saca al Plan 10 lo que había sumado), dale de baja el débito y, si le sigue quedando Plan 10, quitáselo.{' '}
+        <strong>Baja:</strong> dale de baja el débito.
         Después escribile citando el código y cerrá el pedido con lo que se hizo.
       </p>
 
@@ -147,7 +152,9 @@ export default async function AdminSolicitudes() {
                       <p style={dato}>Sin pagos registrados.</p>
                     ) : (
                       <p style={dato}>
-                        Pagos: {pagosDeEl.map(g => `${fecha(g.created_at)} ${g.tipo} ${pesos(Number(g.monto))}`).join(' · ')}
+                        Pagos: {pagosDeEl
+                          .map(g => `${fecha(g.created_at)} ${g.tipo} ${pesos(Number(g.monto))}${g.revertido_en ? ' (devuelto)' : ''}`)
+                          .join(' · ')}
                         {s.tipo === 'arrepentimiento' && diasDesdePago !== null && (
                           <strong style={{ color: diasDesdePago <= 10 ? '#2e7d32' : '#d64545' }}>
                             {' '}({diasDesdePago <= 10 ? 'dentro' : 'fuera'} de los 10 días: pidió {diasDesdePago} {diasDesdePago === 1 ? 'día' : 'días'} después del último pago)
@@ -166,6 +173,9 @@ export default async function AdminSolicitudes() {
                   esArrepentimiento={s.tipo === 'arrepentimiento'}
                   debitoActivo={debitoActivo}
                   tienePlan10={!!perfil?.es_pro}
+                  pagos={pagosDeEl
+                    .filter(g => !g.revertido_en)
+                    .map(g => ({ id: g.mp_payment_id, texto: `${pesos(Number(g.monto))} del ${fecha(g.created_at)}` }))}
                 />
               ) : (
                 <p style={{ ...dato, marginTop: 10 }}>

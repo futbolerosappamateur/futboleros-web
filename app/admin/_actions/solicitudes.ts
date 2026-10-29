@@ -1,5 +1,6 @@
 'use server'
 
+import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { clienteAdmin } from '@/lib/supabase/admin'
 import { mp } from '@/lib/plan10-servidor'
@@ -36,6 +37,33 @@ export async function darDeBajaDebitoDe(usuarioId: string): Promise<Resultado> {
     .update({ estado: 'cancelled', actualizado: new Date().toISOString() })
     .eq('usuario_id', usuarioId)
   revalidatePath('/admin/solicitudes')
+  return { ok: true }
+}
+
+// Arrepentimiento: devuelve el pago entero por Mercado Pago y le saca al Plan 10 lo que había sumado ese pago.
+// Después llega al webhook el aviso de la devolución, que ya no descuenta nada
+export async function devolverPago(paymentId: string): Promise<Resultado> {
+  if (!/^\d+$/.test(paymentId)) return { ok: false, error: 'Pago no válido' }
+  const supabase = await clienteAdmin()
+  const { data: pago, error: errorPago } = await supabase
+    .from('pagos_plan10').select('revertido_en').eq('mp_payment_id', paymentId).maybeSingle()
+  if (errorPago) return { ok: false, error: errorPago.message }
+  if (!pago) return { ok: false, error: 'Ese pago no está registrado.' }
+  if (pago.revertido_en) return { ok: false, error: 'Ese pago ya se devolvió.' }
+  try {
+    // Mercado Pago pide una clave única en cada pedido de devolución
+    await mp(`/v1/payments/${paymentId}/refunds`, {
+      method: 'POST',
+      body: {},
+      headers: { 'X-Idempotency-Key': randomUUID() },
+    })
+  } catch (e) {
+    console.error('[admin devolver pago]', e)
+    return { ok: false, error: 'Mercado Pago no hizo la devolución. Probá de nuevo o hacela desde Mercado Pago.' }
+  }
+  const { error } = await supabase.rpc('revertir_pago_plan10', { p_payment_id: paymentId })
+  revalidatePath('/admin/solicitudes')
+  if (error) return { ok: false, error: `La devolución se hizo, pero no se pudo descontar el Plan 10: ${error.message}` }
   return { ok: true }
 }
 

@@ -5,12 +5,16 @@ import { SITE_URL } from '@/lib/sitio'
 export const BASE_URL = process.env.NEXT_PUBLIC_URL || SITE_URL
 
 // API de Mercado Pago con el token de la cuenta; si responde con error, tira el mensaje de MP
-export async function mp(path: string, opciones?: { method?: string; body?: unknown }): Promise<any> {
+export async function mp(
+  path: string,
+  opciones?: { method?: string; body?: unknown; headers?: Record<string, string> },
+): Promise<any> {
   const res = await fetch(`https://api.mercadopago.com${path}`, {
     method: opciones?.method ?? 'GET',
     headers: {
       Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
       'Content-Type': 'application/json',
+      ...opciones?.headers,
     },
     body: opciones?.body ? JSON.stringify(opciones.body) : undefined,
     cache: 'no-store',
