@@ -8,7 +8,10 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className={styles.footerInner}>
         <Image src="/logoFoot2.webp" alt="Futboleros" width={180} height={48} className={styles.footerLogo} />
-        <p className={styles.footerText}>© {new Date().getFullYear()} Futboleros.<br />Todos los derechos reservados.</p>
+        <p className={styles.footerText}>
+          © {new Date().getFullYear()} Futboleros.<br />Todos los derechos reservados.<br />
+          Diseñado por <a href="https://chehosting.net/" target="_blank" rel="noopener">chehosting.net</a>
+        </p>
         <nav className={styles.footerNav}>
           <a href={URL_GOOGLE_PLAY} target="_blank" rel="noopener noreferrer" className={styles.footerApp}>Descargá la app</a>
           <Link href="/contacto">Contacto</Link>
