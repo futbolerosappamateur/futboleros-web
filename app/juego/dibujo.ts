@@ -922,7 +922,7 @@ const SHORT_CINTURA = 8
 // Algunas piezas van más grandes que en la hoja: Don Fulbio es cabezón y panzón, como en los afiches
 const AJUSTE: Partial<Record<NombrePieza, number>> = {
   cabezaContento: 1.3, cabezaDolor: 1.3, cabezaGrito: 1.3, torso: 1.2, short: 1.15,
-  brazo: 1.1, antebrazo: 1.1, muslo: 1.05, botin: 0.95,
+  brazo: 1.1, antebrazo: 1.1, muslo: 1.05, botin: 0.95, pelota: 1.3,
 }
 const RIVALES = { parado: 1, abierto: 1, barrida: 1, saltando: 1, caido: 1, deEspaldas: 1 }
 const escalaDe = (n: NombrePieza) =>
@@ -1064,7 +1064,7 @@ function fulbio(
   ctx.restore()
 }
 
-const radioPelota = () => (personajesListos ? (PIEZAS.pelota.w * ESCALA_FULBIO) / 2 : 6.5)
+const radioPelota = () => (personajesListos ? (PIEZAS.pelota.w * escalaDe('pelota')) / 2 : 6.5)
 
 const suave = (t: number) => 1 - (1 - t) * (1 - t)
 
@@ -1186,7 +1186,7 @@ function dibujarJugador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
   if (j.estado === 'cayendo' || j.estado === 'fin') {
     const tc = j.tiempoCaida
     const haciaAdelante = j.motivo === 'barrida'
-    const bx = x + 18 + tc * 260 * Math.max(0, 1 - tc * 0.4)
+    const bx = x + 21 + tc * 260 * Math.max(0, 1 - tc * 0.4)
     const by = v.piso - radioPelota() - Math.abs(Math.sin(tc * 12)) * 22 * Math.exp(-3 * tc)
     pelota(ctx, bx, by, j.distancia / 6.5 + tc * 10)
     if (personajesListos && tc > 0.16) {
@@ -1244,14 +1244,14 @@ function dibujarPelota(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
   const q = progresoJugada(j)
   if (j.jugada === 'caño' && q > 0) {
     // Sale por entre las piernas y Don Fulbio la va a buscar por el costado
-    pelota(ctx, x + 16 + 78 * Math.sin(q * Math.PI), v.piso - r, giro * 1.6)
+    pelota(ctx, x + 19 + 78 * Math.sin(q * Math.PI), v.piso - r, giro * 1.6)
   } else if (j.jugada === 'gambeta' && q > 0) {
     const s = Math.sin(q * Math.PI)
-    pelota(ctx, x + 16 + 7 * Math.cos(q * Math.PI * 2), pies - r + 0.5 - s * 14, giro)
+    pelota(ctx, x + 19 + 7 * Math.cos(q * Math.PI * 2), pies - r + 0.5 - s * 14, giro)
   } else if (j.enAire) {
-    pelota(ctx, x + 15, pies - r + 2.5, giro)
+    pelota(ctx, x + 17, pies - r + 2.5, giro)
   } else {
-    pelota(ctx, x + 18 + Math.sin(j.fasePaso * 2) * 2, pies - r - Math.abs(Math.sin(j.fasePaso)) * 5, giro)
+    pelota(ctx, x + 21 + Math.sin(j.fasePaso * 2) * 2, pies - r - Math.abs(Math.sin(j.fasePaso)) * 5, giro)
   }
 }
 
