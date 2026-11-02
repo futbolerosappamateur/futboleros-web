@@ -520,11 +520,9 @@ function cancha(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
     ctx.ellipse(xs - (cy - v.piso) * pendiente, cy, 120, Math.min(34, (fondo - v.piso) * 0.4), 0, 0, Math.PI * 2)
     ctx.stroke()
   }
-  // Línea de cal lejana y la de abajo de los pies
+  // Línea de cal del otro lado de la cancha
   ctx.fillStyle = 'rgba(239,227,198,0.25)'
   ctx.fillRect(0, tope + 3, v.ancho, 1.5)
-  ctx.fillStyle = 'rgba(239,227,198,0.5)'
-  ctx.fillRect(0, v.piso + 9, v.ancho, 2.5)
 }
 
 // ---- Muñecos ----
@@ -885,7 +883,8 @@ const POSE_BARRIDA: Pose = { cadera: [0, -14], torso: -1.15, piernaA: [1.5, 0.05
 interface DefPieza { src: string; w: number; h: number; p: [number, number]; e?: [number, number] }
 
 const ESCALA_FULBIO = 0.1275   // unidades del mundo por píxel, piezas de Don Fulbio
-const ESCALA_SENTADO = 0.24
+const TAMAÑO_FULBIO = 1.15     // todo el títere, un poco más grande que la hoja (al lado de los rivales quedaba chico)
+const ESCALA_SENTADO = 0.205
 const ESCALA_RIVAL = 0.265
 
 const PIEZAS = {
@@ -917,6 +916,7 @@ type Cabeza = 'cabezaContento' | 'cabezaDolor' | 'cabezaGrito'
 const TORSO_HOMBRO: [number, number] = [30, 45]         // la manga que se ve: ahí va el brazo de adelante
 const TORSO_HOMBRO_LEJOS: [number, number] = [112, 42]  // el brazo de atrás asoma del otro lado del pecho
 const TORSO_CUELLO: [number, number] = [80, 25]
+const SENTADO_CABEZA: [number, number] = [65, 50]   // dónde está la cabeza en la pose de sentado
 const SHORT_CINTURA = 8
 
 // Algunas piezas van más grandes que en la hoja: Don Fulbio es cabezón y panzón, como en los afiches
@@ -1055,10 +1055,10 @@ function fulbio(
     })
     return
   }
-  const escala = opciones.escala ?? 1
+  const escala = (opciones.escala ?? 1) * TAMAÑO_FULBIO
   ctx.save()
   ctx.translate(x, y)
-  if (escala !== 1) ctx.scale(escala, escala)
+  ctx.scale(escala, escala)
   if (opciones.rotacion) ctx.rotate(opciones.rotacion)
   fulbioConImagenes(ctx, pose, opciones.cabeza ?? 'cabezaContento')
   ctx.restore()
@@ -1194,7 +1194,11 @@ function dibujarJugador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
       const t = tc - 0.16
       const rebote = Math.abs(Math.sin(t * 9)) * 8 * Math.exp(-5 * t)
       pieza(ctx, 'sentado', x + 8, v.piso + 1 - rebote)
-      if (tc > 0.45) estrellitas(ctx, x - 11, v.piso - 53, tc)
+      if (tc > 0.45) {
+        const e = escalaDe('sentado')
+        const [cx, cy] = SENTADO_CABEZA
+        estrellitas(ctx, x + 8 + (cx - PIEZAS.sentado.p[0]) * e, v.piso + 1 + (cy - PIEZAS.sentado.p[1]) * e - 12, tc)
+      }
       return
     }
     const t = Math.min(1, tc / 0.45)
