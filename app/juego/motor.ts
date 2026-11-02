@@ -1,21 +1,24 @@
-// Gambeta (prototipo): el futbolista corre solo; el que juega salta las barridas y gambetea a los rivales
-// que lo esperan parados. Todo va en unidades del mundo (el jugador mide unas 74); dibujo.ts lo escala a
-// la pantalla. El recorrido sale de la fecha de Argentina, así que ese día es el mismo para todos.
+// Gambeta (prototipo): Don Fulbio corre solo con la pelota; el que juega salta las barridas, gambetea a los
+// rivales que lo esperan parados y, si el rival tiene las piernas abiertas, le puede tirar un caño (vale más).
+// Todo va en unidades del mundo (Don Fulbio mide unas 74); dibujo.ts lo escala a la pantalla. El recorrido
+// sale de la fecha de Argentina, así que ese día es el mismo para todos.
 
-export type TipoRival = 'barrida' | 'parado'
+export type TipoRival = 'barrida' | 'parado' | 'abierto'
+export type Jugada = 'gambeta' | 'caño'
+export type Motivo = 'barrida' | 'parado' | 'cerrado'
 export type Estado = 'listo' | 'jugando' | 'pausa' | 'cayendo' | 'fin'
 
 export interface Rival {
   tipo: TipoRival
-  x: number            // borde izquierdo en el mundo
+  x: number             // borde izquierdo en el mundo
   ancho: number
   piel: string
-  salto: number        // el parado salta con vos si lo querés saltar
+  salto: number         // los que esperan parados saltan con vos si los querés saltar
   vSalto: number
   saltó: boolean
-  gambeteado: boolean
-  caida: number        // 0 a 1: se cae después de la gambeta
-  pista: string | null // ayuda en los primeros rivales
+  pasado: Jugada | null // cómo lo pasaste
+  caida: number         // 0 a 1: la animación después de pasarlo
+  pista: string | null  // ayuda en los primeros rivales
 }
 
 interface Texto { texto: string; x: number; y: number; vida: number; grande: boolean }
@@ -24,36 +27,39 @@ interface Particula { x: number; y: number; vx: number; vy: number; vida: number
 export interface Juego {
   estado: Estado
   fecha: string
-  distancia: number    // posición del jugador en el mundo
+  distancia: number     // posición del jugador en el mundo
   velocidad: number
   tiempo: number
-  y: number            // altura de los pies sobre el piso
+  y: number             // altura de los pies sobre el piso
   vy: number
   enAire: boolean
   apretandoSalto: boolean
-  gambeta: number      // lo que le queda a la gambeta en curso (0: no está gambeteando)
-  esperaGambeta: number
-  pedidoSalto: number  // se acuerda de la tecla un ratito (si la apretás justo antes de caer)
+  jugada: Jugada | null // gambeta o caño en curso (nunca las dos)
+  tiempoJugada: number  // lo que le queda
+  esperaJugada: number
+  pedidoSalto: number   // se acuerda de la tecla un ratito (si la apretás justo antes de caer)
   pedidoGambeta: number
+  pedidoCaño: number
   fasePaso: number
   gambetas: number
+  caños: number
   racha: number
-  ultimaGambeta: number
+  ultimaJugada: number
   rivales: Rival[]
   textos: Texto[]
   particulas: Particula[]
-  motivo: TipoRival | null
+  motivo: Motivo | null
   tiempoCaida: number
   temblor: number
   azar: () => number
-  proximoX: number     // dónde va el próximo rival
+  proximoX: number      // dónde va el próximo rival
   colocados: number
 }
 
-export const ALTO_JUGADOR = 74
-export const X_JUGADOR = 110        // a cuánto del borde izquierdo de la pantalla corre el jugador
+export const X_JUGADOR = 110        // el mayor margen izquierdo de las pantallas (para limpiar rivales)
 export const UNIDADES_POR_METRO = 40
 export const PUNTOS_POR_GAMBETA = 10
+export const PUNTOS_POR_CAÑO = 25
 
 const V_INICIAL = 300
 const V_MAXIMA = 660
@@ -61,16 +67,16 @@ const DISTANCIA_RAMPA = 30000      // a mayor número, más tarda en acelerar
 const VELOCIDAD_LISTO = 140        // en la pantalla de inicio corre tranquilo, sin rivales
 const G_SUBIDA = 2600
 const G_BAJADA = 3300
-const V_SALTO = 920
+const V_SALTO = 900
 const V_CORTE = 600                // si soltás el botón enseguida, salta más bajo
-const DURACION_GAMBETA = 0.38
-const ESPERA_GAMBETA = 0.2
+export const DURACION_JUGADA = 0.38
+const ESPERA_JUGADA = 0.2
 const MEMORIA_TECLA = 0.13
-const ANCHO = { barrida: 76, parado: 30 } as const
-const PIELES = ['#b07a50', '#e0b088', '#8a5a38', '#c99468']
+const ANCHO = { barrida: 76, parado: 30, abierto: 40 } as const
+const PIELES = ['#c98a5e', '#e6b48c', '#9a6440', '#d9a072']
 
-// Caja del jugador respecto de su posición (un poco más chica que el dibujo: perdona los roces)
-const CAJA = { izq: -11, der: 13, alto: 62 }
+// Caja de Don Fulbio respecto de su posición (un poco más chica que el dibujo: perdona los roces)
+const CAJA = { izq: -12, der: 14, alto: 60 }
 
 // Generador con semilla (mulberry32) y hash FNV de la fecha
 function generador(semilla: number) {
@@ -104,15 +110,16 @@ export const velocidadEn = (d: number) =>
 export const dificultad = (d: number) => (velocidadEn(d) - V_INICIAL) / (V_MAXIMA - V_INICIAL)
 
 export const metros = (j: Juego) => Math.floor(j.distancia / UNIDADES_POR_METRO)
-export const puntos = (j: Juego) => metros(j) + j.gambetas * PUNTOS_POR_GAMBETA
+export const puntos = (j: Juego) => metros(j) + j.gambetas * PUNTOS_POR_GAMBETA + j.caños * PUNTOS_POR_CAÑO
 
 export function nuevoJuego(fecha: string, estado: Estado = 'listo'): Juego {
   return {
     estado, fecha,
     distancia: 0, velocidad: estado === 'listo' ? VELOCIDAD_LISTO : V_INICIAL, tiempo: 0,
     y: 0, vy: 0, enAire: false, apretandoSalto: false,
-    gambeta: 0, esperaGambeta: 0, pedidoSalto: 0, pedidoGambeta: 0,
-    fasePaso: 0, gambetas: 0, racha: 0, ultimaGambeta: -10,
+    jugada: null, tiempoJugada: 0, esperaJugada: 0,
+    pedidoSalto: 0, pedidoGambeta: 0, pedidoCaño: 0,
+    fasePaso: 0, gambetas: 0, caños: 0, racha: 0, ultimaJugada: -10,
     rivales: [], textos: [], particulas: [],
     motivo: null, tiempoCaida: 0, temblor: 0,
     azar: generador(hash(`gambeta-${fecha}`)),
@@ -131,26 +138,41 @@ export function soltarSalto(j: Juego) {
   j.apretandoSalto = false
 }
 
+// Gambeta y caño se excluyen: el último que apretaste es el que vale
 export function apretarGambeta(j: Juego) {
-  if (j.estado === 'jugando') j.pedidoGambeta = MEMORIA_TECLA
+  if (j.estado !== 'jugando') return
+  j.pedidoGambeta = MEMORIA_TECLA
+  j.pedidoCaño = 0
+}
+
+export function apretarCaño(j: Juego) {
+  if (j.estado !== 'jugando') return
+  j.pedidoCaño = MEMORIA_TECLA
+  j.pedidoGambeta = 0
 }
 
 // ---- Recorrido ----
 
 // Pone los rivales hasta la x pedida. Las distancias se miden en segundos a la velocidad de ese tramo, y
 // nunca bajan del mínimo que hace falta para resolver el rival anterior y reaccionar al siguiente.
+// Siempre se sacan cuatro números por rival, así el recorrido del día no cambia por nada.
 function colocarHasta(j: Juego, hasta: number) {
   while (j.proximoX < hasta) {
     const i = j.colocados
     const dif = dificultad(j.proximoX)
     const sorteo = j.azar()
-    const tipo: TipoRival = i < 2 ? 'barrida' : i === 2 ? 'parado' : sorteo < 0.5 ? 'barrida' : 'parado'
+    // Los primeros enseñan: dos barridas, uno parado, otra barrida y uno con las piernas abiertas
+    const tipo: TipoRival =
+      i < 2 || i === 3 ? 'barrida'
+        : i === 2 ? 'parado'
+          : i === 4 ? 'abierto'
+            : sorteo < 0.42 ? 'barrida' : sorteo < 0.76 ? 'parado' : 'abierto'
     const ancho = ANCHO[tipo]
     j.rivales.push({
       tipo, x: j.proximoX, ancho,
       piel: PIELES[Math.floor(j.azar() * PIELES.length)],
-      salto: 0, vSalto: 0, saltó: false, gambeteado: false, caida: 0,
-      pista: i === 0 ? 'SALTÁ' : i === 2 ? 'GAMBETEALO' : null,
+      salto: 0, vSalto: 0, saltó: false, pasado: null, caida: 0,
+      pista: i === 0 ? 'SALTÁ' : i === 2 ? 'GAMBETEALO' : i === 4 ? '¡CAÑO!' : null,
     })
     j.colocados++
 
@@ -159,8 +181,7 @@ function colocarHasta(j: Juego, hasta: number) {
     const corto = j.azar() < 0.12 + 0.33 * dif
     const variacion = j.azar()
     const segundos = corto ? minimo + variacion * 0.25 : (1.75 - 0.8 * dif) * (0.85 + variacion * 0.5)
-    // Los primeros, más separados: es la parte en que se aprende
-    const extra = i < 3 ? 0.9 : 0
+    const extra = i < 5 ? 0.9 : 0   // los primeros, más separados: es la parte en que se aprende
     j.proximoX += ancho + (Math.max(minimo, segundos) + extra) * v
   }
 }
@@ -195,13 +216,26 @@ function cajasSeTocan(j: Juego, r: Rival) {
   return der > r.x + 4 && izq < r.x + r.ancho - 4 && j.y < r.salto + alto && j.y + CAJA.alto > r.salto
 }
 
-function chocar(j: Juego, motivo: TipoRival) {
+function chocar(j: Juego, motivo: Motivo) {
   j.estado = 'cayendo'
   j.motivo = motivo
   j.tiempoCaida = 0
   j.temblor = 0.35
-  j.gambeta = 0
-  polvo(j, j.distancia + 10, 4, 18, '#c9a84c', 1.4)
+  j.jugada = null
+  j.tiempoJugada = 0
+  polvo(j, j.distancia + 10, 4, 18, '#d4a54a', 1.4)
+}
+
+function pasar(j: Juego, r: Rival, jugada: Jugada) {
+  r.pasado = jugada
+  j.racha = j.tiempo - j.ultimaJugada < 2.5 ? j.racha + 1 : 1
+  j.ultimaJugada = j.tiempo
+  const valor = jugada === 'caño' ? PUNTOS_POR_CAÑO : PUNTOS_POR_GAMBETA
+  if (jugada === 'caño') j.caños++
+  else j.gambetas++
+  const nombre = jugada === 'caño' ? '¡CAÑO!' : '¡GAMBETA!'
+  texto(j, j.racha > 1 ? `${nombre} ¡OLÉ! ×${j.racha}` : nombre, r.x + 10, 122, jugada === 'caño' || j.racha > 1)
+  texto(j, `+${valor}`, r.x + 14, 98)
 }
 
 export function avanzar(j: Juego, dt: number) {
@@ -210,7 +244,7 @@ export function avanzar(j: Juego, dt: number) {
 
   if (j.estado === 'listo') {
     j.distancia += j.velocidad * dt
-    j.fasePaso += (j.velocidad * dt * Math.PI * 2) / 110
+    j.fasePaso += (j.velocidad * dt * Math.PI * 2) / 100
     actualizarEfectos(j, dt)
     return
   }
@@ -226,27 +260,28 @@ export function avanzar(j: Juego, dt: number) {
     }
     actualizarRivales(j, dt)
     actualizarEfectos(j, dt)
-    if (j.tiempoCaida > 1.1) j.estado = 'fin'
+    if (j.tiempoCaida > 1.2) j.estado = 'fin'
     return
   }
 
   // jugando
   j.velocidad = velocidadEn(j.distancia)
   j.distancia += j.velocidad * dt
-  const zancada = 120 + (j.velocidad - V_INICIAL) * 0.25
+  const zancada = 105 + (j.velocidad - V_INICIAL) * 0.22   // pasitos cortos: Don Fulbio no es un velocista
   j.fasePaso += (j.velocidad * dt * Math.PI * 2) / zancada
 
   j.pedidoSalto = Math.max(0, j.pedidoSalto - dt)
   j.pedidoGambeta = Math.max(0, j.pedidoGambeta - dt)
-  if (j.gambeta > 0) {
-    j.gambeta -= dt
-    if (j.gambeta <= 0) { j.gambeta = 0; j.esperaGambeta = ESPERA_GAMBETA }
-  } else if (j.esperaGambeta > 0) {
-    j.esperaGambeta = Math.max(0, j.esperaGambeta - dt)
+  j.pedidoCaño = Math.max(0, j.pedidoCaño - dt)
+  if (j.jugada) {
+    j.tiempoJugada -= dt
+    if (j.tiempoJugada <= 0) { j.jugada = null; j.tiempoJugada = 0; j.esperaJugada = ESPERA_JUGADA }
+  } else if (j.esperaJugada > 0) {
+    j.esperaJugada = Math.max(0, j.esperaJugada - dt)
   }
 
-  // Salto: no se puede saltar en medio de una gambeta (se guarda el pedido por si termina justo)
-  if (!j.enAire && j.pedidoSalto > 0 && j.gambeta === 0) {
+  // Salto: no se puede saltar en medio de una gambeta o un caño (se guarda el pedido por si termina justo)
+  if (!j.enAire && j.pedidoSalto > 0 && !j.jugada) {
     j.vy = V_SALTO
     j.enAire = true
     j.pedidoSalto = 0
@@ -259,31 +294,27 @@ export function avanzar(j: Juego, dt: number) {
       j.y = 0
       j.vy = 0
       j.enAire = false
-      polvo(j, j.distancia, 0, 6, '#8a7a3a', 0.7)
+      polvo(j, j.distancia, 0, 6, '#8a7344', 0.7)
     }
   }
 
-  // Gambeta: solo con los pies en el piso
-  if (!j.enAire && j.pedidoGambeta > 0 && j.gambeta === 0 && j.esperaGambeta === 0) {
-    j.gambeta = DURACION_GAMBETA
+  // Gambeta o caño: solo con los pies en el piso
+  if (!j.enAire && !j.jugada && j.esperaJugada === 0 && (j.pedidoGambeta > 0 || j.pedidoCaño > 0)) {
+    j.jugada = j.pedidoCaño > 0 ? 'caño' : 'gambeta'
+    j.tiempoJugada = DURACION_JUGADA
     j.pedidoGambeta = 0
+    j.pedidoCaño = 0
   }
 
   colocarHasta(j, j.distancia + 1600)
   actualizarRivales(j, dt)
 
   for (const r of j.rivales) {
-    if (r.gambeteado || !cajasSeTocan(j, r)) continue
-    if (r.tipo === 'parado' && j.gambeta > 0) {
-      r.gambeteado = true
-      j.racha = j.tiempo - j.ultimaGambeta < 2.5 ? j.racha + 1 : 1
-      j.ultimaGambeta = j.tiempo
-      j.gambetas++
-      texto(j, j.racha > 1 ? `¡OLÉ! ×${j.racha}` : '¡GAMBETA!', r.x + 10, 120, j.racha > 1)
-      texto(j, `+${PUNTOS_POR_GAMBETA}`, r.x + 14, 96)
-      continue
-    }
-    chocar(j, r.tipo)
+    if (r.pasado || !cajasSeTocan(j, r)) continue
+    if (r.tipo !== 'barrida' && j.jugada === 'gambeta') { pasar(j, r, 'gambeta'); continue }
+    if (r.tipo === 'abierto' && j.jugada === 'caño') { pasar(j, r, 'caño'); continue }
+    // El caño a uno con las piernas cerradas pega en las canillas
+    chocar(j, r.tipo === 'barrida' ? 'barrida' : j.jugada === 'caño' ? 'cerrado' : 'parado')
     break
   }
 
@@ -293,7 +324,7 @@ export function avanzar(j: Juego, dt: number) {
 function actualizarRivales(j: Juego, dt: number) {
   for (const r of j.rivales) {
     const dx = r.x - j.distancia
-    if (r.tipo === 'parado' && !r.gambeteado) {
+    if (r.tipo !== 'barrida' && !r.pasado) {
       // Si lo querés saltar, salta con vos y te la saca de cabeza: se calcula para que esté arriba
       // justo cuando llegás
       if (!r.saltó && j.enAire && j.estado === 'jugando' && dx > -10 && dx < j.velocidad * 0.3) {
@@ -306,10 +337,10 @@ function actualizarRivales(j: Juego, dt: number) {
         if (r.salto === 0) r.vSalto = 0
       }
     }
-    if (r.gambeteado) r.caida = Math.min(1, r.caida + dt * 2.8)
+    if (r.pasado) r.caida = Math.min(1, r.caida + dt * 2.8)
     // La barrida levanta pasto mientras se ve
     if (r.tipo === 'barrida' && dx < 700 && dx > -100 && Math.random() < dt * 30) {
-      polvo(j, r.x + 4, 2, 1, Math.random() < 0.5 ? '#4f7a3a' : '#8a7a3a', 0.6)
+      polvo(j, r.x + 4, 2, 1, Math.random() < 0.5 ? '#5d6b3a' : '#8a7344', 0.6)
     }
   }
   // Los que ya quedaron atrás
@@ -333,5 +364,5 @@ function actualizarEfectos(j: Juego, dt: number) {
   j.textos = j.textos.filter((t) => t.vida > 0)
 }
 
-// Datos para dibujar la gambeta: 0 a 1 mientras dura
-export const progresoGambeta = (j: Juego) => (j.gambeta > 0 ? 1 - j.gambeta / DURACION_GAMBETA : 0)
+// Para dibujar la gambeta o el caño: 0 a 1 mientras dura
+export const progresoJugada = (j: Juego) => (j.jugada ? 1 - j.tiempoJugada / DURACION_JUGADA : 0)

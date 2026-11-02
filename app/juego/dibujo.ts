@@ -1,31 +1,20 @@
-// Dibujo de Gambeta en un canvas 2D. Los muñecos se arman con poses (ángulos de cada articulación) y la
-// cancha es de noche, con torres de luz, alambrado y carteles, en los colores de la app.
-import {
-  type Juego, type Rival, progresoGambeta, metros,
-} from './motor'
+// Dibujo de Gambeta en un canvas 2D, con la estética de los afiches de Don Fulbio: azul marino, crema y
+// dorado, contornos de tinta y grano de papel. Los muñecos se arman con poses (ángulos de cada articulación).
+import { type Juego, type Rival, progresoJugada, metros } from './motor'
 
 export interface Vista {
   ancho: number        // lo que se ve del mundo, en unidades
   alto: number
   escala: number       // píxeles CSS por unidad
   piso: number         // altura de la línea por la que corre (en unidades, desde arriba)
-  xJugador: number     // a cuánto del borde izquierdo corre el jugador
+  xJugador: number     // a cuánto del borde izquierdo corre Don Fulbio
   cssAncho: number
   cssAlto: number
   dpr: number
 }
 
-export interface Ropa {
-  camiseta: string
-  detalle: string
-  short: string
-  medias: string
-  piel: string
-  pelo: string
-}
-
 // Lo mínimo que se ve de ancho: con el celular parado se acerca un poco más para que los jugadores no
-// queden chiquitos, y el jugador corre más a la izquierda para no perder distancia hacia adelante
+// queden chiquitos, y Don Fulbio corre más a la izquierda para no perder distancia hacia adelante
 const ANCHO_MINIMO = 640
 const ANCHO_MINIMO_PARADO = 540
 const ALTO_MINIMO = 420
@@ -37,74 +26,81 @@ export function calcularVista(cssAncho: number, cssAlto: number, dpr: number, re
   const escala = Math.min(cssAncho / (parado ? ANCHO_MINIMO_PARADO : ANCHO_MINIMO), cssAlto / ALTO_MINIMO, ESCALA_MAXIMA)
   const ancho = cssAncho / escala
   const alto = cssAlto / escala
-  // Celular parado: la cancha baja hasta los botones y arriba queda el cielo con el marcador
+  // Celular parado: la cancha baja hasta los botones y arriba queda el cielo con el escudo y el marcador
   const piso = parado
     ? alto * 0.6
     : alto - Math.max(72, alto * 0.17, reservaAbajo ? reservaAbajo / escala + 14 : 0)
   return { ancho, alto, escala, piso, xJugador: parado ? 85 : 110, cssAncho, cssAlto, dpr }
 }
 
-// ---- Colores ----
+// ---- Colores del afiche ----
+
+const TINTA = '#1a1612'
+const NAVY = '#13284a'
+const AZUL = '#3a6ea5'
+const ORO = '#d4a54a'
+const CREMA = '#efe3c6'
+const ROJO = '#a83a2e'
 
 function rgb(hex: string): [number, number, number] {
   const n = parseInt(hex.replace('#', '').slice(0, 6), 16)
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
-const aHex = (r: number, g: number, b: number) =>
-  '#' + [r, g, b].map((c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0')).join('')
-
 const cacheOscuro = new Map<string, string>()
-function oscuro(hex: string, f = 0.7) {
+function oscuro(hex: string, f = 0.72) {
+  if (f === 1) return hex
   const clave = hex + f
   let c = cacheOscuro.get(clave)
   if (!c) {
     const [r, g, b] = rgb(hex)
-    c = aHex(r * f, g * f, b * f)
+    c = '#' + [r, g, b].map((v) => Math.round(v * f).toString(16).padStart(2, '0')).join('')
     cacheOscuro.set(clave, c)
   }
   return c
 }
 
-const luminancia = (hex: string) => {
-  const [r, g, b] = rgb(hex)
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+// ---- Los dos tipos de jugador ----
+
+interface Aspecto {
+  cuerpo: 'fulbio' | 'rival'
+  bastones: string[]   // franjas verticales de la camiseta
+  manga: string
+  puño: string
+  short: string
+  franjaShort: string
+  medias: string
+  bandaMedias: string
+  pelo: string
+  // Medidas (unidades): Don Fulbio es petiso, de piernas cortas, panzón y cabezón
+  muslo: number
+  pierna: number
+  brazo: number
+  antebrazo: number
+  torso: number
+  cabeza: number
+  anchoPierna: number
+  anchoBrazo: number
+  panza: [number, number]  // semiejes del torso
 }
 
-function esRojizo(hex: string) {
-  const [r, g, b] = rgb(hex).map((c) => c / 255)
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  if (max - min < 0.25 || max < 0.3) return false
-  let tono = 0
-  if (max === r) tono = ((g - b) / (max - min)) * 60
-  else if (max === g) tono = (2 + (b - r) / (max - min)) * 60
-  else tono = (4 + (r - g) / (max - min)) * 60
-  if (tono < 0) tono += 360
-  return tono < 30 || tono > 330
+const DON_FULBIO: Aspecto = {
+  cuerpo: 'fulbio',
+  bastones: [NAVY, AZUL, ORO, AZUL, NAVY],
+  manga: NAVY, puño: ORO, short: '#162544', franjaShort: ORO, medias: '#2f6aa3', bandaMedias: NAVY, pelo: '#1d1b1f',
+  muslo: 13, pierna: 13, brazo: 10, antebrazo: 10, torso: 23, cabeza: 11.5, anchoPierna: 8.5, anchoBrazo: 6.5,
+  panza: [13, 15],
 }
 
-// Sin club, la camiseta dorada de Futboleros
-export function ropaJugador(colores: [string, string] | null): Ropa {
-  if (!colores) {
-    return { camiseta: '#c9a84c', detalle: '#1a0f03', short: '#1a0f03', medias: '#c9a84c', piel: '#d29b6c', pelo: '#2a1a0e' }
-  }
-  const [a, b] = colores
-  return {
-    camiseta: a,
-    detalle: b,
-    short: luminancia(b) < 0.5 ? b : oscuro(a, 0.45),
-    medias: a,
-    piel: '#d29b6c',
-    pelo: '#2a1a0e',
-  }
+const RIVAL: Aspecto = {
+  cuerpo: 'rival',
+  bastones: [ROJO, CREMA, ROJO, CREMA, ROJO],
+  manga: ROJO, puño: CREMA, short: '#1d1b1f', franjaShort: ROJO, medias: ROJO, bandaMedias: CREMA, pelo: '#2a1d14',
+  muslo: 17, pierna: 17, brazo: 12, antebrazo: 11, torso: 24, cabeza: 8.5, anchoPierna: 7, anchoBrazo: 5.5,
+  panza: [8, 14],
 }
 
-// Los rivales van de rojo, o de azul si el jugador ya es de rojo
-export function ropaRival(jugador: Ropa): Ropa {
-  const color = esRojizo(jugador.camiseta) ? '#1d4fb8' : '#d0121b'
-  return { camiseta: color, detalle: '#ffffff', short: '#f2f2f2', medias: color, piel: '#b07a50', pelo: '#1a120a' }
-}
+const PIEL_FULBIO = '#e2a877'
 
 // ---- Decorado fijo (siempre el mismo, no depende del día) ----
 
@@ -119,155 +115,353 @@ function azarFijo(semilla: number) {
 const PERIODO_CIUDAD = 1400
 const EDIFICIOS = (() => {
   const azar = azarFijo(7)
-  const lista: { x: number; ancho: number; alto: number; ventanas: [number, number, number][] }[] = []
+  const lista: { x: number; ancho: number; alto: number; antena: boolean; ventanas: [number, number, number][] }[] = []
   let x = 0
   while (x < PERIODO_CIUDAD) {
-    const ancho = 40 + azar() * 80
-    const alto = 40 + azar() * 110
+    const ancho = 34 + azar() * 70
+    const alto = 40 + azar() * 120
     const ventanas: [number, number, number][] = []
-    for (let vy = 10; vy < alto - 8; vy += 12) {
-      for (let vx = 7; vx < ancho - 7; vx += 11) {
-        if (azar() < 0.22) ventanas.push([vx, vy, 0.2 + azar() * 0.35])
+    for (let vy = 10; vy < alto - 8; vy += 11) {
+      for (let vx = 6; vx < ancho - 6; vx += 9) {
+        if (azar() < 0.2) ventanas.push([vx, vy, 0.25 + azar() * 0.45])
       }
     }
-    lista.push({ x, ancho, alto, ventanas })
-    x += ancho + azar() * 18
+    lista.push({ x, ancho, alto, antena: azar() < 0.3, ventanas })
+    x += ancho + azar() * 14
   }
   return lista
 })()
 
 const ESTRELLAS = (() => {
   const azar = azarFijo(11)
-  return Array.from({ length: 70 }, () => ({ x: azar(), y: azar(), brillo: 0.25 + azar() * 0.6, fase: azar() * 6 }))
+  return Array.from({ length: 80 }, () => ({ x: azar(), y: azar(), brillo: 0.25 + azar() * 0.6, fase: azar() * 6 }))
 })()
 
-const CARTELES = ['FUTBOLEROS', 'PLAN 10', 'EL FÚTBOL AMATEUR, ORGANIZADO', 'FUTBOLEROS', 'ARMÁ TU PARTIDO']
+const MANCHAS = (() => {
+  const azar = azarFijo(23)
+  return Array.from({ length: 9 }, () => ({ x: azar() * 1800, y: azar(), rx: 30 + azar() * 70, ry: 0.15 + azar() * 0.2 }))
+})()
+
+// Frases de los afiches de Don Fulbio
+const CARTELES = [
+  '★ FUTBOLEROS ★', 'LA APP DEL FULBITO Y LOS DOLORES', 'SIN CALENTAMIENTO DESDE 1998',
+  '★ FUTBOLEROS ★', 'EL LUNES NO CUENTO', 'HOY JUEGO TRANQUILO',
+]
+
+// Grano de papel para la capa que va encima del canvas (Juego.tsx la pone de fondo): se arma una sola vez
+let grano: string | null = null
+export function texturaGrano() {
+  if (grano) return grano
+  const c = document.createElement('canvas')
+  c.width = c.height = 180
+  const g = c.getContext('2d')
+  if (!g) return ''
+  const azar = azarFijo(5)
+  for (let i = 0; i < 2600; i++) {
+    const claro = azar() < 0.5
+    g.fillStyle = claro ? `rgba(239,227,198,${0.04 + azar() * 0.09})` : `rgba(10,8,6,${0.05 + azar() * 0.1})`
+    g.fillRect(azar() * 180, azar() * 180, 1 + azar() * 1.2, 1 + azar() * 1.2)
+  }
+  // Algunas rayitas, como un afiche gastado
+  g.strokeStyle = 'rgba(239,227,198,0.08)'
+  g.lineWidth = 0.6
+  for (let i = 0; i < 6; i++) {
+    const x = azar() * 180
+    const y = azar() * 180
+    g.beginPath()
+    g.moveTo(x, y)
+    g.lineTo(x + (azar() - 0.5) * 40, y + azar() * 30)
+    g.stroke()
+  }
+  grano = c.toDataURL('image/png')
+  return grano
+}
 
 // ---- Escena ----
 
-function cielo(ctx: CanvasRenderingContext2D, v: Vista, tiempo: number) {
-  const g = ctx.createLinearGradient(0, 0, 0, v.piso)
-  g.addColorStop(0, '#070504')
-  g.addColorStop(0.55, '#140d06')
-  g.addColorStop(1, '#3a2509')
-  ctx.fillStyle = g
-  ctx.fillRect(0, 0, v.ancho, v.piso)
-  // Estrellas, solo arriba de las torres
-  const techo = Math.max(0, v.piso - 330)
-  for (const e of ESTRELLAS) {
-    const y = e.y * techo
-    if (y > techo - 20) continue
-    ctx.globalAlpha = e.brillo * (0.7 + 0.3 * Math.sin(tiempo * 1.5 + e.fase))
-    ctx.fillStyle = '#e8d5a0'
-    ctx.fillRect(e.x * v.ancho, y, 1.6, 1.6)
-  }
-  ctx.globalAlpha = 1
+function escudo(v: Vista) {
+  const radio = Math.min(v.ancho * 0.32, v.piso * 0.28, 170)
+  return { x: v.ancho / 2, y: Math.max(radio + 40, v.piso * 0.42), radio }
 }
 
-function ciudad(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
-  const base = v.piso - 26
-  const corrimiento = -((distancia * 0.08) % PERIODO_CIUDAD)
-  for (let k = 0; corrimiento + k * PERIODO_CIUDAD < v.ancho; k++) {
-    const x0 = corrimiento + k * PERIODO_CIUDAD
-    for (const e of EDIFICIOS) {
-      const x = x0 + e.x
-      if (x > v.ancho || x + e.ancho < 0) continue
-      ctx.fillStyle = '#120c06'
-      ctx.fillRect(x, base - e.alto, e.ancho, e.alto)
-      for (const [vx, vy, a] of e.ventanas) {
-        ctx.fillStyle = `rgba(201,168,76,${a})`
-        ctx.fillRect(x + vx, base - e.alto + vy, 4, 5)
-      }
+function estrella(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, giro = 0) {
+  ctx.fillStyle = color
+  ctx.beginPath()
+  for (let i = 0; i < 10; i++) {
+    const a = giro - Math.PI / 2 + (i * Math.PI) / 5
+    const rr = i % 2 ? r * 0.45 : r
+    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr)
+  }
+  ctx.closePath()
+  ctx.fill()
+}
+
+// Lo que no cambia de un cuadro a otro (cielo, ciudad, torre de luz, tejido del alambrado) se dibuja una
+// vez en un canvas aparte y después solo se copia: dibujarlo entero en cada cuadro le cuesta al celular
+interface Capas {
+  clave: string
+  cielo: HTMLCanvasElement
+  ciudad: HTMLCanvasElement
+  torre: HTMLCanvasElement
+  tejido: CanvasPattern | null
+}
+
+const ALTO_CIUDAD = 180
+let capas: Capas | null = null
+
+function lienzo(ancho: number, alto: number, k: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
+  const c = document.createElement('canvas')
+  c.width = Math.max(1, Math.ceil(ancho * k))
+  c.height = Math.max(1, Math.ceil(alto * k))
+  const g = c.getContext('2d') as CanvasRenderingContext2D
+  g.scale(k, k)
+  return [c, g]
+}
+
+const alturaTorre = (v: Vista) => Math.max(200, Math.min(460, v.piso - 120))   // más altas con más cielo
+
+function obtenerCapas(ctx: CanvasRenderingContext2D, v: Vista, firma: string): Capas {
+  const k = v.escala * v.dpr
+  // Si la letra de la firma todavía no cargó, el cielo se vuelve a armar cuando cargue
+  const letra = document.fonts ? document.fonts.check(`20px ${firma}`) : true
+  const clave = `${Math.round(v.ancho)}x${Math.round(v.alto)}@${k.toFixed(3)}|${letra}`
+  if (capas && capas.clave === clave) return capas
+
+  const [cielo, gc] = lienzo(v.ancho, v.piso, k)
+  dibujarCielo(gc, v, firma)
+  const [ciudad, gu] = lienzo(PERIODO_CIUDAD + 120, ALTO_CIUDAD, k)
+  dibujarCiudad(gu)
+  const alto = alturaTorre(v)
+  const [torre, gt] = lienzo(340, alto + 194, k)
+  dibujarTorre(gt, 170, 110, alto)
+  const [trama, gm] = lienzo(12, 12, k)
+  gm.strokeStyle = 'rgba(200,210,225,0.13)'
+  gm.lineWidth = 0.8
+  gm.beginPath()
+  gm.moveTo(0, 0)
+  gm.lineTo(12, 12)
+  gm.moveTo(12, 0)
+  gm.lineTo(0, 12)
+  gm.stroke()
+  const tejido = ctx.createPattern(trama, 'repeat')
+  tejido?.setTransform(new DOMMatrix().scale(1 / k))
+
+  capas = { clave, cielo, ciudad, torre, tejido }
+  return capas
+}
+
+function dibujarCielo(g: CanvasRenderingContext2D, v: Vista, firma: string) {
+  const fondo = g.createLinearGradient(0, 0, 0, v.piso)
+  fondo.addColorStop(0, '#0a1528')
+  fondo.addColorStop(0.6, '#13284a')
+  fondo.addColorStop(1, '#27466f')
+  g.fillStyle = fondo
+  g.fillRect(0, 0, v.ancho, v.piso)
+
+  // Rayos del afiche, saliendo de atrás del escudo
+  const e = escudo(v)
+  const largo = Math.hypot(v.ancho, v.piso) * 1.2
+  for (let i = 0; i < 12; i++) {
+    const a1 = 0.2 + (i * Math.PI * 2) / 12
+    const a2 = a1 + Math.PI / 12
+    g.fillStyle = i % 2 ? 'rgba(239,227,198,0.06)' : 'rgba(58,110,165,0.13)'
+    g.beginPath()
+    g.moveTo(e.x, e.y)
+    g.lineTo(e.x + Math.cos(a1) * largo, e.y + Math.sin(a1) * largo)
+    g.lineTo(e.x + Math.cos(a2) * largo, e.y + Math.sin(a2) * largo)
+    g.closePath()
+    g.fill()
+  }
+
+  // Estrellas
+  const techo = Math.max(0, v.piso - 200)
+  g.fillStyle = CREMA
+  for (const s of ESTRELLAS) {
+    g.globalAlpha = s.brillo
+    g.fillRect(s.x * v.ancho, s.y * techo, 1.6, 1.6)
+  }
+  g.globalAlpha = 1
+
+  // Escudo de Futboleros: doble aro, estrella y la firma con su subrayado
+  g.strokeStyle = 'rgba(239,227,198,0.5)'
+  g.lineWidth = 3
+  g.beginPath()
+  g.arc(e.x, e.y, e.radio, 0, Math.PI * 2)
+  g.stroke()
+  g.lineWidth = 1.2
+  g.beginPath()
+  g.arc(e.x, e.y, e.radio - 9, 0, Math.PI * 2)
+  g.stroke()
+  estrella(g, e.x, e.y - e.radio * 0.5, e.radio * 0.13, 'rgba(239,227,198,0.6)')
+  g.font = `${Math.round(e.radio * 0.4)}px ${firma}`
+  g.textAlign = 'center'
+  g.textBaseline = 'middle'
+  g.fillStyle = 'rgba(239,227,198,0.62)'
+  g.fillText('Futboleros', e.x, e.y + e.radio * 0.04)
+  g.strokeStyle = 'rgba(239,227,198,0.55)'
+  g.lineWidth = 3
+  g.lineCap = 'round'
+  g.beginPath()
+  g.moveTo(e.x - e.radio * 0.62, e.y + e.radio * 0.36)
+  g.quadraticCurveTo(e.x, e.y + e.radio * 0.18, e.x + e.radio * 0.7, e.y + e.radio * 0.2)
+  g.stroke()
+}
+
+// La tira de edificios, con la base abajo de todo
+function dibujarCiudad(g: CanvasRenderingContext2D) {
+  for (const e of EDIFICIOS) {
+    g.fillStyle = '#0c1830'
+    g.fillRect(e.x, ALTO_CIUDAD - e.alto, e.ancho, e.alto)
+    if (e.antena) g.fillRect(e.x + e.ancho / 2 - 1, ALTO_CIUDAD - e.alto - 16, 2, 16)
+    for (const [vx, vy, a] of e.ventanas) {
+      g.fillStyle = `rgba(224,184,102,${a})`
+      g.fillRect(e.x + vx, ALTO_CIUDAD - e.alto + vy, 3.5, 4.5)
     }
   }
 }
 
-function torres(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
+// Una torre de luz con su haz y su resplandor; x es el centro y tope, la punta del poste
+function dibujarTorre(g: CanvasRenderingContext2D, x: number, tope: number, alto: number) {
+  const base = tope + alto
+  const haz = g.createLinearGradient(0, tope, 0, base + 60)
+  haz.addColorStop(0, 'rgba(255,236,190,0.10)')
+  haz.addColorStop(1, 'rgba(255,236,190,0)')
+  g.fillStyle = haz
+  g.beginPath()
+  g.moveTo(x - 16, tope + 10)
+  g.lineTo(x + 16, tope + 10)
+  g.lineTo(x + 170, base + 60)
+  g.lineTo(x - 170, base + 60)
+  g.closePath()
+  g.fill()
+  const brillo = g.createRadialGradient(x, tope, 0, x, tope, 110)
+  brillo.addColorStop(0, 'rgba(255,240,200,0.45)')
+  brillo.addColorStop(1, 'rgba(255,240,200,0)')
+  g.fillStyle = brillo
+  g.fillRect(x - 110, tope - 110, 220, 220)
+  // Poste de reticulado y reflectores redondos
+  g.strokeStyle = '#0b1426'
+  g.lineWidth = 2
+  g.beginPath()
+  g.moveTo(x - 4, base)
+  g.lineTo(x - 2, tope)
+  g.moveTo(x + 4, base)
+  g.lineTo(x + 2, tope)
+  for (let y = base; y > tope + 8; y -= 16) {
+    g.moveTo(x - 4, y)
+    g.lineTo(x + 4, y - 16)
+  }
+  g.stroke()
+  g.fillStyle = '#0b1426'
+  g.fillRect(x - 20, tope - 14, 40, 22)
+  for (let fila = 0; fila < 2; fila++) {
+    for (let col = 0; col < 3; col++) circulo(g, x - 12 + col * 12, tope - 7 + fila * 10, 4, '#fff4d6')
+  }
+}
+
+function ciudad(ctx: CanvasRenderingContext2D, v: Vista, distancia: number, capa: HTMLCanvasElement) {
+  const corrimiento = -((distancia * 0.08) % PERIODO_CIUDAD)
+  for (let x = corrimiento; x < v.ancho; x += PERIODO_CIUDAD) {
+    ctx.drawImage(capa, x, v.piso - 26 - ALTO_CIUDAD, PERIODO_CIUDAD + 120, ALTO_CIUDAD)
+  }
+}
+
+function torres(ctx: CanvasRenderingContext2D, v: Vista, distancia: number, capa: HTMLCanvasElement) {
   const periodo = 560
-  const base = v.piso - 24
-  const alto = Math.max(200, Math.min(460, v.piso - 120))   // más altas si hay más cielo (celular parado)
+  const alto = alturaTorre(v)
+  const tope = v.piso - 24 - alto
   const corrimiento = -((distancia * 0.25) % periodo)
   for (let x = corrimiento + 180; x < v.ancho + 200; x += periodo) {
-    const tope = base - alto
-    // Haz de luz hacia la cancha y resplandor
-    ctx.globalCompositeOperation = 'lighter'
-    const haz = ctx.createLinearGradient(0, tope, 0, base + 60)
-    haz.addColorStop(0, 'rgba(255,226,150,0.10)')
-    haz.addColorStop(1, 'rgba(255,226,150,0)')
-    ctx.fillStyle = haz
-    ctx.beginPath()
-    ctx.moveTo(x - 16, tope + 10)
-    ctx.lineTo(x + 16, tope + 10)
-    ctx.lineTo(x + 170, base + 60)
-    ctx.lineTo(x - 170, base + 60)
-    ctx.closePath()
-    ctx.fill()
-    const brillo = ctx.createRadialGradient(x, tope, 0, x, tope, 120)
-    brillo.addColorStop(0, 'rgba(255,231,168,0.42)')
-    brillo.addColorStop(1, 'rgba(255,231,168,0)')
-    ctx.fillStyle = brillo
-    ctx.fillRect(x - 120, tope - 120, 240, 240)
-    ctx.globalCompositeOperation = 'source-over'
-    // Poste y reflector
-    ctx.fillStyle = '#1c1409'
-    ctx.fillRect(x - 3, tope, 6, alto)
-    for (let y = tope + 40; y < base; y += 34) ctx.fillRect(x - 6, y, 12, 2)
-    ctx.fillStyle = '#2a1e0e'
-    ctx.fillRect(x - 24, tope - 12, 48, 22)
-    ctx.fillStyle = '#fff6d8'
-    for (let fila = 0; fila < 2; fila++) {
-      for (let col = 0; col < 4; col++) {
-        ctx.beginPath()
-        ctx.arc(x - 16 + col * 10.5, tope - 5 + fila * 9, 3, 0, Math.PI * 2)
-        ctx.fill()
-      }
-    }
+    ctx.drawImage(capa, x - 170, tope - 110, 340, alto + 194)
   }
 }
 
-function alambrado(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
+const anchosCartel = new Map<string, number>()
+
+function alambrado(ctx: CanvasRenderingContext2D, v: Vista, distancia: number, tejido: CanvasPattern | null) {
   const base = v.piso - 24
-  const tope = v.piso - 112
+  const tope = v.piso - 108
   const alto = base - tope
-  const corrimiento = (distancia * 0.55) % 12
-  ctx.save()
-  ctx.beginPath()
-  ctx.rect(0, tope, v.ancho, alto)
-  ctx.clip()
-  ctx.strokeStyle = 'rgba(201,168,76,0.14)'
-  ctx.lineWidth = 0.8
-  ctx.beginPath()
-  for (let x = -alto - corrimiento; x < v.ancho + alto; x += 12) {
-    ctx.moveTo(x, tope)
-    ctx.lineTo(x + alto, base)
-    ctx.moveTo(x + alto, tope)
-    ctx.lineTo(x, base)
+  if (tejido) {
+    // El tejido se corre con el alambrado (la trama se repite cada 12)
+    const corrimiento = (distancia * 0.55) % 12
+    ctx.save()
+    ctx.translate(-corrimiento, 0)
+    ctx.fillStyle = tejido
+    ctx.fillRect(corrimiento, tope, v.ancho, alto)
+    ctx.restore()
   }
-  ctx.stroke()
-  ctx.restore()
-  // Caño de arriba y postes
-  ctx.fillStyle = '#3a2a12'
+  ctx.fillStyle = '#0e1a2e'
   ctx.fillRect(0, tope - 2, v.ancho, 3)
   const postes = (distancia * 0.55) % 150
   for (let x = -postes; x < v.ancho; x += 150) ctx.fillRect(x, tope - 2, 4, alto + 2)
-  // Carteles al pie del alambrado
-  const periodo = 430
-  const corrimientoCarteles = (distancia * 0.55) % (periodo * CARTELES.length)
+
+  // Carteles azules con letras crema, como el de "La app del fulbito y los dolores"
+  const periodo = 470
+  const vuelta = periodo * CARTELES.length
+  const corrimientoCarteles = (distancia * 0.55) % vuelta
   ctx.font = '15px "Bebas Neue", sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   for (let i = 0; i < CARTELES.length * 2; i++) {
-    const x = i * periodo - corrimientoCarteles + 40
-    if (x > v.ancho || x + 210 < 0) continue
+    const x = i * periodo - corrimientoCarteles + 30
+    if (x > v.ancho || x + 280 < 0) continue
     const texto = CARTELES[i % CARTELES.length]
-    const ancho = Math.max(120, ctx.measureText(texto).width + 36)
-    ctx.fillStyle = '#1e1a0e'
-    ctx.fillRect(x, base - 24, ancho, 24)
-    ctx.strokeStyle = 'rgba(201,168,76,0.45)'
-    ctx.lineWidth = 1
-    ctx.strokeRect(x + 0.5, base - 23.5, ancho - 1, 23)
-    ctx.fillStyle = '#c9a84c'
-    ctx.fillText(texto, x + ancho / 2, base - 11)
+    // El ancho se mide una vez (cuando ya cargó la letra)
+    let ancho = anchosCartel.get(texto)
+    if (ancho === undefined) {
+      ancho = Math.max(120, ctx.measureText(texto).width + 34)
+      if (document.fonts?.check('15px "Bebas Neue"')) anchosCartel.set(texto, ancho)
+    }
+    ctx.fillStyle = NAVY
+    ctx.fillRect(x, base - 26, ancho, 26)
+    ctx.strokeStyle = 'rgba(239,227,198,0.75)'
+    ctx.lineWidth = 1.2
+    ctx.strokeRect(x + 2.5, base - 23.5, ancho - 5, 21)
+    ctx.strokeStyle = TINTA
+    ctx.strokeRect(x + 0.5, base - 25.5, ancho - 1, 25)
+    ctx.fillStyle = CREMA
+    ctx.fillText(texto, x + ancho / 2, base - 12)
+  }
+}
+
+// Un arco de vez en cuando, del otro lado de la cancha
+function arcos(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
+  const periodo = 3300
+  const base = v.piso - 20
+  const corrimiento = (distancia * 0.85) % periodo
+  for (let x = 900 - corrimiento; x < v.ancho + 200; x += periodo) {
+    if (x + 170 < 0) continue
+    const ancho = 150
+    const alto = 62
+    // Red: el fondo del arco, un poco corrido hacia atrás
+    ctx.strokeStyle = 'rgba(239,227,198,0.22)'
+    ctx.lineWidth = 0.7
+    ctx.beginPath()
+    for (let i = 0; i <= ancho; i += 10) {
+      ctx.moveTo(x + i, base - alto)
+      ctx.lineTo(x + i + 14, base - alto - 8)
+      ctx.lineTo(x + i + 14, base - 6)
+    }
+    for (let y = 0; y <= alto; y += 10) {
+      ctx.moveTo(x + 14, base - y - 6)
+      ctx.lineTo(x + ancho + 14, base - y - 6)
+    }
+    ctx.stroke()
+    // Palos
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.beginPath()
+    ctx.moveTo(x, base)
+    ctx.lineTo(x, base - alto)
+    ctx.lineTo(x + ancho, base - alto)
+    ctx.lineTo(x + ancho, base)
+    ctx.strokeStyle = TINTA
+    ctx.lineWidth = 6
+    ctx.stroke()
+    ctx.strokeStyle = CREMA
+    ctx.lineWidth = 3.4
+    ctx.stroke()
   }
 }
 
@@ -275,15 +469,16 @@ function cancha(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
   const tope = v.piso - 24
   const fondo = v.alto
   const g = ctx.createLinearGradient(0, tope, 0, fondo)
-  g.addColorStop(0, '#24442a')
-  g.addColorStop(0.35, '#1c3820')
-  g.addColorStop(1, '#0c1a0d')
+  g.addColorStop(0, '#46522c')
+  g.addColorStop(0.3, '#36421f')
+  g.addColorStop(1, '#1b2412')
   ctx.fillStyle = g
   ctx.fillRect(0, tope, v.ancho, fondo - tope)
-  // Franjas del corte del pasto, inclinadas para dar profundidad
+
+  // Franjas del corte, inclinadas para dar profundidad
   const inclinacion = (fondo - tope) * 0.35
   const corrimiento = distancia % 200
-  ctx.fillStyle = 'rgba(255,255,255,0.035)'
+  ctx.fillStyle = 'rgba(239,227,198,0.03)'
   ctx.beginPath()
   for (let x = -corrimiento - inclinacion; x < v.ancho + 200; x += 200) {
     ctx.moveTo(x, tope)
@@ -293,10 +488,25 @@ function cancha(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
     ctx.closePath()
   }
   ctx.fill()
+
+  // Peladas de tierra: es una cancha de barrio
+  ctx.fillStyle = 'rgba(122,96,58,0.28)'
+  const vuelta = distancia % 1800
+  for (let k = 0; k < 2; k++) {
+    for (const m of MANCHAS) {
+      const x = m.x - vuelta + k * 1800
+      const y = v.piso + 14 + m.y * Math.max(20, fondo - v.piso - 30)
+      if (x + m.rx < 0 || x - m.rx > v.ancho) continue
+      ctx.beginPath()
+      ctx.ellipse(x, y, m.rx, m.rx * m.ry, 0, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
   // Cada tanto, la mitad de cancha: la línea cruzada (inclinada como las franjas) y el círculo central
   const periodo = 2600
   const pendiente = 0.35
-  ctx.strokeStyle = 'rgba(232,226,200,0.28)'
+  ctx.strokeStyle = 'rgba(239,227,198,0.3)'
   ctx.lineWidth = 2
   for (let k = Math.ceil((distancia - v.xJugador - 600) / periodo); k * periodo - distancia + v.xJugador < v.ancho + 600; k++) {
     if (k <= 0) continue
@@ -311,9 +521,9 @@ function cancha(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
     ctx.stroke()
   }
   // Línea de cal lejana y la de abajo de los pies
-  ctx.fillStyle = 'rgba(232,226,200,0.25)'
+  ctx.fillStyle = 'rgba(239,227,198,0.25)'
   ctx.fillRect(0, tope + 3, v.ancho, 1.5)
-  ctx.fillStyle = 'rgba(232,226,200,0.55)'
+  ctx.fillStyle = 'rgba(239,227,198,0.5)'
   ctx.fillRect(0, v.piso + 9, v.ancho, 2.5)
 }
 
@@ -328,11 +538,7 @@ interface Pose {
   brazoB: [number, number]
 }
 
-const TORSO = 24
-const MUSLO = 17
-const PIERNA = 17
-const BRAZO = 12
-const ANTEBRAZO = 11
+type Cara = 'contento' | 'dolor'
 
 function trazo(ctx: CanvasRenderingContext2D, color: string, ancho: number, x1: number, y1: number, x2: number, y2: number) {
   ctx.strokeStyle = color
@@ -343,118 +549,331 @@ function trazo(ctx: CanvasRenderingContext2D, color: string, ancho: number, x1: 
   ctx.stroke()
 }
 
-function pierna(ctx: CanvasRenderingContext2D, hx: number, hy: number, [a, k]: [number, number], ropa: Ropa, lejos: boolean) {
-  const f = lejos ? 0.68 : 1
-  const kx = hx + Math.sin(a) * MUSLO
-  const ky = hy + Math.cos(a) * MUSLO
-  const b = a - k
-  const ax = kx + Math.sin(b) * PIERNA
-  const ay = ky + Math.cos(b) * PIERNA
-  trazo(ctx, oscuro(ropa.piel, f), 7, hx, hy, kx, ky)
-  trazo(ctx, oscuro(ropa.short, f), 9, hx, hy, hx + (kx - hx) * 0.5, hy + (ky - hy) * 0.5)
-  trazo(ctx, oscuro(ropa.piel, f), 6, kx, ky, ax, ay)
-  trazo(ctx, oscuro(ropa.medias, f), 6.4, kx + (ax - kx) * 0.3, ky + (ay - ky) * 0.3, ax, ay)
-  trazo(ctx, oscuro(ropa.detalle, f), 6.6, kx + (ax - kx) * 0.3, ky + (ay - ky) * 0.3, kx + (ax - kx) * 0.38, ky + (ay - ky) * 0.38)
-  // Botín: perpendicular a la pierna, para adelante
-  trazo(ctx, lejos ? '#0a0a0a' : '#151515', 5.5, ax, ay, ax + Math.cos(b) * 8, ay - Math.sin(b) * 8)
+function circulo(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, relleno: string, contorno = 0) {
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.fillStyle = relleno
+  ctx.fill()
+  if (contorno) {
+    ctx.strokeStyle = TINTA
+    ctx.lineWidth = contorno
+    ctx.stroke()
+  }
 }
 
-function brazo(ctx: CanvasRenderingContext2D, sx: number, sy: number, [a, e]: [number, number], ropa: Ropa, lejos: boolean) {
-  const f = lejos ? 0.68 : 1
-  const ex = sx + Math.sin(a) * BRAZO
-  const ey = sy + Math.cos(a) * BRAZO
-  const b = a + e
-  const mx = ex + Math.sin(b) * ANTEBRAZO
-  const my = ey + Math.cos(b) * ANTEBRAZO
-  trazo(ctx, oscuro(ropa.piel, f), 5, sx, sy, ex, ey)
-  trazo(ctx, oscuro(ropa.camiseta, f), 6.5, sx, sy, sx + (ex - sx) * 0.55, sy + (ey - sy) * 0.55)
-  trazo(ctx, oscuro(ropa.piel, f), 4.6, ex, ey, mx, my)
+const punto = (x1: number, y1: number, x2: number, y2: number, t: number): [number, number] =>
+  [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t]
+
+// Primero todos los contornos de la pierna y después los rellenos: así las articulaciones no quedan marcadas
+function pierna(
+  ctx: CanvasRenderingContext2D, a: Aspecto, hx: number, hy: number, [ang, flex]: [number, number],
+  piel: string, lejos: boolean, extra: 'rodillera' | 'tobillera' | null,
+) {
+  const f = lejos ? 0.72 : 1
+  const kx = hx + Math.sin(ang) * a.muslo
+  const ky = hy + Math.cos(ang) * a.muslo
+  const b = ang - flex
+  const ax = kx + Math.sin(b) * a.pierna
+  const ay = ky + Math.cos(b) * a.pierna
+  const px = ax + Math.cos(b) * 8
+  const py = ay - Math.sin(b) * 8
+  const w = a.anchoPierna
+  const wp = w * 0.82
+
+  trazo(ctx, TINTA, w + 3, hx, hy, kx, ky)
+  trazo(ctx, TINTA, wp + 3, kx, ky, ax, ay)
+  trazo(ctx, TINTA, 6.5 + 3, ax, ay, px, py)
+
+  trazo(ctx, oscuro(piel, f), w, hx, hy, kx, ky)
+  const [sx, sy] = punto(hx, hy, kx, ky, a.cuerpo === 'fulbio' ? 0.6 : 0.5)
+  trazo(ctx, oscuro(a.short, f), w + 2.5, hx, hy, sx, sy)
+  trazo(ctx, oscuro(piel, f), wp, kx, ky, ax, ay)
+  const [m1x, m1y] = punto(kx, ky, ax, ay, 0.32)
+  const [m2x, m2y] = punto(kx, ky, ax, ay, 0.44)
+  trazo(ctx, oscuro(a.medias, f), wp + 0.5, m1x, m1y, ax, ay)
+  trazo(ctx, oscuro(a.bandaMedias, f), wp + 0.7, m1x, m1y, m2x, m2y)
+  if (extra === 'rodillera') {
+    // Rodillera de guerra
+    const [r1x, r1y] = punto(hx, hy, kx, ky, 0.72)
+    const [r2x, r2y] = punto(kx, ky, ax, ay, 0.24)
+    trazo(ctx, TINTA, w + 3.5, r1x, r1y, kx, ky)
+    trazo(ctx, TINTA, w + 3.5, kx, ky, r2x, r2y)
+    trazo(ctx, oscuro('#33343a', f), w + 1.5, r1x, r1y, kx, ky)
+    trazo(ctx, oscuro('#33343a', f), w + 1.5, kx, ky, r2x, r2y)
+    circulo(ctx, kx, ky, 1.6, oscuro('#6d6f78', f))
+  } else if (extra === 'tobillera') {
+    // Tobillera por las dudas
+    const [t1x, t1y] = punto(kx, ky, ax, ay, 0.68)
+    trazo(ctx, oscuro('#f2ecdc', f), wp + 1.6, t1x, t1y, ax, ay)
+  }
+  // Botín negro con las tres tiras
+  trazo(ctx, '#141414', 6.5, ax, ay, px, py)
+  for (const t of [0.35, 0.55, 0.75]) {
+    const [bx, by] = punto(ax, ay, px, py, t)
+    trazo(ctx, 'rgba(239,227,198,0.8)', 0.9, bx - Math.sin(b) * 2.2, by - Math.cos(b) * 2.2, bx + Math.sin(b) * 0.4, by + Math.cos(b) * 0.4)
+  }
+}
+
+function brazo(
+  ctx: CanvasRenderingContext2D, a: Aspecto, sx: number, sy: number, [ang, codo]: [number, number],
+  piel: string, lejos: boolean,
+) {
+  const f = lejos ? 0.72 : 1
+  const ex = sx + Math.sin(ang) * a.brazo
+  const ey = sy + Math.cos(ang) * a.brazo
+  const b = ang + codo
+  const mx = ex + Math.sin(b) * a.antebrazo
+  const my = ey + Math.cos(b) * a.antebrazo
+  const w = a.anchoBrazo
+  trazo(ctx, TINTA, w + 3, sx, sy, ex, ey)
+  trazo(ctx, TINTA, w + 2.5, ex, ey, mx, my)
+  circulo(ctx, mx, my, w * 0.55 + 1.5, TINTA)
+  trazo(ctx, oscuro(piel, f), w, sx, sy, ex, ey)
+  const [cx, cy] = punto(sx, sy, ex, ey, 0.55)
+  const [px, py] = punto(sx, sy, ex, ey, 0.66)
+  trazo(ctx, oscuro(a.manga, f), w + 2.2, sx, sy, cx, cy)
+  trazo(ctx, oscuro(a.puño, f), w + 2.2, cx, cy, px, py)
+  trazo(ctx, oscuro(piel, f), w - 0.5, ex, ey, mx, my)
+  circulo(ctx, mx, my, w * 0.55, oscuro(piel, f))
+}
+
+function torso(ctx: CanvasRenderingContext2D, a: Aspecto, hx: number, hy: number, inclinacion: number, piel: string) {
+  const [rx, ry] = a.panza
+  const adelante = a.cuerpo === 'fulbio' ? 2.5 : 0
+  const cx = hx + Math.sin(inclinacion) * a.torso * 0.5 + Math.cos(inclinacion) * adelante
+  const cy = hy - Math.cos(inclinacion) * a.torso * 0.5 + Math.sin(inclinacion) * adelante
+  ctx.save()
+  ctx.translate(cx, cy)
+  ctx.rotate(inclinacion)
+  ctx.beginPath()
+  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
+  ctx.save()
+  ctx.clip()
+  const franja = (rx * 2) / a.bastones.length
+  a.bastones.forEach((color, i) => {
+    ctx.fillStyle = color
+    ctx.fillRect(-rx + i * franja, -ry, franja + 0.5, ry * 2)
+  })
+  if (a.cuerpo === 'fulbio') {
+    // La panza que se escapa por debajo de la camiseta
+    ctx.fillStyle = piel
+    ctx.beginPath()
+    ctx.ellipse(rx * 0.35, ry * 0.92, rx * 0.62, 4.2, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = TINTA
+    ctx.lineWidth = 1.3
+    ctx.beginPath()
+    ctx.ellipse(rx * 0.35, ry * 0.92, rx * 0.62, 4.2, 0, Math.PI, Math.PI * 2)
+    ctx.stroke()
+  }
+  ctx.restore()
+  ctx.beginPath()
+  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
+  ctx.strokeStyle = TINTA
+  ctx.lineWidth = 2.6
+  ctx.stroke()
+  if (a.cuerpo === 'fulbio') {
+    // Escudito en el pecho
+    circulo(ctx, rx * 0.42, -ry * 0.3, 3, NAVY)
+    ctx.strokeStyle = ORO
+    ctx.lineWidth = 0.9
+    ctx.stroke()
+  }
+  ctx.restore()
+
+  // Short
+  const srx = rx * (a.cuerpo === 'fulbio' ? 0.95 : 1.05)
+  ctx.beginPath()
+  ctx.ellipse(hx + 1, hy + 2, srx, a.cuerpo === 'fulbio' ? 7.5 : 6, 0, 0, Math.PI * 2)
+  ctx.fillStyle = a.short
+  ctx.fill()
+  ctx.strokeStyle = TINTA
+  ctx.lineWidth = 2.4
+  ctx.stroke()
+  trazo(ctx, a.franjaShort, 1.6, hx - srx * 0.25, hy - 4.5, hx - srx * 0.32, hy + 8)
+}
+
+function cabezaFulbio(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, cara: Cara) {
+  // Pelo despeinado por la vida (atrás)
+  ctx.beginPath()
+  for (let i = 0; i <= 14; i++) {
+    const ang = ((150 + i * 14) * Math.PI) / 180
+    const rr = i % 2 ? r + 1 : r + 5.5 + (i % 4 === 0 ? 1.5 : 0)
+    ctx.lineTo(x + Math.cos(ang) * rr, y + Math.sin(ang) * rr)
+  }
+  ctx.closePath()
+  ctx.fillStyle = DON_FULBIO.pelo
+  ctx.fill()
+  ctx.strokeStyle = TINTA
+  ctx.lineWidth = 1.4
+  ctx.stroke()
+  // Cara y oreja
+  circulo(ctx, x, y, r, PIEL_FULBIO, 2.2)
+  circulo(ctx, x - 2.5, y + 1.5, 2.6, oscuro(PIEL_FULBIO, 0.85), 1.1)
+  // Flequillo
+  ctx.beginPath()
+  ctx.moveTo(x - r * 0.6, y - r * 0.75)
+  ctx.lineTo(x + r * 0.15, y - r * 1.05)
+  ctx.lineTo(x + r * 0.05, y - r * 0.55)
+  ctx.lineTo(x + r * 0.55, y - r * 0.85)
+  ctx.lineTo(x + r * 0.4, y - r * 0.45)
+  ctx.lineTo(x + r * 0.85, y - r * 0.5)
+  ctx.lineTo(x + r * 0.6, y - r * 1.05)
+  ctx.lineTo(x - r * 0.2, y - r * 1.25)
+  ctx.closePath()
+  ctx.fillStyle = DON_FULBIO.pelo
+  ctx.fill()
+  // Cachete colorado
+  ctx.fillStyle = 'rgba(216,105,92,0.35)'
+  ctx.beginPath()
+  ctx.arc(x + 3, y + 3.5, 3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = TINTA
+  ctx.lineCap = 'round'
+  ctx.lineWidth = 1.4
+  if (cara === 'contento') {
+    // Ojo cerrado de risa y ceja
+    ctx.beginPath()
+    ctx.arc(x + 5, y - 1, 2.2, Math.PI * 1.1, Math.PI * 1.9)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(x + 2.5, y - 5.5)
+    ctx.quadraticCurveTo(x + 5, y - 7, x + 7.5, y - 5.8)
+    ctx.stroke()
+    // Sonrisa grande
+    ctx.beginPath()
+    ctx.moveTo(x + 3, y + 5.2)
+    ctx.quadraticCurveTo(x + 7.5, y + 11, x + 10, y + 4.8)
+    ctx.closePath()
+    ctx.fillStyle = '#5a1f1a'
+    ctx.fill()
+    ctx.stroke()
+    trazo(ctx, CREMA, 1.2, x + 4, y + 5.8, x + 9, y + 5.5)
+  } else {
+    // ¿Qué fue ese dolor?: ojos apretados y boca torcida
+    trazo(ctx, TINTA, 1.4, x + 3, y - 2.5, x + 6.5, y - 1)
+    trazo(ctx, TINTA, 1.4, x + 3, y + 0.5, x + 6.5, y - 1)
+    ctx.beginPath()
+    ctx.moveTo(x + 3, y + 7)
+    ctx.lineTo(x + 5, y + 5.5)
+    ctx.lineTo(x + 7, y + 7)
+    ctx.lineTo(x + 9.5, y + 5.6)
+    ctx.stroke()
+  }
+  // Nariz colorada
+  circulo(ctx, x + r * 0.95, y + 0.8, 3.9, '#d8695c', 1.4)
+  circulo(ctx, x + r * 0.95 + 1, y - 0.6, 1, 'rgba(255,240,220,0.8)')
+}
+
+function cabezaRival(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, piel: string) {
+  circulo(ctx, x, y, r, piel, 2)
+  ctx.beginPath()
+  ctx.arc(x, y, r + 0.8, (150 * Math.PI) / 180, (335 * Math.PI) / 180)
+  ctx.closePath()
+  ctx.fillStyle = RIVAL.pelo
+  ctx.fill()
+  ctx.strokeStyle = TINTA
+  ctx.lineWidth = 1.2
+  ctx.stroke()
+  circulo(ctx, x - 1, y + 1, 1.8, oscuro(piel, 0.8))
+  circulo(ctx, x + 4.2, y - 0.8, 1.1, TINTA)
+  ctx.lineCap = 'round'
+  trazo(ctx, TINTA, 1.3, x + 2, y - 3.6, x + 6.2, y - 2.2)   // cejas de pocos amigos
+  trazo(ctx, TINTA, 1.1, x + 4, y + 4, x + 6.8, y + 3.6)
 }
 
 function muñeco(
-  ctx: CanvasRenderingContext2D, x: number, y: number, mirando: 1 | -1, pose: Pose, ropa: Ropa,
-  escala = 1, rotacion = 0,
+  ctx: CanvasRenderingContext2D, a: Aspecto, x: number, y: number, mirando: number, pose: Pose,
+  opciones: { piel?: string; escala?: number; rotacion?: number; cara?: Cara } = {},
 ) {
+  const piel = opciones.piel ?? PIEL_FULBIO
+  const escala = opciones.escala ?? 1
   ctx.save()
   ctx.translate(x, y)
   ctx.scale(mirando * escala, escala)
-  if (rotacion) ctx.rotate(rotacion)
+  if (opciones.rotacion) ctx.rotate(opciones.rotacion)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   const [hx, hy] = pose.cadera
-  const sx = hx + Math.sin(pose.torso) * TORSO
-  const sy = hy - Math.cos(pose.torso) * TORSO
-  const cx = hx + Math.sin(pose.torso) * (TORSO + 10)
-  const cy = hy - Math.cos(pose.torso) * (TORSO + 10)
+  const t = pose.torso
+  const sx = hx + Math.sin(t) * a.torso
+  const sy = hy - Math.cos(t) * a.torso
+  const fulbio = a.cuerpo === 'fulbio'
+  const cuello = fulbio ? 2 : 3
+  const cx = hx + Math.sin(t) * (a.torso + a.cabeza + cuello)
+  const cy = hy - Math.cos(t) * (a.torso + a.cabeza + cuello)
 
-  // Lo de atrás primero
-  brazo(ctx, sx, sy, pose.brazoB, ropa, true)
-  pierna(ctx, hx, hy, pose.piernaB, ropa, true)
-  // Torso y short
-  trazo(ctx, ropa.camiseta, 15, hx, hy - 2, sx, sy + 2)
-  trazo(ctx, ropa.detalle, 2.6, hx - Math.cos(pose.torso) * 5, hy - 3 - Math.sin(pose.torso) * 5,
-    sx - Math.cos(pose.torso) * 5, sy + 3 - Math.sin(pose.torso) * 5)
-  trazo(ctx, ropa.short, 14, hx - 1, hy - 2, hx + 1, hy + 3)
-  // Lo de adelante
-  pierna(ctx, hx, hy, pose.piernaA, ropa, false)
-  brazo(ctx, sx, sy, pose.brazoA, ropa, false)
-  // Cabeza: cuello del color del detalle, pelo atrás y arriba
-  trazo(ctx, ropa.detalle, 4, sx - 3, sy + 1, sx + 3, sy - 1)
-  ctx.fillStyle = ropa.piel
-  ctx.beginPath()
-  ctx.arc(cx, cy, 8.5, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = ropa.pelo
-  ctx.beginPath()
-  ctx.arc(cx, cy, 9, (150 * Math.PI) / 180, (335 * Math.PI) / 180)
-  ctx.closePath()
-  ctx.fill()
-  ctx.fillStyle = oscuro(ropa.piel, 0.8)
-  ctx.beginPath()
-  ctx.arc(cx - 1, cy + 1, 2, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = '#1a120a'
-  ctx.fillRect(cx + 4.5, cy - 1.5, 1.6, 1.8)
+  brazo(ctx, a, sx, sy, pose.brazoB, piel, true)
+  pierna(ctx, a, hx, hy, pose.piernaB, piel, true, fulbio ? 'tobillera' : null)
+  torso(ctx, a, hx, hy, t, piel)
+  pierna(ctx, a, hx, hy, pose.piernaA, piel, false, fulbio ? 'rodillera' : null)
+  brazo(ctx, a, sx, sy, pose.brazoA, piel, false)
+  // Cuello de la camiseta
+  trazo(ctx, TINTA, 6, sx - 3, sy + 1.5, sx + 3.5, sy - 0.5)
+  trazo(ctx, a.puño, 3.5, sx - 3, sy + 1.5, sx + 3.5, sy - 0.5)
+  if (fulbio) cabezaFulbio(ctx, cx, cy, a.cabeza, opciones.cara ?? 'contento')
+  else cabezaRival(ctx, cx, cy, a.cabeza, piel)
   ctx.restore()
 }
 
+// Poses de Don Fulbio (cadera baja: piernas cortas)
 const correr = (p: number): Pose => {
-  const rebote = Math.abs(Math.cos(p)) * 2.5
+  const rebote = Math.abs(Math.cos(p)) * 3
   return {
-    cadera: [0, -35 - rebote],
-    torso: 0.22,
-    piernaA: [0.8 * Math.sin(p), 0.35 + 1.1 * Math.max(0, Math.cos(p))],
-    piernaB: [0.8 * Math.sin(p + Math.PI), 0.35 + 1.1 * Math.max(0, Math.cos(p + Math.PI))],
-    brazoA: [-0.75 * Math.sin(p), 1.4],
-    brazoB: [0.75 * Math.sin(p), 1.4],
+    cadera: [0, -29 - rebote],
+    torso: 0.12,
+    piernaA: [0.75 * Math.sin(p), 0.3 + 1.1 * Math.max(0, Math.cos(p))],
+    piernaB: [0.75 * Math.sin(p + Math.PI), 0.3 + 1.1 * Math.max(0, Math.cos(p + Math.PI))],
+    brazoA: [0.2 - 0.85 * Math.sin(p), 1.5],
+    brazoB: [0.2 + 0.85 * Math.sin(p), 1.5],
   }
 }
 
 const enElAire = (vy: number): Pose => vy > 0
-  ? { cadera: [0, -38], torso: 0.1, piernaA: [0.95, 1.6], piernaB: [-0.35, 1.3], brazoA: [1.9, 0.6], brazoB: [-1.0, 0.9] }
-  : { cadera: [0, -37], torso: 0.12, piernaA: [0.5, 0.6], piernaB: [-0.15, 0.5], brazoA: [1.5, 0.5], brazoB: [-0.7, 0.8] }
+  ? { cadera: [0, -31], torso: 0.05, piernaA: [1.0, 1.7], piernaB: [-0.3, 1.4], brazoA: [2.4, 0.5], brazoB: [1.9, 0.6] }
+  : { cadera: [0, -30], torso: 0.1, piernaA: [0.6, 0.7], piernaB: [-0.2, 0.6], brazoA: [1.9, 0.4], brazoB: [-0.6, 0.8] }
 
+// Bicicleta: la pierna de adelante pasa por arriba de la pelota
 const gambeteando = (q: number): Pose => {
   const s = Math.sin(q * Math.PI)
   return {
-    cadera: [0, -35],
-    torso: 0.08 - 0.18 * s,
-    piernaA: [0.3 + 0.75 * Math.sin(q * Math.PI * 2), 0.5 + 0.5 * s],
+    cadera: [0, -29],
+    torso: 0.06 - 0.16 * s,
+    piernaA: [0.3 + 0.7 * Math.sin(q * Math.PI * 2), 0.5 + 0.5 * s],
     piernaB: [-0.25, 0.4],
-    brazoA: [0.2 + 1.3 * s, 0.3],
-    brazoB: [-0.2 - 1.2 * s, 0.3],
+    brazoA: [0.3 + 1.3 * s, 0.4],
+    brazoB: [-0.2 - 1.2 * s, 0.4],
   }
 }
 
-const POSE_CAIDO: Pose = { cadera: [0, -35], torso: 0.2, piernaA: [0.6, 0.9], piernaB: [-0.4, 0.8], brazoA: [2.2, 0.4], brazoB: [1.6, 0.5] }
+// Caño: le pega con la punta para mandarla entre las piernas
+const tirandoCaño = (q: number): Pose => {
+  const s = Math.sin(q * Math.PI)
+  const toque = Math.max(0, 1 - q * 3)
+  return {
+    cadera: [0, -29],
+    torso: 0.15,
+    piernaA: [0.25 + 0.85 * toque, 0.35 + 0.6 * (1 - toque)],
+    piernaB: [-0.35, 0.6],
+    brazoA: [0.2 + 1.0 * s, 0.7],
+    brazoB: [-0.1 - 1.0 * s, 0.7],
+  }
+}
 
+const POSE_CAIDO: Pose = { cadera: [0, -29], torso: 0.2, piernaA: [0.7, 0.9], piernaB: [-0.3, 0.8], brazoA: [2.4, 0.4], brazoB: [1.8, 0.5] }
+
+// Poses de los rivales
 const parado = (fase: number): Pose => {
   const rebote = Math.sin(fase * 9) * 1.2
   return { cadera: [0, -33 + rebote], torso: 0.28, piernaA: [0.38, 0.55], piernaB: [-0.3, 0.55], brazoA: [0.75, 0.5], brazoB: [-0.45, 0.6] }
 }
-
+const abierto = (fase: number): Pose => {
+  const rebote = Math.sin(fase * 9) * 1
+  return { cadera: [0, -26 + rebote], torso: 0.12, piernaA: [0.74, 0.1], piernaB: [-0.74, 0.1], brazoA: [1.6, 0.3], brazoB: [-1.4, 0.3] }
+}
 const POSE_SALTO_RIVAL: Pose = { cadera: [0, -36], torso: 0.05, piernaA: [0.25, 0.9], piernaB: [-0.15, 1.1], brazoA: [2.9, 0.15], brazoB: [2.7, 0.2] }
 const POSE_DESPARRAMADO: Pose = { cadera: [0, -34], torso: 0.1, piernaA: [0.7, 0.3], piernaB: [0.95, 0.5], brazoA: [2.4, 0.3], brazoB: [2.0, 0.3] }
+const POSE_MIRANDO: Pose = { cadera: [0, -35], torso: -0.05, piernaA: [0.12, 0.15], piernaB: [-0.12, 0.15], brazoA: [2.5, 0.6], brazoB: [2.2, 0.6] }
 // Tirado hacia atrás con una pierna estirada al ras del pasto, la otra doblada abajo y un brazo apoyado
 const POSE_BARRIDA: Pose = { cadera: [0, -14], torso: -1.15, piernaA: [1.5, 0.05], piernaB: [1.3, 2.5], brazoA: [-0.6, -0.4], brazoB: [2.6, 0.3] }
 
@@ -462,79 +881,100 @@ const suave = (t: number) => 1 - (1 - t) * (1 - t)
 
 function sombra(ctx: CanvasRenderingContext2D, x: number, y: number, ancho: number, altura: number) {
   const f = Math.max(0.35, 1 - altura / 200)
-  ctx.fillStyle = `rgba(0,0,0,${0.35 * f})`
+  ctx.fillStyle = `rgba(8,12,20,${0.4 * f})`
   ctx.beginPath()
   ctx.ellipse(x, y + 3, ancho * f, 4 * f, 0, 0, Math.PI * 2)
   ctx.fill()
 }
 
+// Pelota de cuero de otras épocas
 function pelota(ctx: CanvasRenderingContext2D, x: number, y: number, giro: number) {
   ctx.save()
   ctx.translate(x, y)
   ctx.rotate(giro)
-  ctx.fillStyle = '#f4f1e8'
+  circulo(ctx, 0, 0, 6.5, '#8b6a45', 1.6)
+  ctx.strokeStyle = 'rgba(26,22,18,0.75)'
+  ctx.lineWidth = 0.9
   ctx.beginPath()
-  ctx.arc(0, 0, 6.5, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = '#1a1a1a'
-  ctx.beginPath()
-  ctx.arc(0, 0, 2.4, 0, Math.PI * 2)
-  ctx.fill()
-  for (let i = 0; i < 5; i++) {
-    const a = (i * Math.PI * 2) / 5
-    ctx.beginPath()
-    ctx.arc(Math.cos(a) * 5.6, Math.sin(a) * 5.6, 1.5, 0, Math.PI * 2)
-    ctx.fill()
-  }
+  ctx.moveTo(-6, -1.5)
+  ctx.quadraticCurveTo(0, -3.5, 6, -1.5)
+  ctx.moveTo(-5, 3)
+  ctx.quadraticCurveTo(0, 1, 5, 3)
+  ctx.moveTo(-1, -6.3)
+  ctx.quadraticCurveTo(-2.5, 0, -1, 6.3)
+  ctx.stroke()
+  circulo(ctx, -2, -2.5, 1.4, 'rgba(239,227,198,0.35)')
   ctx.restore()
 }
 
-function dibujarRival(ctx: CanvasRenderingContext2D, r: Rival, j: Juego, v: Vista, ropa: Ropa) {
+function dibujarRival(ctx: CanvasRenderingContext2D, r: Rival, j: Juego, v: Vista) {
   const x = r.x - j.distancia + v.xJugador
   if (x > v.ancho + 80 || x + r.ancho < -80) return
-  const conPiel = { ...ropa, piel: r.piel }
+  const piel = r.piel
   if (r.tipo === 'barrida') {
     sombra(ctx, x + 36, v.piso, 38, 0)
-    muñeco(ctx, x + 40, v.piso, -1, POSE_BARRIDA, conPiel)
+    muñeco(ctx, RIVAL, x + 40, v.piso, -1, POSE_BARRIDA, { piel })
     return
   }
   const centro = x + r.ancho / 2
-  sombra(ctx, centro, v.piso, 13, r.salto)
-  if (r.gambeteado) {
-    muñeco(ctx, centro, v.piso, -1, POSE_DESPARRAMADO, conPiel, 1, -1.35 * suave(r.caida))
+  sombra(ctx, centro, v.piso, r.tipo === 'abierto' ? 20 : 13, r.salto)
+  if (r.pasado === 'gambeta') {
+    muñeco(ctx, RIVAL, centro, v.piso, -1, POSE_DESPARRAMADO, { piel, rotacion: -1.35 * suave(r.caida) })
+  } else if (r.pasado === 'caño' && r.caida < 0.4) {
+    // La pelota todavía está pasando entre las piernas
+    muñeco(ctx, RIVAL, centro, v.piso, -1, abierto(j.tiempo + r.x * 0.01), { piel })
+  } else if (r.pasado === 'caño') {
+    // Lo dejaste mirando: se da vuelta a buscar la pelota
+    muñeco(ctx, RIVAL, centro, v.piso, -Math.cos(((r.caida - 0.4) / 0.6) * Math.PI), POSE_MIRANDO, { piel })
+    ctx.font = '22px "Bebas Neue", sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'alphabetic'
+    ctx.lineWidth = 3
+    ctx.strokeStyle = TINTA
+    ctx.strokeText('?', centro + 2, v.piso - 74)
+    ctx.fillStyle = CREMA
+    ctx.fillText('?', centro + 2, v.piso - 74)
   } else if (r.saltó && r.salto > 0) {
-    muñeco(ctx, centro, v.piso - r.salto, -1, POSE_SALTO_RIVAL, conPiel)
+    muñeco(ctx, RIVAL, centro, v.piso - r.salto, -1, POSE_SALTO_RIVAL, { piel })
   } else {
-    muñeco(ctx, centro, v.piso, -1, parado(j.tiempo + r.x * 0.01), conPiel)
+    const fase = j.tiempo + r.x * 0.01
+    muñeco(ctx, RIVAL, centro, v.piso, -1, r.tipo === 'abierto' ? abierto(fase) : parado(fase), { piel })
   }
 }
 
-function dibujarJugador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista, ropa: Ropa) {
+function dibujarJugador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
   const x = v.xJugador
   const pies = v.piso - j.y
-  const giro = j.distancia / 6.5
-  sombra(ctx, x + 4, v.piso, 15, j.y)
+  sombra(ctx, x + 4, v.piso, 17, j.y)
 
   if (j.estado === 'cayendo' || j.estado === 'fin') {
     const t = Math.min(1, j.tiempoCaida / 0.45)
     const haciaAdelante = j.motivo === 'barrida'
-    muñeco(ctx, x, pies, 1, POSE_CAIDO, ropa, 1, (haciaAdelante ? 1.45 : -1.3) * suave(t))
+    muñeco(ctx, DON_FULBIO, x, pies, 1, POSE_CAIDO, { rotacion: (haciaAdelante ? 1.45 : -1.3) * suave(t), cara: 'dolor' })
     const tc = j.tiempoCaida
     const bx = x + 18 + tc * 260 * Math.max(0, 1 - tc * 0.4)
     const by = v.piso - 6 - Math.abs(Math.sin(tc * 12)) * 22 * Math.exp(-3 * tc)
-    pelota(ctx, bx, by, giro + tc * 10)
+    pelota(ctx, bx, by, j.distancia / 6.5 + tc * 10)
+    // Estrellitas alrededor de la cabeza
+    if (tc > 0.4) {
+      const hx = x + (haciaAdelante ? 62 : -56)
+      const hy = v.piso - 24
+      for (let i = 0; i < 3; i++) {
+        const a = tc * 4 + (i * Math.PI * 2) / 3
+        estrella(ctx, hx + Math.cos(a) * 14, hy + Math.sin(a) * 5, 4.5, ORO, a)
+      }
+    }
     return
   }
 
-  const q = progresoGambeta(j)
-  if (q > 0) {
+  const q = progresoJugada(j)
+  if (j.jugada && q > 0) {
     const s = Math.sin(q * Math.PI)
-    // Estela dorada
-    ctx.strokeStyle = 'rgba(201,168,76,0.5)'
+    ctx.strokeStyle = 'rgba(212,165,74,0.6)'
     ctx.lineWidth = 2
     ctx.lineCap = 'round'
     for (let i = 0; i < 3; i++) {
-      const ly = pies - 18 - s * 18 - i * 14
+      const ly = pies - 16 - s * 16 - i * 13
       ctx.globalAlpha = 0.6 * s
       ctx.beginPath()
       ctx.moveTo(x - 18 - i * 6, ly)
@@ -542,38 +982,63 @@ function dibujarJugador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista, ropa:
       ctx.stroke()
     }
     ctx.globalAlpha = 1
-    muñeco(ctx, x, pies - s * 18, 1, gambeteando(q), ropa, 1 - 0.08 * s)
-    pelota(ctx, x + 16 + 7 * Math.cos(q * Math.PI * 2), pies - 6 - s * 16, giro)
+    const pose = j.jugada === 'caño' ? tirandoCaño(q) : gambeteando(q)
+    muñeco(ctx, DON_FULBIO, x, pies - s * 16, 1, pose, { escala: 1 - 0.08 * s })
     return
   }
 
   if (j.enAire) {
-    muñeco(ctx, x, pies, 1, enElAire(j.vy), ropa)
-    pelota(ctx, x + 15, pies - 4, giro)
+    muñeco(ctx, DON_FULBIO, x, pies, 1, enElAire(j.vy))
     return
   }
+  muñeco(ctx, DON_FULBIO, x, pies, 1, correr(j.fasePaso))
+}
 
-  muñeco(ctx, x, pies, 1, correr(j.fasePaso), ropa)
-  pelota(ctx, x + 17 + Math.sin(j.fasePaso * 2) * 2, pies - 6.5 - Math.abs(Math.sin(j.fasePaso)) * 5, giro)
+// La pelota va aparte: en el caño pasa por delante del rival, entre las piernas
+function dibujarPelota(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
+  if (j.estado === 'cayendo' || j.estado === 'fin') return
+  const x = v.xJugador
+  const pies = v.piso - j.y
+  const giro = j.distancia / 6.5
+  const q = progresoJugada(j)
+  if (j.jugada === 'caño' && q > 0) {
+    // Sale por entre las piernas y Don Fulbio la va a buscar por el costado
+    pelota(ctx, x + 16 + 78 * Math.sin(q * Math.PI), v.piso - 6.5, giro * 1.6)
+  } else if (j.jugada === 'gambeta' && q > 0) {
+    const s = Math.sin(q * Math.PI)
+    pelota(ctx, x + 16 + 7 * Math.cos(q * Math.PI * 2), pies - 6 - s * 14, giro)
+  } else if (j.enAire) {
+    pelota(ctx, x + 15, pies - 4, giro)
+  } else {
+    pelota(ctx, x + 18 + Math.sin(j.fasePaso * 2) * 2, pies - 6.5 - Math.abs(Math.sin(j.fasePaso)) * 5, giro)
+  }
 }
 
 function pistas(ctx: CanvasRenderingContext2D, j: Juego, v: Vista, tactil: boolean) {
   if (j.estado !== 'jugando') return
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
+  ctx.lineJoin = 'round'
   for (const r of j.rivales) {
-    if (!r.pista || r.gambeteado) continue
+    if (!r.pista || r.pasado) continue
     const x = r.x - j.distancia + v.xJugador + r.ancho / 2
     if (x < v.xJugador + 30 || x > v.ancho - 20) continue
-    const salto = r.tipo === 'barrida'
-    const tecla = tactil ? (salto ? 'BOTÓN SALTAR' : 'BOTÓN GAMBETA') : (salto ? 'ESPACIO O ↑' : '→ O D')
-    ctx.globalAlpha = 0.75 + 0.25 * Math.sin(j.tiempo * 8)
-    ctx.fillStyle = '#c9a84c'
-    ctx.font = '22px "Bebas Neue", sans-serif'
-    ctx.fillText(salto ? '↑ ' + r.pista : r.pista + ' →', x, v.piso - 118)
-    ctx.font = '600 9px Montserrat, sans-serif'
-    ctx.fillStyle = '#e8d5a0'
-    ctx.fillText(tecla, x, v.piso - 104)
+    const titulo = r.tipo === 'barrida' ? '↑ ' + r.pista : r.tipo === 'parado' ? r.pista + ' →' : r.pista + ' ↓'
+    const tecla = tactil
+      ? (r.tipo === 'barrida' ? 'BOTÓN SALTAR' : r.tipo === 'parado' ? 'BOTÓN GAMBETA' : 'BOTÓN CAÑO (O GAMBETA)')
+      : (r.tipo === 'barrida' ? 'ESPACIO O ↑' : r.tipo === 'parado' ? '→ O D' : '↓ O S (O GAMBETA)')
+    ctx.globalAlpha = 0.8 + 0.2 * Math.sin(j.tiempo * 8)
+    ctx.font = '24px "Bebas Neue", sans-serif'
+    ctx.lineWidth = 4
+    ctx.strokeStyle = TINTA
+    ctx.strokeText(titulo, x, v.piso - 120)
+    ctx.fillStyle = ORO
+    ctx.fillText(titulo, x, v.piso - 120)
+    ctx.font = '700 9px Montserrat, sans-serif'
+    ctx.lineWidth = 3
+    ctx.strokeText(tecla, x, v.piso - 106)
+    ctx.fillStyle = CREMA
+    ctx.fillText(tecla, x, v.piso - 106)
     ctx.globalAlpha = 1
   }
 }
@@ -586,77 +1051,77 @@ function efectos(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
   }
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
+  ctx.lineJoin = 'round'
   for (const t of j.textos) {
     ctx.globalAlpha = Math.min(1, t.vida / 0.4)
     ctx.font = `${t.grande ? 30 : 20}px "Bebas Neue", sans-serif`
     const x = t.x - j.distancia + v.xJugador
     const y = v.piso - t.y
-    ctx.lineWidth = 3
-    ctx.strokeStyle = '#100c06'
+    ctx.lineWidth = 4
+    ctx.strokeStyle = TINTA
     ctx.strokeText(t.texto, x, y)
-    ctx.fillStyle = t.texto.startsWith('+') ? '#e8d5a0' : '#c9a84c'
+    ctx.fillStyle = t.texto.startsWith('+') ? CREMA : ORO
     ctx.fillText(t.texto, x, y)
   }
   ctx.globalAlpha = 1
 }
 
-function viñeta(ctx: CanvasRenderingContext2D, v: Vista) {
-  const r = Math.max(v.ancho, v.alto)
-  const g = ctx.createRadialGradient(v.ancho / 2, v.piso * 0.8, r * 0.25, v.ancho / 2, v.piso * 0.8, r * 0.8)
-  g.addColorStop(0, 'rgba(0,0,0,0)')
-  g.addColorStop(1, 'rgba(0,0,0,0.5)')
-  ctx.fillStyle = g
-  ctx.fillRect(0, 0, v.ancho, v.alto)
-}
-
 function marcador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista, arriba: number) {
   if (j.estado === 'listo') return
-  ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
-  ctx.shadowColor = 'rgba(0,0,0,0.6)'
-  ctx.shadowBlur = 8
-  ctx.fillStyle = '#c9a84c'
-  ctx.font = '48px "Bebas Neue", sans-serif'
-  ctx.fillText(String(metros(j)), v.cssAncho / 2, arriba + 50)
-  ctx.shadowBlur = 0
-  ctx.fillStyle = 'rgba(232,213,160,0.75)'
-  ctx.font = '700 10px Montserrat, sans-serif'
-  ctx.fillText('M E T R O S', v.cssAncho / 2, arriba + 66)
-  // Gambetas, a la derecha
-  ctx.textAlign = 'right'
-  ctx.fillStyle = '#e8d5a0'
-  ctx.font = '30px "Bebas Neue", sans-serif'
-  ctx.fillText(String(j.gambetas), v.cssAncho - 18, arriba + 42)
-  ctx.fillStyle = 'rgba(232,213,160,0.75)'
-  ctx.font = '700 9px Montserrat, sans-serif'
-  ctx.fillText('GAMBETAS', v.cssAncho - 18, arriba + 56)
+  ctx.lineJoin = 'round'
+  const numero = (texto: string, x: number, y: number, tam: number, color: string, alineacion: CanvasTextAlign) => {
+    ctx.textAlign = alineacion
+    ctx.font = `${tam}px "Bebas Neue", sans-serif`
+    ctx.lineWidth = 5
+    ctx.strokeStyle = TINTA
+    ctx.strokeText(texto, x, y)
+    ctx.fillStyle = color
+    ctx.fillText(texto, x, y)
+  }
+  const etiqueta = (texto: string, x: number, y: number, alineacion: CanvasTextAlign) => {
+    ctx.textAlign = alineacion
+    ctx.font = '700 9px Montserrat, sans-serif'
+    ctx.fillStyle = 'rgba(239,227,198,0.8)'
+    ctx.fillText(texto, x, y)
+  }
+  numero(String(metros(j)), v.cssAncho / 2, arriba + 52, 50, CREMA, 'center')
+  etiqueta('M E T R O S', v.cssAncho / 2, arriba + 67, 'center')
+  const derecha = v.cssAncho - 18
+  numero(String(j.caños), derecha, arriba + 44, 30, ORO, 'right')
+  etiqueta('CAÑOS', derecha, arriba + 57, 'right')
+  numero(String(j.gambetas), derecha - 50, arriba + 44, 30, CREMA, 'right')
+  etiqueta('GAMBETAS', derecha - 50, arriba + 57, 'right')
 }
 
 export function dibujar(
   ctx: CanvasRenderingContext2D, j: Juego, v: Vista,
-  ropas: { jugador: Ropa; rival: Ropa }, opciones: { tactil: boolean; arriba: number },
+  opciones: { tactil: boolean; arriba: number; firma?: string },   // firma: la familia de la letra de "Futboleros"
 ) {
   ctx.setTransform(v.dpr * v.escala, 0, 0, v.dpr * v.escala, 0, 0)
   if (j.temblor > 0) {
     const a = j.temblor * 16
     ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a)
   }
-  cielo(ctx, v, j.tiempo)
-  ciudad(ctx, v, j.distancia)
-  torres(ctx, v, j.distancia)
-  alambrado(ctx, v, j.distancia)
+  const fijas = obtenerCapas(ctx, v, opciones.firma ?? 'Lobster, cursive')
+  ctx.drawImage(fijas.cielo, 0, 0, v.ancho, v.piso)
+  ciudad(ctx, v, j.distancia, fijas.ciudad)
+  torres(ctx, v, j.distancia, fijas.torre)
+  alambrado(ctx, v, j.distancia, fijas.tejido)
   cancha(ctx, v, j.distancia)
+  arcos(ctx, v, j.distancia)
 
-  // En la gambeta el jugador pasa por detrás del rival
-  const detras = progresoGambeta(j) > 0
-  if (detras) dibujarJugador(ctx, j, v, ropas.jugador)
-  for (const r of j.rivales) dibujarRival(ctx, r, j, v, ropas.rival)
-  if (!detras) dibujarJugador(ctx, j, v, ropas.jugador)
+  // En la gambeta y el caño, Don Fulbio pasa por detrás del rival
+  const detras = progresoJugada(j) > 0
+  if (detras) dibujarJugador(ctx, j, v)
+  for (const r of j.rivales) dibujarRival(ctx, r, j, v)
+  if (!detras) dibujarJugador(ctx, j, v)
+  dibujarPelota(ctx, j, v)
 
   pistas(ctx, j, v, opciones.tactil)
   efectos(ctx, j, v)
-  viñeta(ctx, v)
 
+  // El tono crema, la viñeta y el grano van en una capa fija encima del canvas (Juego.tsx)
   ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0)
   marcador(ctx, j, v, opciones.arriba)
 }
