@@ -72,7 +72,7 @@ const V_CORTE = 600                // si soltás el botón enseguida, salta más
 export const DURACION_JUGADA = 0.38
 const ESPERA_JUGADA = 0.2
 const MEMORIA_TECLA = 0.13
-const ANCHO = { barrida: 76, parado: 30, abierto: 40 } as const
+const ANCHO = { barrida: 76, parado: 30, abierto: 56 } as const   // el de las piernas abiertas ocupa más
 const PIELES = ['#c98a5e', '#e6b48c', '#9a6440', '#d9a072']
 
 // Caja de Don Fulbio respecto de su posición (un poco más chica que el dibujo: perdona los roces)

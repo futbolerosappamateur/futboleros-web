@@ -877,6 +877,195 @@ const POSE_MIRANDO: Pose = { cadera: [0, -35], torso: -0.05, piernaA: [0.12, 0.1
 // Tirado hacia atrás con una pierna estirada al ras del pasto, la otra doblada abajo y un brazo apoyado
 const POSE_BARRIDA: Pose = { cadera: [0, -14], torso: -1.15, piernaA: [1.5, 0.05], piernaB: [1.3, 2.5], brazoA: [-0.6, -0.4], brazoB: [2.6, 0.3] }
 
+// ---- Personajes con imágenes (las piezas dibujadas para el juego, en public/juego) ----
+// Don Fulbio se arma como un títere: cada pieza se engancha en su articulación (p) y, en brazos y piernas,
+// la siguiente va donde termina (e). Los rivales son una imagen entera por pose. Las medidas son en píxeles
+// del archivo .webp. Mientras las imágenes no cargan, se usan los muñecos dibujados de arriba.
+
+interface DefPieza { src: string; w: number; h: number; p: [number, number]; e?: [number, number] }
+
+const ESCALA_FULBIO = 0.1275   // unidades del mundo por píxel, piezas de Don Fulbio
+const ESCALA_SENTADO = 0.24
+const ESCALA_RIVAL = 0.265
+
+const PIEZAS = {
+  cabezaContento: { src: '/juego/fulbio/cabeza-contento.webp', w: 116, h: 132, p: [64, 118] },
+  cabezaDolor: { src: '/juego/fulbio/cabeza-dolor.webp', w: 114, h: 133, p: [62, 119] },
+  cabezaGrito: { src: '/juego/fulbio/cabeza-grito.webp', w: 114, h: 132, p: [62, 118] },
+  torso: { src: '/juego/fulbio/torso.webp', w: 144, h: 144, p: [78, 128] },
+  short: { src: '/juego/fulbio/short.webp', w: 138, h: 96, p: [68, 78] },
+  brazo: { src: '/juego/fulbio/brazo.webp', w: 57, h: 108, p: [31, 12], e: [25, 96] },
+  antebrazo: { src: '/juego/fulbio/antebrazo.webp', w: 47, h: 104, p: [24, 10], e: [22, 94] },
+  muslo: { src: '/juego/fulbio/muslo.webp', w: 70, h: 96, p: [35, 10], e: [34, 86] },
+  piernaRodillera: { src: '/juego/fulbio/pierna-rodillera.webp', w: 60, h: 115, p: [32, 11], e: [23, 104] },
+  piernaTobillera: { src: '/juego/fulbio/pierna-tobillera.webp', w: 56, h: 114, p: [28, 11], e: [23, 104] },
+  botin: { src: '/juego/fulbio/botin.webp', w: 106, h: 61, p: [35, 10] },
+  pelota: { src: '/juego/fulbio/pelota.webp', w: 82, h: 86, p: [41, 43] },
+  sentado: { src: '/juego/fulbio/sentado.webp', w: 387, h: 232, p: [150, 228] },
+  parado: { src: '/juego/rival/parado.webp', w: 154, h: 253, p: [77, 250] },
+  abierto: { src: '/juego/rival/abierto.webp', w: 291, h: 233, p: [146, 230] },
+  barrida: { src: '/juego/rival/barrida.webp', w: 286, h: 200, p: [0, 196] },
+  saltando: { src: '/juego/rival/saltando.webp', w: 199, h: 301, p: [100, 298] },
+  caido: { src: '/juego/rival/caido.webp', w: 314, h: 164, p: [157, 160] },
+  deEspaldas: { src: '/juego/rival/de-espaldas.webp', w: 208, h: 303, p: [104, 300] },
+} satisfies Record<string, DefPieza>
+
+type NombrePieza = keyof typeof PIEZAS
+type Cabeza = 'cabezaContento' | 'cabezaDolor' | 'cabezaGrito'
+
+// Puntos del torso y del short (en píxeles de su archivo)
+const TORSO_HOMBRO: [number, number] = [30, 45]         // la manga que se ve: ahí va el brazo de adelante
+const TORSO_HOMBRO_LEJOS: [number, number] = [112, 42]  // el brazo de atrás asoma del otro lado del pecho
+const TORSO_CUELLO: [number, number] = [80, 25]
+const SHORT_CINTURA = 8
+
+// Algunas piezas van más grandes que en la hoja: Don Fulbio es cabezón y panzón, como en los afiches
+const AJUSTE: Partial<Record<NombrePieza, number>> = {
+  cabezaContento: 1.3, cabezaDolor: 1.3, cabezaGrito: 1.3, torso: 1.2, short: 1.15,
+  brazo: 1.1, antebrazo: 1.1, muslo: 1.05, botin: 0.95,
+}
+const RIVALES = { parado: 1, abierto: 1, barrida: 1, saltando: 1, caido: 1, deEspaldas: 1 }
+const escalaDe = (n: NombrePieza) =>
+  (n === 'sentado' ? ESCALA_SENTADO : n in RIVALES ? ESCALA_RIVAL : ESCALA_FULBIO) * (AJUSTE[n] ?? 1)
+
+const imagenes = new Map<NombrePieza, HTMLImageElement>()
+let personajesListos = false
+let cargando: Promise<void> | null = null
+
+export function cargarPersonajes() {
+  if (!cargando) {
+    const nombres = Object.keys(PIEZAS) as NombrePieza[]
+    cargando = Promise.all(nombres.map((n) => new Promise<void>((listo, error) => {
+      const img = new Image()
+      img.onload = () => { imagenes.set(n, img); listo() }
+      img.onerror = () => error(new Error(`No cargó ${PIEZAS[n].src}`))
+      img.src = PIEZAS[n].src
+    }))).then(() => { personajesListos = true })
+  }
+  return cargando
+}
+
+// Cada pieza se pasa una vez al tamaño en que se va a ver (achicarla en cada cuadro la hace titilar), y las
+// de atrás tienen además su versión oscurecida
+let kActual = 1
+let kSprites = 0
+const sprites = new Map<string, HTMLCanvasElement>()
+
+function sprite(n: NombrePieza, oscura: boolean) {
+  if (kActual !== kSprites) {
+    sprites.clear()
+    kSprites = kActual
+  }
+  const clave = oscura ? n + '·' : n
+  let c = sprites.get(clave)
+  if (!c) {
+    const d = PIEZAS[n]
+    const img = imagenes.get(n) as HTMLImageElement
+    const f = escalaDe(n) * kActual * 1.25
+    c = document.createElement('canvas')
+    c.width = Math.max(1, Math.round(d.w * f))
+    c.height = Math.max(1, Math.round(d.h * f))
+    const g = c.getContext('2d') as CanvasRenderingContext2D
+    g.imageSmoothingQuality = 'high'
+    g.drawImage(img, 0, 0, c.width, c.height)
+    if (oscura) {
+      g.globalCompositeOperation = 'source-atop'
+      g.fillStyle = 'rgba(8,14,30,0.38)'
+      g.fillRect(0, 0, c.width, c.height)
+    }
+    sprites.set(clave, c)
+  }
+  return c
+}
+
+function pieza(
+  ctx: CanvasRenderingContext2D, n: NombrePieza, x: number, y: number,
+  angulo = 0, oscura = false, escalaY = 1,
+) {
+  const d = PIEZAS[n]
+  const esc = escalaDe(n)
+  ctx.save()
+  ctx.translate(x, y)
+  if (angulo) ctx.rotate(angulo)
+  if (escalaY !== 1) ctx.scale(1, escalaY)
+  ctx.drawImage(sprite(n, oscura), -d.p[0] * esc, -d.p[1] * esc, d.w * esc, d.h * esc)
+  ctx.restore()
+}
+
+// Brazo o pierna: se engancha en (x, y) y apunta en el ángulo a (desde la vertical, + adelante), como en
+// las poses. Devuelve dónde termina, para enganchar la pieza siguiente
+function segmento(ctx: CanvasRenderingContext2D, n: NombrePieza, x: number, y: number, a: number, oscura: boolean): [number, number] {
+  const d: DefPieza = PIEZAS[n]
+  const [px, py] = d.p
+  const [ex, ey] = d.e ?? d.p
+  const propio = Math.atan2(ex - px, ey - py)
+  const largo = Math.hypot(ex - px, ey - py) * escalaDe(n)
+  pieza(ctx, n, x, y, propio - a, oscura)
+  return [x + Math.sin(a) * largo, y + Math.cos(a) * largo]
+}
+
+function brazoConImagen(ctx: CanvasRenderingContext2D, x: number, y: number, [a, codo]: [number, number], oscura: boolean) {
+  const [ex, ey] = segmento(ctx, 'brazo', x, y, a, oscura)
+  segmento(ctx, 'antebrazo', ex, ey, a + codo, oscura)
+}
+
+function piernaConImagen(
+  ctx: CanvasRenderingContext2D, x: number, y: number, [a, flex]: [number, number],
+  n: 'piernaRodillera' | 'piernaTobillera', oscura: boolean,
+) {
+  const [kx, ky] = segmento(ctx, 'muslo', x, y, a, oscura)
+  const b = a - flex
+  const [tx, ty] = segmento(ctx, n, kx, ky, b, oscura)
+  pieza(ctx, 'botin', tx, ty, -b, oscura)
+}
+
+function fulbioConImagenes(ctx: CanvasRenderingContext2D, pose: Pose, cabeza: Cabeza) {
+  const [hx, hy] = pose.cadera
+  const t = pose.torso
+  // El torso se apoya en el elástico del short (la panza lo tapa un poco) y se inclina desde ahí
+  const st = escalaDe('torso')
+  const bx = hx
+  const by = hy - (PIEZAS.short.p[1] - SHORT_CINTURA) * escalaDe('short') + 2.5
+  const enTorso = ([px, py]: [number, number]): [number, number] => {
+    const dx = (px - PIEZAS.torso.p[0]) * st
+    const dy = (py - PIEZAS.torso.p[1]) * st
+    return [bx + dx * Math.cos(t) - dy * Math.sin(t), by + dx * Math.sin(t) + dy * Math.cos(t)]
+  }
+  const [sx, sy] = enTorso(TORSO_HOMBRO)
+  const [lx, ly] = enTorso(TORSO_HOMBRO_LEJOS)
+  const [cx, cy] = enTorso(TORSO_CUELLO)
+  brazoConImagen(ctx, lx, ly, pose.brazoB, true)
+  piernaConImagen(ctx, hx - 1.5, hy, pose.piernaB, 'piernaTobillera', true)
+  pieza(ctx, 'short', hx, hy)
+  pieza(ctx, cabeza, cx, cy, t * 0.5)   // antes que el torso: el cuello de la camiseta tapa el del muñeco
+  pieza(ctx, 'torso', bx, by, t)
+  piernaConImagen(ctx, hx + 1.5, hy, pose.piernaA, 'piernaRodillera', false)
+  brazoConImagen(ctx, sx, sy, pose.brazoA, false)
+}
+
+// Don Fulbio con sus piezas si ya cargaron; si no, el muñeco dibujado
+function fulbio(
+  ctx: CanvasRenderingContext2D, x: number, y: number, pose: Pose,
+  opciones: { escala?: number; rotacion?: number; cabeza?: Cabeza } = {},
+) {
+  if (!personajesListos) {
+    muñeco(ctx, DON_FULBIO, x, y, 1, pose, {
+      escala: opciones.escala, rotacion: opciones.rotacion,
+      cara: opciones.cabeza === 'cabezaDolor' ? 'dolor' : 'contento',
+    })
+    return
+  }
+  const escala = opciones.escala ?? 1
+  ctx.save()
+  ctx.translate(x, y)
+  if (escala !== 1) ctx.scale(escala, escala)
+  if (opciones.rotacion) ctx.rotate(opciones.rotacion)
+  fulbioConImagenes(ctx, pose, opciones.cabeza ?? 'cabezaContento')
+  ctx.restore()
+}
+
+const radioPelota = () => (personajesListos ? (PIEZAS.pelota.w * ESCALA_FULBIO) / 2 : 6.5)
+
 const suave = (t: number) => 1 - (1 - t) * (1 - t)
 
 function sombra(ctx: CanvasRenderingContext2D, x: number, y: number, ancho: number, altura: number) {
@@ -887,8 +1076,12 @@ function sombra(ctx: CanvasRenderingContext2D, x: number, y: number, ancho: numb
   ctx.fill()
 }
 
-// Pelota de cuero de otras épocas
+// Pelota de cuero de otras épocas (la imagen, o dibujada mientras carga)
 function pelota(ctx: CanvasRenderingContext2D, x: number, y: number, giro: number) {
+  if (personajesListos) {
+    pieza(ctx, 'pelota', x, y, giro)
+    return
+  }
   ctx.save()
   ctx.translate(x, y)
   ctx.rotate(giro)
@@ -907,9 +1100,52 @@ function pelota(ctx: CanvasRenderingContext2D, x: number, y: number, giro: numbe
   ctx.restore()
 }
 
+function signoDePregunta(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.font = '22px "Bebas Neue", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.lineWidth = 3
+  ctx.strokeStyle = TINTA
+  ctx.strokeText('?', x, y)
+  ctx.fillStyle = CREMA
+  ctx.fillText('?', x, y)
+}
+
+// Rivales con sus imágenes: una por pose. Los que esperan parados "respiran" (se achican apenas de alto)
+function rivalConImagen(ctx: CanvasRenderingContext2D, r: Rival, j: Juego, v: Vista, x: number) {
+  if (r.tipo === 'barrida') {
+    sombra(ctx, x + 40, v.piso, 40, 0)
+    pieza(ctx, 'barrida', x - 2, v.piso + 1)
+    return
+  }
+  const centro = x + r.ancho / 2
+  const fase = j.tiempo + r.x * 0.01
+  const respira = 1 - 0.015 * (1 + Math.sin(fase * 9))
+  sombra(ctx, centro, v.piso, r.tipo === 'abierto' ? 30 : 18, r.salto)
+  if (r.pasado === 'gambeta') {
+    // Queda en cuatro patas: cae desde un poco más arriba
+    const c = suave(r.caida)
+    pieza(ctx, 'caido', centro + 6 * c, v.piso + 1 - 10 * (1 - c))
+  } else if (r.pasado === 'caño' && r.caida < 0.4) {
+    pieza(ctx, 'abierto', centro, v.piso + 1, 0, false, respira)   // la pelota está pasando entre las piernas
+  } else if (r.pasado === 'caño') {
+    // Lo dejaste mirando: se da vuelta a buscar la pelota
+    pieza(ctx, 'deEspaldas', centro, v.piso + 1)
+    signoDePregunta(ctx, centro - 4, v.piso - 92)
+  } else if (r.saltó && r.salto > 0) {
+    pieza(ctx, 'saltando', centro, v.piso + 1 - r.salto)
+  } else {
+    pieza(ctx, r.tipo === 'abierto' ? 'abierto' : 'parado', centro, v.piso + 1, 0, false, respira)
+  }
+}
+
 function dibujarRival(ctx: CanvasRenderingContext2D, r: Rival, j: Juego, v: Vista) {
   const x = r.x - j.distancia + v.xJugador
-  if (x > v.ancho + 80 || x + r.ancho < -80) return
+  if (x > v.ancho + 100 || x + r.ancho < -100) return
+  if (personajesListos) {
+    rivalConImagen(ctx, r, j, v, x)
+    return
+  }
   const piel = r.piel
   if (r.tipo === 'barrida') {
     sombra(ctx, x + 36, v.piso, 38, 0)
@@ -926,19 +1162,19 @@ function dibujarRival(ctx: CanvasRenderingContext2D, r: Rival, j: Juego, v: Vist
   } else if (r.pasado === 'caño') {
     // Lo dejaste mirando: se da vuelta a buscar la pelota
     muñeco(ctx, RIVAL, centro, v.piso, -Math.cos(((r.caida - 0.4) / 0.6) * Math.PI), POSE_MIRANDO, { piel })
-    ctx.font = '22px "Bebas Neue", sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'alphabetic'
-    ctx.lineWidth = 3
-    ctx.strokeStyle = TINTA
-    ctx.strokeText('?', centro + 2, v.piso - 74)
-    ctx.fillStyle = CREMA
-    ctx.fillText('?', centro + 2, v.piso - 74)
+    signoDePregunta(ctx, centro + 2, v.piso - 74)
   } else if (r.saltó && r.salto > 0) {
     muñeco(ctx, RIVAL, centro, v.piso - r.salto, -1, POSE_SALTO_RIVAL, { piel })
   } else {
     const fase = j.tiempo + r.x * 0.01
     muñeco(ctx, RIVAL, centro, v.piso, -1, r.tipo === 'abierto' ? abierto(fase) : parado(fase), { piel })
+  }
+}
+
+function estrellitas(ctx: CanvasRenderingContext2D, x: number, y: number, tiempo: number) {
+  for (let i = 0; i < 3; i++) {
+    const a = tiempo * 4 + (i * Math.PI * 2) / 3
+    estrella(ctx, x + Math.cos(a) * 14, y + Math.sin(a) * 5, 4.5, ORO, a)
   }
 }
 
@@ -948,22 +1184,22 @@ function dibujarJugador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
   sombra(ctx, x + 4, v.piso, 17, j.y)
 
   if (j.estado === 'cayendo' || j.estado === 'fin') {
-    const t = Math.min(1, j.tiempoCaida / 0.45)
-    const haciaAdelante = j.motivo === 'barrida'
-    muñeco(ctx, DON_FULBIO, x, pies, 1, POSE_CAIDO, { rotacion: (haciaAdelante ? 1.45 : -1.3) * suave(t), cara: 'dolor' })
     const tc = j.tiempoCaida
+    const haciaAdelante = j.motivo === 'barrida'
     const bx = x + 18 + tc * 260 * Math.max(0, 1 - tc * 0.4)
-    const by = v.piso - 6 - Math.abs(Math.sin(tc * 12)) * 22 * Math.exp(-3 * tc)
+    const by = v.piso - radioPelota() - Math.abs(Math.sin(tc * 12)) * 22 * Math.exp(-3 * tc)
     pelota(ctx, bx, by, j.distancia / 6.5 + tc * 10)
-    // Estrellitas alrededor de la cabeza
-    if (tc > 0.4) {
-      const hx = x + (haciaAdelante ? 62 : -56)
-      const hy = v.piso - 24
-      for (let i = 0; i < 3; i++) {
-        const a = tc * 4 + (i * Math.PI * 2) / 3
-        estrella(ctx, hx + Math.cos(a) * 14, hy + Math.sin(a) * 5, 4.5, ORO, a)
-      }
+    if (personajesListos && tc > 0.16) {
+      // Sentado en el pasto agarrándose el tobillo, con un rebotecito al caer
+      const t = tc - 0.16
+      const rebote = Math.abs(Math.sin(t * 9)) * 8 * Math.exp(-5 * t)
+      pieza(ctx, 'sentado', x + 8, v.piso + 1 - rebote)
+      if (tc > 0.45) estrellitas(ctx, x - 11, v.piso - 53, tc)
+      return
     }
+    const t = Math.min(1, tc / 0.45)
+    fulbio(ctx, x, pies, POSE_CAIDO, { rotacion: (haciaAdelante ? 1.45 : -1.3) * suave(t), cabeza: 'cabezaDolor' })
+    if (tc > 0.4) estrellitas(ctx, x + (haciaAdelante ? 62 : -56), v.piso - 24, tc)
     return
   }
 
@@ -983,15 +1219,15 @@ function dibujarJugador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
     }
     ctx.globalAlpha = 1
     const pose = j.jugada === 'caño' ? tirandoCaño(q) : gambeteando(q)
-    muñeco(ctx, DON_FULBIO, x, pies - s * 16, 1, pose, { escala: 1 - 0.08 * s })
+    fulbio(ctx, x, pies - s * 16, pose, { escala: 1 - 0.08 * s })
     return
   }
 
   if (j.enAire) {
-    muñeco(ctx, DON_FULBIO, x, pies, 1, enElAire(j.vy))
+    fulbio(ctx, x, pies, enElAire(j.vy), { cabeza: 'cabezaGrito' })
     return
   }
-  muñeco(ctx, DON_FULBIO, x, pies, 1, correr(j.fasePaso))
+  fulbio(ctx, x, pies, correr(j.fasePaso))
 }
 
 // La pelota va aparte: en el caño pasa por delante del rival, entre las piernas
@@ -1000,17 +1236,18 @@ function dibujarPelota(ctx: CanvasRenderingContext2D, j: Juego, v: Vista) {
   const x = v.xJugador
   const pies = v.piso - j.y
   const giro = j.distancia / 6.5
+  const r = radioPelota()
   const q = progresoJugada(j)
   if (j.jugada === 'caño' && q > 0) {
     // Sale por entre las piernas y Don Fulbio la va a buscar por el costado
-    pelota(ctx, x + 16 + 78 * Math.sin(q * Math.PI), v.piso - 6.5, giro * 1.6)
+    pelota(ctx, x + 16 + 78 * Math.sin(q * Math.PI), v.piso - r, giro * 1.6)
   } else if (j.jugada === 'gambeta' && q > 0) {
     const s = Math.sin(q * Math.PI)
-    pelota(ctx, x + 16 + 7 * Math.cos(q * Math.PI * 2), pies - 6 - s * 14, giro)
+    pelota(ctx, x + 16 + 7 * Math.cos(q * Math.PI * 2), pies - r + 0.5 - s * 14, giro)
   } else if (j.enAire) {
-    pelota(ctx, x + 15, pies - 4, giro)
+    pelota(ctx, x + 15, pies - r + 2.5, giro)
   } else {
-    pelota(ctx, x + 18 + Math.sin(j.fasePaso * 2) * 2, pies - 6.5 - Math.abs(Math.sin(j.fasePaso)) * 5, giro)
+    pelota(ctx, x + 18 + Math.sin(j.fasePaso * 2) * 2, pies - r - Math.abs(Math.sin(j.fasePaso)) * 5, giro)
   }
 }
 
@@ -1098,6 +1335,7 @@ export function dibujar(
   ctx: CanvasRenderingContext2D, j: Juego, v: Vista,
   opciones: { tactil: boolean; arriba: number; firma?: string },   // firma: la familia de la letra de "Futboleros"
 ) {
+  kActual = v.escala * v.dpr
   ctx.setTransform(v.dpr * v.escala, 0, 0, v.dpr * v.escala, 0, 0)
   if (j.temblor > 0) {
     const a = j.temblor * 16
