@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import localFont from 'next/font/local'
 import styles from './juego.module.css'
 import {
-  nuevoJuego, avanzar, apretarSalto, soltarSalto, apretarGambeta, apretarCaño, metros, puntos,
-  PUNTOS_POR_GAMBETA, PUNTOS_POR_CAÑO, type Juego as EstadoJuego, type Motivo,
+  nuevoJuego, avanzar, apretarSalto, soltarSalto, apretarGambeta, apretarCaño, patear, metros, puntos,
+  PUNTOS_POR_GAMBETA, PUNTOS_POR_CAÑO, PUNTOS_POR_GOL, META_METROS,
+  type Juego as EstadoJuego, type Motivo, type Definicion,
 } from './motor'
 import { calcularVista, cargarImagenes, dibujar, texturaGrano, type Vista } from './dibujo'
 
@@ -13,7 +14,7 @@ import { calcularVista, cargarImagenes, dibujar, texturaGrano, type Vista } from
 const firma = localFont({ src: '../../public/fonts/Lobster-Regular.ttf', display: 'swap' })
 const titulo = localFont({ src: '../../public/fonts/Rye-Regular.ttf', display: 'swap' })
 
-type Pantalla = 'inicio' | 'jugando' | 'pausa' | 'fin'
+type Pantalla = 'inicio' | 'jugando' | 'remate' | 'pausa' | 'fin'
 
 interface Resultado {
   metros: number
@@ -21,6 +22,7 @@ interface Resultado {
   caños: number
   puntos: number
   motivo: Motivo | null
+  definicion: Definicion | null   // cómo terminó el mano a mano, si llegó
   mejor: number
   record: boolean
   frase: string
@@ -30,10 +32,14 @@ const PASO = 1 / 120    // la simulación avanza siempre de a 1/120 s, vaya el c
 const RESERVA_BOTONES = 64   // celular acostado: la línea por la que corre queda arriba de los botones
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
-const TITULOS: Record<Motivo, string> = {
+const TITULOS: Record<Motivo | Definicion, string> = {
   barrida: '¡Te barrieron!',
   parado: '¡Te la sacaron!',
   cerrado: '¡Cerró las piernas!',
+  gol: '¡Golazo!',
+  atajada: '¡Te la atajó!',
+  palo: '¡Pegó en el palo!',
+  afuera: '¡Afuera!',
 }
 
 // Frases de Don Fulbio para cuando se termina
@@ -114,6 +120,7 @@ export default function Juego({ fecha }: { fecha: string }) {
     }
     setResultado({
       metros: metros(j), gambetas: j.gambetas, caños: j.caños, puntos: total, motivo: j.motivo,
+      definicion: j.remate?.tiro?.definicion ?? null,
       mejor: Math.max(anterior, total), record: anterior > 0 && total > anterior,
       frase: FRASES[Math.floor(Math.random() * FRASES.length)],
     })
@@ -154,14 +161,15 @@ export default function Juego({ fecha }: { fecha: string }) {
         acumulado -= PASO
       }
       dibujar(ctx, j, vista, { tactil: tactilRef.current, arriba })
-      if (j.estado === 'fin' && pantallaRef.current === 'jugando') terminar(j)
+      if (j.estado === 'remate' && pantallaRef.current === 'jugando') setPantalla('remate')
+      if (j.estado === 'fin' && (pantallaRef.current === 'jugando' || pantallaRef.current === 'remate')) terminar(j)
     }
     cuadro = requestAnimationFrame(paso)
     return () => {
       cancelAnimationFrame(cuadro)
       observador.disconnect()
     }
-  }, [terminar, tactil])
+  }, [terminar, setPantalla, tactil])
 
   // El escudo y las imágenes de Don Fulbio y de los rivales (mientras cargan se ven los muñecos
   // dibujados), y el grano de papel de la capa de arriba
@@ -182,6 +190,14 @@ export default function Juego({ fecha }: { fecha: string }) {
     const abajo = (e: KeyboardEvent) => {
       const p = pantallaRef.current
       const j = juegoRef.current
+      // Mano a mano: cualquier tecla del juego patea
+      if (p === 'remate') {
+        if (esSalto(e.code) || esGambeta(e.code) || esCaño(e.code) || e.code === 'Enter') {
+          e.preventDefault()
+          if (!e.repeat) patear(j)
+        }
+        return
+      }
       if (p === 'jugando') {
         if (esSalto(e.code)) {
           e.preventDefault()
@@ -228,7 +244,7 @@ export default function Juego({ fecha }: { fecha: string }) {
     onPointerCancel: () => soltarSalto(juegoRef.current),
   }
 
-  const cara = resultado?.record ? 'valio' : 'dolor'
+  const cara = resultado?.record || resultado?.definicion === 'gol' ? 'valio' : 'dolor'
 
   return (
     <div className={styles.juego} onContextMenu={(e) => e.preventDefault()}>
@@ -239,6 +255,15 @@ export default function Juego({ fecha }: { fecha: string }) {
 
       {pantalla === 'jugando' && (
         <button className={styles.pausa} onClick={pausar} aria-label="Pausa">II</button>
+      )}
+
+      {/* Mano a mano: se patea tocando o haciendo clic en cualquier lado */}
+      {pantalla === 'remate' && (
+        <button
+          className={styles.patear}
+          onPointerDown={(e) => { e.preventDefault(); patear(juegoRef.current) }}
+          aria-label="Patear"
+        />
       )}
 
       {tactil && pantalla === 'jugando' && (
@@ -283,8 +308,9 @@ export default function Juego({ fecha }: { fecha: string }) {
               </li>
             </ul>
             <p className={styles.reglas}>
-              Cada metro suma 1 punto, cada gambeta {PUNTOS_POR_GAMBETA} y cada caño {PUNTOS_POR_CAÑO}. El
-              recorrido del {fechaLinda(fecha)} es el mismo para todos.
+              Cada metro suma 1 punto, cada gambeta {PUNTOS_POR_GAMBETA} y cada caño {PUNTOS_POR_CAÑO}. A los{' '}
+              {META_METROS} metros quedás mano a mano con el arquero: tenés un solo tiro y el gol suma{' '}
+              {PUNTOS_POR_GOL}. El recorrido del {fechaLinda(fecha)} es el mismo para todos.
             </p>
             <button className={styles.jugar} onClick={jugar} autoFocus>Jugar</button>
             <p className={styles.nota}>Prototipo: en la versión final hay una sola vida por día.</p>
@@ -314,13 +340,19 @@ export default function Juego({ fecha }: { fecha: string }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/juego/cara-${cara}.webp`} alt="" className={styles.cara} />
             <h2 className={`${styles.titulo} ${styles.tituloFin} ${titulo.className}`}>
-              {resultado.motivo ? TITULOS[resultado.motivo] : '¡Fin!'}
+              {resultado.definicion ? TITULOS[resultado.definicion] : resultado.motivo ? TITULOS[resultado.motivo] : '¡Fin!'}
             </h2>
             <p className={`${styles.frase} ${firma.className}`}>“{resultado.frase}”</p>
             <div className={styles.numeros}>
               <div><strong>{resultado.metros}</strong><span>metros</span></div>
               <div><strong>{resultado.gambetas}</strong><span>gambetas</span></div>
               <div><strong>{resultado.caños}</strong><span>caños</span></div>
+              {resultado.definicion && (
+                <div>
+                  <strong>{resultado.definicion === 'gol' ? 1 : 0}</strong>
+                  <span>{resultado.definicion === 'gol' ? 'gol' : 'goles'}</span>
+                </div>
+              )}
               <div className={styles.total}><strong>{resultado.puntos}</strong><span>puntos</span></div>
             </div>
             <p className={styles.mejor}>

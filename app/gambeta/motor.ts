@@ -1,12 +1,37 @@
 // Gambeta (prototipo): Don Fulbio corre solo con la pelota; el que juega salta las barridas, gambetea a los
 // rivales que lo esperan parados y, si el rival tiene las piernas abiertas, le puede tirar un caño (vale más).
-// Todo va en unidades del mundo (Don Fulbio mide unas 74); dibujo.ts lo escala a la pantalla. El recorrido
-// sale de la fecha de Argentina, así que ese día es el mismo para todos.
+// Al llegar a la meta queda mano a mano con el arquero y patea una sola vez. Todo va en unidades del mundo
+// (Don Fulbio mide unas 74); dibujo.ts lo escala a la pantalla. El recorrido, el arquero y la mira salen de
+// la fecha de Argentina, así que ese día son los mismos para todos.
 
 export type TipoRival = 'barrida' | 'parado' | 'abierto'
 export type Jugada = 'gambeta' | 'caño'
 export type Motivo = 'barrida' | 'parado' | 'cerrado'
-export type Estado = 'listo' | 'jugando' | 'pausa' | 'cayendo' | 'fin'
+export type Estado = 'listo' | 'jugando' | 'pausa' | 'cayendo' | 'llegada' | 'remate' | 'fin'
+export type Definicion = 'gol' | 'atajada' | 'palo' | 'afuera'
+
+// En el arco, u va de -1 (palo izquierdo) a 1 (palo derecho) y w de 0 (el piso) a 1 (el travesaño)
+export interface Tiro {
+  t: number              // tiempo desde que pateó
+  u: number              // a dónde va la pelota
+  w: number
+  desde: number          // dónde estaba parado el arquero
+  au: number             // hasta dónde llegan sus manos
+  aw: number
+  definicion: Definicion
+}
+
+export interface Remate {
+  t: number              // tiempo desde que empezó el mano a mano
+  tiro: Tiro | null
+  // El arquero y la mira del día
+  arqueroBase: number
+  arqueroAmplitud: number
+  arqueroPeriodo: number
+  alcance: number        // hasta dónde se estira a los costados
+  miraPeriodoU: number
+  miraPeriodoW: number
+}
 
 export interface Rival {
   tipo: TipoRival
@@ -54,12 +79,23 @@ export interface Juego {
   azar: () => number
   proximoX: number      // dónde va el próximo rival
   colocados: number
+  tiempoLlegada: number
+  remate: Remate | null
 }
 
 export const X_JUGADOR = 110        // el mayor margen izquierdo de las pantallas (para limpiar rivales)
 export const UNIDADES_POR_METRO = 40
 export const PUNTOS_POR_GAMBETA = 10
 export const PUNTOS_POR_CAÑO = 25
+export const PUNTOS_POR_GOL = 100
+export const META_METROS = 300      // para probar el remate; el tope del día va a ser 2500
+export const META = META_METROS * UNIDADES_POR_METRO
+export const DISTANCIA_ARCO = 7 * UNIDADES_POR_METRO   // de la meta al arco: Don Fulbio frena antes
+const SIN_RIVALES = 25 * UNIDADES_POR_METRO             // el último tramo, libre, para ver venir el arco
+export const DURACION_LLEGADA = 1.3
+export const ESPERA_REMATE = 0.7    // al principio del mano a mano no patea (por si venías apretando)
+export const DURACION_VUELO = 0.42  // lo que tarda la pelota en llegar al arco
+const DURACION_DEFINICION = 2.8     // del tiro a la tarjeta del final
 
 const V_INICIAL = 300
 const V_MAXIMA = 660
@@ -109,8 +145,10 @@ export const velocidadEn = (d: number) =>
 // 0 al arrancar, 1 a la velocidad máxima
 export const dificultad = (d: number) => (velocidadEn(d) - V_INICIAL) / (V_MAXIMA - V_INICIAL)
 
-export const metros = (j: Juego) => Math.floor(j.distancia / UNIDADES_POR_METRO)
-export const puntos = (j: Juego) => metros(j) + j.gambetas * PUNTOS_POR_GAMBETA + j.caños * PUNTOS_POR_CAÑO
+export const metros = (j: Juego) => Math.min(META_METROS, Math.floor(j.distancia / UNIDADES_POR_METRO))
+export const hizoGol = (j: Juego) => j.remate?.tiro?.definicion === 'gol'
+export const puntos = (j: Juego) =>
+  metros(j) + j.gambetas * PUNTOS_POR_GAMBETA + j.caños * PUNTOS_POR_CAÑO + (hizoGol(j) ? PUNTOS_POR_GOL : 0)
 
 export function nuevoJuego(fecha: string, estado: Estado = 'listo'): Juego {
   return {
@@ -124,6 +162,7 @@ export function nuevoJuego(fecha: string, estado: Estado = 'listo'): Juego {
     motivo: null, tiempoCaida: 0, temblor: 0,
     azar: generador(hash(`gambeta-${fecha}`)),
     proximoX: 900, colocados: 0,
+    tiempoLlegada: 0, remate: null,
   }
 }
 
@@ -151,13 +190,73 @@ export function apretarCaño(j: Juego) {
   j.pedidoGambeta = 0
 }
 
+// Un solo tiro, a donde esté la mira en ese momento
+export function patear(j: Juego) {
+  const r = j.remate
+  if (j.estado !== 'remate' || !r || r.tiro || r.t < ESPERA_REMATE) return
+  const [u, w] = miraEn(r, r.t)
+  r.tiro = { t: 0, u, w, ...definir(r, u, w, arqueroEn(r, r.t)) }
+}
+
+// ---- Mano a mano ----
+
+// El arquero se mueve de un palo al otro; la mira recorre el arco a velocidad pareja, de lado a lado y de
+// arriba abajo, y se pasa un poco de los palos y del travesaño (para poder errarle)
+export const arqueroEn = (r: Remate, t: number) =>
+  r.arqueroBase + r.arqueroAmplitud * Math.sin((t / r.arqueroPeriodo) * Math.PI * 2)
+
+const vaivén = (t: number, periodo: number) => 1 - 4 * Math.abs(((t / periodo + 0.25) % 1) - 0.5)   // -1 a 1, en línea recta
+
+export const miraEn = (r: Remate, t: number): [number, number] => [
+  1.12 * vaivén(t, r.miraPeriodoU),
+  0.07 + 1.01 * (1 - vaivén(t, r.miraPeriodoW)) / 2,
+]
+
+// Alcance del arquero: una elipse alrededor de su cuerpo, más alta que ancha, así que los ángulos son gol
+const ALTURA_ARQUERO = 0.42
+const ALCANCE_ALTO = 0.72
+const PALO_U = 0.04     // medio palo más el radio de la pelota, en medios anchos del arco
+const PALO_W = 0.05     // lo mismo para el travesaño, en altos del arco
+
+function definir(r: Remate, u: number, w: number, desde: number): Omit<Tiro, 't' | 'u' | 'w'> {
+  // El arquero se estira hacia la pelota: llega hasta ella o hasta el borde de su alcance
+  const d = Math.hypot((u - desde) / r.alcance, (w - ALTURA_ARQUERO) / ALCANCE_ALTO)
+  const llega = d > 1 ? 1 / d : 1
+  const au = desde + (u - desde) * llega
+  const aw = ALTURA_ARQUERO + (w - ALTURA_ARQUERO) * llega
+  const ladoPalo = Math.abs(Math.abs(u) - 1) < PALO_U && w < 1 + PALO_W
+  const travesaño = Math.abs(w - 1) < PALO_W && Math.abs(u) < 1 + PALO_U
+  const definicion: Definicion =
+    ladoPalo || travesaño ? 'palo'
+      : Math.abs(u) > 1 || w > 1 ? 'afuera'
+        : d <= 1 ? 'atajada'
+          : 'gol'
+  return { desde, au, aw, definicion }
+}
+
+function empezarRemate(j: Juego) {
+  const azar = generador(hash(`arquero-${j.fecha}`))
+  j.estado = 'remate'
+  j.textos = []
+  j.particulas = []
+  j.remate = {
+    t: 0, tiro: null,
+    arqueroBase: (azar() - 0.5) * 0.3,
+    arqueroAmplitud: 0.12 + azar() * 0.16,
+    arqueroPeriodo: 1.8 + azar() * 0.8,
+    alcance: 0.55 + azar() * 0.08,
+    miraPeriodoU: 1.7 + azar() * 0.5,
+    miraPeriodoW: 2.3 + azar() * 0.6,
+  }
+}
+
 // ---- Recorrido ----
 
 // Pone los rivales hasta la x pedida. Las distancias se miden en segundos a la velocidad de ese tramo, y
 // nunca bajan del mínimo que hace falta para resolver el rival anterior y reaccionar al siguiente.
 // Siempre se sacan cuatro números por rival, así el recorrido del día no cambia por nada.
 function colocarHasta(j: Juego, hasta: number) {
-  while (j.proximoX < hasta) {
+  while (j.proximoX < hasta && j.proximoX < META - SIN_RIVALES) {
     const i = j.colocados
     const dif = dificultad(j.proximoX)
     const sorteo = j.azar()
@@ -239,8 +338,39 @@ function pasar(j: Juego, r: Rival, jugada: Jugada) {
 }
 
 export function avanzar(j: Juego, dt: number) {
-  if (j.estado === 'pausa' || j.estado === 'fin') return
+  if (j.estado === 'pausa') return
+  if (j.estado === 'fin') {
+    if (j.remate?.tiro) j.remate.tiro.t += dt   // detrás de la tarjeta, la red y los papelitos siguen
+    return
+  }
   j.tiempo += dt
+
+  if (j.estado === 'remate') {
+    const r = j.remate as Remate
+    r.t += dt
+    if (r.tiro) {
+      r.tiro.t += dt
+      if (r.tiro.t > DURACION_DEFINICION) j.estado = 'fin'
+    }
+    return
+  }
+
+  if (j.estado === 'llegada') {
+    // Frena frente al arco (si venía saltando, primero cae)
+    j.tiempoLlegada += dt
+    j.velocidad *= Math.exp(-4 * dt)
+    j.distancia += j.velocidad * dt
+    j.fasePaso += (j.velocidad * dt * Math.PI * 2) / 105
+    if (j.enAire) {
+      j.vy -= (j.vy > 0 ? G_SUBIDA : G_BAJADA) * dt
+      j.y = Math.max(0, j.y + j.vy * dt)
+      if (j.y === 0) { j.enAire = false; j.vy = 0 }
+    }
+    actualizarRivales(j, dt)
+    actualizarEfectos(j, dt)
+    if (j.tiempoLlegada > DURACION_LLEGADA) empezarRemate(j)
+    return
+  }
 
   if (j.estado === 'listo') {
     j.distancia += j.velocidad * dt
@@ -316,6 +446,15 @@ export function avanzar(j: Juego, dt: number) {
     // El caño a uno con las piernas cerradas pega en las canillas
     chocar(j, r.tipo === 'barrida' ? 'barrida' : j.jugada === 'caño' ? 'cerrado' : 'parado')
     break
+  }
+
+  // Llegó: queda mano a mano con el arquero
+  if (j.estado === 'jugando' && j.distancia >= META) {
+    j.estado = 'llegada'
+    j.tiempoLlegada = 0
+    j.jugada = null
+    j.tiempoJugada = 0
+    texto(j, '¡MANO A MANO!', j.distancia + 200, 150, true)   // todavía avanza un poco al frenar
   }
 
   actualizarEfectos(j, dt)

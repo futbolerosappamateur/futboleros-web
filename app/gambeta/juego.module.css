@@ -234,6 +234,12 @@
   color: #a8782a;
 }
 
+/* Con el gol son cinco números: en el celular parado se juntan un poco para entrar en una línea */
+@media (max-width: 400px) {
+  .numeros { gap: 10px; flex-wrap: wrap; }
+  .numeros span { letter-spacing: 0.6px; }
+}
+
 .mejor {
   margin-top: 6px;
   font-size: 13.5px;
@@ -248,6 +254,17 @@
   -webkit-text-stroke: 4px var(--tinta);
   paint-order: stroke fill;
   text-shadow: 0 6px 30px rgba(0, 0, 0, 0.6);
+}
+
+/* Mano a mano: toda la pantalla es el botón de patear */
+.patear {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: crosshair;
+  touch-action: none;
 }
 
 .pausa {

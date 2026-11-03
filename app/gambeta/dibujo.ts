@@ -1,6 +1,10 @@
 // Dibujo de Gambeta en un canvas 2D, con la estética de los afiches de Don Fulbio: azul marino, crema y
 // dorado, contornos de tinta y grano de papel. Los muñecos se arman con poses (ángulos de cada articulación).
-import { type Juego, type Rival, progresoJugada, metros } from './motor'
+import {
+  type Juego, type Rival, type Remate, type Tiro, type Definicion, progresoJugada, metros, arqueroEn, miraEn,
+  META, META_METROS, DISTANCIA_ARCO, DURACION_LLEGADA, DURACION_VUELO, ESPERA_REMATE, PUNTOS_POR_GOL,
+  UNIDADES_POR_METRO,
+} from './motor'
 
 export interface Vista {
   ancho: number        // lo que se ve del mundo, en unidades
@@ -691,8 +695,11 @@ function arcos(ctx: CanvasRenderingContext2D, v: Vista, distancia: number) {
   const periodo = 3300
   const base = v.piso - 20
   const corrimiento = (distancia * 0.85) % periodo
+  // En los últimos 40 m no entra ninguno más: al llegar, el único arco a la vista es el del mano a mano
+  const ultimo = (META - 40 * UNIDADES_POR_METRO) * 0.85 + v.ancho
   for (let x = 900 - corrimiento; x < v.ancho + 200; x += periodo) {
     if (x + 170 < 0) continue
+    if (x + distancia * 0.85 > ultimo) break
     const ancho = 150
     const alto = 62
     // Red: el fondo del arco, un poco corrido hacia atrás
@@ -1210,22 +1217,23 @@ export function cargarImagenes() {
 }
 
 // Cada pieza se pasa una vez al tamaño en que se va a ver (achicarla en cada cuadro la hace titilar), y las
-// de atrás tienen además su versión oscurecida
+// de atrás tienen además su versión oscurecida. En el mano a mano el arquero está más cerca y se ve más
+// grande: ese aumento va redondeado, para que no se arme una copia por cada tamaño de ventana
 let kActual = 1
 let kSprites = 0
 const sprites = new Map<string, HTMLCanvasElement>()
 
-function sprite(n: NombrePieza, oscura: boolean) {
+function sprite(n: NombrePieza, oscura: boolean, aumento: number) {
   if (kActual !== kSprites) {
     sprites.clear()
     kSprites = kActual
   }
-  const clave = oscura ? n + '·' : n
+  const clave = `${n}${oscura ? '·' : ''}${aumento === 1 ? '' : '×' + aumento}`
   let c = sprites.get(clave)
   if (!c) {
     const d = PIEZAS[n]
     const img = imagenes.get(n) as HTMLImageElement
-    const f = escalaDe(n) * kActual * 1.25
+    const f = escalaDe(n) * aumento * kActual * 1.25
     c = document.createElement('canvas')
     c.width = Math.max(1, Math.round(d.w * f))
     c.height = Math.max(1, Math.round(d.h * f))
@@ -1244,15 +1252,15 @@ function sprite(n: NombrePieza, oscura: boolean) {
 
 function pieza(
   ctx: CanvasRenderingContext2D, n: NombrePieza, x: number, y: number,
-  angulo = 0, oscura = false, escalaY = 1,
+  angulo = 0, oscura = false, escalaY = 1, aumento = 1,
 ) {
   const d = PIEZAS[n]
-  const esc = escalaDe(n)
+  const esc = escalaDe(n) * aumento
   ctx.save()
   ctx.translate(x, y)
   if (angulo) ctx.rotate(angulo)
   if (escalaY !== 1) ctx.scale(1, escalaY)
-  ctx.drawImage(sprite(n, oscura), -d.p[0] * esc, -d.p[1] * esc, d.w * esc, d.h * esc)
+  ctx.drawImage(sprite(n, oscura, aumento), -d.p[0] * esc, -d.p[1] * esc, d.w * esc, d.h * esc)
   ctx.restore()
 }
 
@@ -1591,12 +1599,465 @@ function marcador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista, arriba: num
     ctx.fillText(texto, x, y)
   }
   numero(String(metros(j)), v.cssAncho / 2, arriba + 52, 50, CREMA, 'center')
-  etiqueta('M E T R O S', v.cssAncho / 2, arriba + 67, 'center')
+  etiqueta(`DE ${META_METROS} METROS`, v.cssAncho / 2, arriba + 67, 'center')
   const derecha = v.cssAncho - 18
   numero(String(j.caños), derecha, arriba + 44, 30, ORO, 'right')
   etiqueta('CAÑOS', derecha, arriba + 57, 'right')
   numero(String(j.gambetas), derecha - 50, arriba + 44, 30, CREMA, 'right')
   etiqueta('GAMBETAS', derecha - 50, arriba + 57, 'right')
+}
+
+// El arco del final del recorrido, de perfil: la boca mira a Don Fulbio y la red va hacia atrás
+function arcoFinal(ctx: CanvasRenderingContext2D, v: Vista, j: Juego) {
+  if (j.estado === 'listo') return
+  const x = META + DISTANCIA_ARCO - j.distancia + v.xJugador
+  if (x > v.ancho + 20 || x < -100) return
+  const piso = v.piso + 1
+  const alto = 80
+  const [lx, ly] = [9, -20]   // el palo de atrás está más lejos: se ve más arriba
+  const fondo = 58
+  ctx.save()
+  ctx.beginPath()
+  ctx.moveTo(x, piso)
+  ctx.lineTo(x, piso - alto)
+  ctx.lineTo(x + lx, piso - alto + ly)
+  ctx.lineTo(x + fondo, piso - alto * 0.55 + ly / 2)
+  ctx.lineTo(x + fondo + 6, piso + ly / 2)
+  ctx.closePath()
+  ctx.fillStyle = 'rgba(10,16,28,0.25)'
+  ctx.fill()
+  ctx.clip()
+  ctx.strokeStyle = 'rgba(239,227,198,0.28)'
+  ctx.lineWidth = 0.8
+  ctx.beginPath()
+  for (let i = -alto; i < fondo + 10; i += 8) {
+    ctx.moveTo(x + i, piso)
+    ctx.lineTo(x + i + alto, piso - alto)
+    ctx.moveTo(x + i, piso - alto)
+    ctx.lineTo(x + i + alto, piso)
+  }
+  ctx.stroke()
+  ctx.restore()
+  // Primero el palo de atrás, después el travesaño y el palo de adelante
+  ctx.lineCap = 'round'
+  const palo = (x1: number, y1: number, x2: number, y2: number, ancho: number) => {
+    for (const [color, grosor] of [[TINTA, ancho + 2.6], [CREMA, ancho]] as const) {
+      ctx.strokeStyle = color
+      ctx.lineWidth = grosor
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.stroke()
+    }
+  }
+  palo(x + lx, piso + ly, x + lx, piso - alto + ly, 2.6)
+  palo(x, piso - alto, x + lx, piso - alto + ly, 3.4)
+  palo(x, piso, x, piso - alto, 3.4)
+}
+
+// Un velo oscuro para pasar de la carrera al mano a mano (en píxeles CSS)
+function velo(ctx: CanvasRenderingContext2D, v: Vista, alfa: number) {
+  if (alfa <= 0) return
+  ctx.fillStyle = `rgba(6,10,20,${Math.min(1, alfa)})`
+  ctx.fillRect(0, 0, v.cssAncho, v.cssAlto)
+}
+
+// ---- Mano a mano ----
+// La cámara mira el arco de frente, desde atrás de la pelota, con el fondo de la carrera quieto. Mientras no
+// esté la hoja del arquero, el arquero es el rival de las piernas abiertas (y el que salta, girado, para la
+// estirada).
+
+// k: cuánto más grande que en la compu se ve el arco (la pelota, la mira y los carteles crecen con él)
+interface Arco { cx: number; base: number; ancho: number; alto: number; pelotaY: number; radio: number; k: number }
+
+function medidasArco(v: Vista): Arco {
+  // Con el celular parado el arco ocupa casi todo el ancho; si no, quedaba chiquito
+  const ancho = v.alto > v.ancho ? v.ancho * 0.86 : Math.min(v.ancho * 0.55, 400)
+  const k = ancho / 400
+  const base = v.piso + 6
+  return {
+    cx: v.ancho / 2, base, ancho, alto: ancho * 0.36,
+    pelotaY: base + Math.max(34, Math.min(120 * k, (v.alto - base) * 0.6)),
+    radio: 15 * k, k,
+  }
+}
+
+// Un punto del arco en la pantalla: u de -1 a 1 entre los palos, w de 0 a 1 del piso al travesaño
+const enArco = (a: Arco, u: number, w: number): [number, number] => [a.cx + (u * a.ancho) / 2, a.base - w * a.alto]
+
+const PATADA = 0.06       // la pelota sale un instante después del toque
+const REACCION = 0.07     // lo que tarda el arquero en tirarse
+const ESTIRADA = 0.3
+
+function pastoRemate(ctx: CanvasRenderingContext2D, v: Vista, a: Arco) {
+  const tope = v.piso - 24
+  const g = ctx.createLinearGradient(0, tope, 0, v.alto)
+  g.addColorStop(0, '#46522c')
+  g.addColorStop(0.3, '#36421f')
+  g.addColorStop(1, '#1b2412')
+  ctx.fillStyle = g
+  ctx.fillRect(0, tope, v.ancho, v.alto - tope)
+  // Franjas del corte, paralelas al arco y más anchas cuanto más cerca
+  ctx.fillStyle = 'rgba(239,227,198,0.03)'
+  for (let i = 0, y = a.base; y < v.alto; i++) {
+    const alto = 10 + i * 9
+    if (i % 2 === 0) ctx.fillRect(0, y, v.ancho, alto)
+    y += alto
+  }
+  // Línea de fondo, área chica y los costados del área grande, que se abren hacia adelante
+  const hasta = a.pelotaY - a.base
+  const abre = (y: number) => 1 + ((y - a.base) / hasta) * 0.45
+  const yChica = a.base + hasta * 0.42
+  const chica = a.ancho * 0.39
+  const grande = a.ancho * 0.75
+  ctx.strokeStyle = 'rgba(239,227,198,0.4)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(0, a.base)
+  ctx.lineTo(v.ancho, a.base)
+  ctx.moveTo(a.cx - chica, a.base)
+  ctx.lineTo(a.cx - chica * abre(yChica), yChica)
+  ctx.lineTo(a.cx + chica * abre(yChica), yChica)
+  ctx.lineTo(a.cx + chica, a.base)
+  for (const lado of [-1, 1]) {
+    ctx.moveTo(a.cx + lado * grande, a.base)
+    ctx.lineTo(a.cx + lado * grande * abre(v.alto), v.alto)
+  }
+  ctx.stroke()
+  // El punto del penal
+  ctx.fillStyle = 'rgba(239,227,198,0.55)'
+  ctx.beginPath()
+  ctx.ellipse(a.cx, a.pelotaY + a.radio * 0.85, 9 * a.k, 3 * a.k, 0, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+// La red: el fondo un poco más chico (está más lejos) unido al marco por los costados y el techo. Si entró
+// la pelota, se infla: ondas que se abren desde donde pegó
+function redRemate(ctx: CanvasRenderingContext2D, a: Arco, golEn: [number, number] | null, t: number) {
+  const [x0, y0] = enArco(a, -1, 1)
+  const [x1, y1] = enArco(a, 1, 0)
+  const fx0 = x0 + a.ancho * 0.07
+  const fx1 = x1 - a.ancho * 0.07
+  const fy0 = y0 + a.alto * 0.14
+  const fy1 = y1 - a.alto * 0.04
+  ctx.fillStyle = 'rgba(8,14,26,0.3)'
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(x0, y0, x1 - x0, y1 - y0)
+  ctx.clip()
+  const alto = y1 - y0
+  ctx.strokeStyle = 'rgba(239,227,198,0.2)'
+  ctx.lineWidth = 0.8
+  ctx.beginPath()
+  for (let x = x0 - alto; x < x1 + alto; x += 10) {
+    ctx.moveTo(x, y1)
+    ctx.lineTo(x + alto, y0)
+    ctx.moveTo(x, y0)
+    ctx.lineTo(x + alto, y1)
+  }
+  ctx.stroke()
+  if (golEn && t < 0.9) {
+    ctx.strokeStyle = `rgba(239,227,198,${0.55 * (1 - t / 0.9)})`
+    ctx.lineWidth = 1.6
+    for (let i = 0; i < 3; i++) {
+      const r = 6 + t * 80 + i * 10
+      ctx.beginPath()
+      ctx.ellipse(golEn[0], golEn[1], r, r * 0.8, 0, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  }
+  ctx.restore()
+  ctx.strokeStyle = 'rgba(239,227,198,0.32)'
+  ctx.lineWidth = 1.2
+  ctx.beginPath()
+  ctx.moveTo(x0, y0)
+  ctx.lineTo(fx0, fy0)
+  ctx.lineTo(fx1, fy0)
+  ctx.lineTo(x1, y0)
+  ctx.moveTo(x0, y1)
+  ctx.lineTo(fx0, fy1)
+  ctx.lineTo(fx0, fy0)
+  ctx.moveTo(x1, y1)
+  ctx.lineTo(fx1, fy1)
+  ctx.lineTo(fx1, fy0)
+  ctx.moveTo(fx0, fy1)
+  ctx.lineTo(fx1, fy1)
+  ctx.stroke()
+}
+
+function palosRemate(ctx: CanvasRenderingContext2D, a: Arco) {
+  const [x0, y0] = enArco(a, -1, 1)
+  const [x1, y1] = enArco(a, 1, 0)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  ctx.moveTo(x0, y1 + 2)
+  ctx.lineTo(x0, y0)
+  ctx.lineTo(x1, y0)
+  ctx.lineTo(x1, y1 + 2)
+  ctx.strokeStyle = TINTA
+  ctx.lineWidth = 8
+  ctx.stroke()
+  ctx.strokeStyle = CREMA
+  ctx.lineWidth = 5
+  ctx.stroke()
+}
+
+// Dónde está el arquero: parado se mueve de un palo al otro; cuando patean se estira hacia la pelota (con
+// la imagen del que salta, girada) y al final cae. Las manos sirven para dejar la pelota atajada
+interface PoseArquero { imagen: 'abierto' | 'saltando'; x: number; y: number; angulo: number; manos: [number, number]; aumento: number }
+
+function poseArquero(r: Remate, a: Arco): PoseArquero {
+  const aumento = Math.round(((a.alto * 0.74) / (PIEZAS.abierto.h * ESCALA_RIVAL)) * 20) / 20
+  const tiro = r.tiro
+  if (!tiro || tiro.t < REACCION) {
+    const [x, y] = enArco(a, tiro ? tiro.desde : arqueroEn(r, r.t), 0)
+    return { imagen: 'abierto', x, y, angulo: 0, manos: [x, y - a.alto * 0.42], aumento }
+  }
+  const p = suave(Math.min(1, (tiro.t - REACCION) / ESTIRADA))
+  const [px, py] = enArco(a, tiro.desde, 0)
+  const [hx, hy] = enArco(a, tiro.au, tiro.aw)
+  const largo = PIEZAS.saltando.h * ESCALA_RIVAL * aumento * 0.92   // de los pies a las manos
+  if (Math.hypot(hx - px, hy - py) < largo * 0.8) {
+    // La tiene cerca: se corre sin tirarse
+    return { imagen: 'abierto', x: px + (hx - px) * p, y: py, angulo: 0, manos: [hx, hy], aumento }
+  }
+  const angulo = Math.atan2(hx - px, py - hy)
+  const piesX = hx - Math.sin(angulo) * largo
+  const piesY = hy + Math.cos(angulo) * largo
+  const cae = tiro.t > 0.65 ? suave(Math.min(1, (tiro.t - 0.65) / 0.35)) * Math.max(0, a.base - 6 - Math.max(hy, piesY)) : 0
+  return {
+    imagen: 'saltando', angulo: angulo * p,
+    x: px + (piesX - px) * p, y: py + (piesY - py) * p + cae,
+    manos: [hx, hy + cae], aumento,
+  }
+}
+
+function arqueroRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco, pose: PoseArquero) {
+  if (!personajesListos) {
+    muñeco(ctx, RIVAL, pose.x, pose.y, 1, abierto(r.t), { escala: (a.alto * 0.74) / 62, rotacion: pose.angulo })
+    return
+  }
+  if (pose.imagen === 'abierto') sombra(ctx, pose.x, a.base, 30 * a.k, 0)
+  const respira = pose.imagen === 'abierto' && !r.tiro ? 1 - 0.012 * (1 + Math.sin(r.t * 8)) : 1
+  pieza(ctx, pose.imagen, pose.x, pose.y + 2, pose.angulo, false, respira, pose.aumento)
+}
+
+// La pelota del mano a mano: está más cerca, así que se ve más grande que en la carrera
+function pelotaGrande(ctx: CanvasRenderingContext2D, x: number, y: number, radio: number, giro: number, alfa = 1) {
+  ctx.save()
+  ctx.globalAlpha = alfa
+  ctx.translate(x, y)
+  ctx.rotate(giro)
+  const img = imagenes.get('pelota')
+  if (personajesListos && img) {
+    const d = PIEZAS.pelota
+    const esc = (radio * 2) / d.w
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(img, -d.p[0] * esc, -d.p[1] * esc, d.w * esc, d.h * esc)
+  } else {
+    circulo(ctx, 0, 0, radio, '#8b6a45', 2)
+  }
+  ctx.restore()
+}
+
+function pelotaRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco, pose: PoseArquero, v: Vista) {
+  const tiro = r.tiro
+  if (!tiro || tiro.t < PATADA) {
+    pelotaGrande(ctx, a.cx, a.pelotaY, a.radio, 0)
+    return
+  }
+  const [tx, ty] = enArco(a, tiro.u, tiro.w)
+  const chico = a.radio * 0.55
+  const giro = tiro.t * 22
+  const p = Math.min(1, (tiro.t - PATADA) / (DURACION_VUELO - PATADA))
+  if (p < 1) {
+    // Vuela hacia el arco, con un poco de comba, y se achica porque se aleja
+    const x = a.cx + (tx - a.cx) * p
+    const y = a.pelotaY + (ty - a.pelotaY) * p - Math.sin(p * Math.PI) * a.alto * 0.18
+    pelotaGrande(ctx, x, y, a.radio + (chico - a.radio) * p, giro)
+    return
+  }
+  const t = tiro.t - DURACION_VUELO
+  if (tiro.definicion === 'gol') {
+    // Infla la red y cae al fondo del arco
+    const c = suave(Math.min(1, t / 0.7))
+    pelotaGrande(ctx, tx + (a.cx - tx) * 0.05 * c, ty + (a.base - chico * 0.9 - ty) * c, chico * 0.92, giro * 0.2)
+  } else if (tiro.definicion === 'atajada') {
+    pelotaGrande(ctx, pose.manos[0], pose.manos[1], chico, 0.6)
+  } else if (tiro.definicion === 'palo') {
+    // Rebota para afuera y viene hacia adelante
+    const y = ty - 90 * t + 620 * t * t
+    if (y < v.alto + 40) pelotaGrande(ctx, tx + Math.sign(tiro.u) * 150 * t, y, chico * (1 + 1.4 * t), giro)
+  } else if (t < 0.4) {
+    // Afuera: sigue de largo y se pierde
+    pelotaGrande(ctx, tx + (tx - a.cx) * 0.6 * t, ty - 40 * t, chico * (1 - 0.6 * t), giro, 1 - t / 0.4)
+  }
+}
+
+function miraRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco) {
+  if (r.tiro) return
+  const [x, y] = enArco(a, ...miraEn(r, r.t))
+  const pulso = (1 + 0.08 * Math.sin(r.t * 12)) * a.k
+  ctx.save()
+  ctx.globalAlpha = r.t >= ESPERA_REMATE ? 1 : 0.4
+  ctx.translate(x, y)
+  ctx.scale(pulso, pulso)
+  ctx.lineCap = 'round'
+  for (const [color, grosor] of [[TINTA, 5], [ORO, 2.5]] as const) {
+    ctx.strokeStyle = color
+    ctx.lineWidth = grosor
+    ctx.beginPath()
+    ctx.arc(0, 0, 11, 0, Math.PI * 2)
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      ctx.moveTo(dx * 6, dy * 6)
+      ctx.lineTo(dx * 17, dy * 17)
+    }
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+// El golpe de la patada: rayitas que salen de la pelota
+function impacto(ctx: CanvasRenderingContext2D, a: Arco, t: number) {
+  const q = t / 0.16
+  ctx.save()
+  ctx.globalAlpha = 1 - q
+  ctx.strokeStyle = CREMA
+  ctx.lineWidth = 2.5
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  for (let i = 0; i < 8; i++) {
+    const ang = (i / 8) * Math.PI * 2 + 0.3
+    const r1 = a.radio + 4 + q * 10
+    ctx.moveTo(a.cx + Math.cos(ang) * r1, a.pelotaY + Math.sin(ang) * r1)
+    ctx.lineTo(a.cx + Math.cos(ang) * (r1 + 9), a.pelotaY + Math.sin(ang) * (r1 + 9))
+  }
+  ctx.stroke()
+  ctx.restore()
+}
+
+// Papelitos para el gol (siempre los mismos)
+const PAPELITOS = (() => {
+  const azar = azarFijo(31)
+  const colores = [ORO, CREMA, '#7fb1dd', AZUL]
+  return Array.from({ length: 60 }, (_, i) => ({
+    x: azar(), demora: azar() * 0.5, velocidad: 60 + azar() * 70, fase: azar() * 6, color: colores[i % 4],
+  }))
+})()
+
+const TEXTO_DEFINICION: Record<Definicion, string> = {
+  gol: '¡GOOOL!', atajada: '¡ATAJÓ!', palo: '¡PALO!', afuera: '¡AFUERA!',
+}
+
+function definicionRemate(ctx: CanvasRenderingContext2D, v: Vista, a: Arco, tiro: Tiro) {
+  const t = tiro.t - DURACION_VUELO
+  const gol = tiro.definicion === 'gol'
+  if (gol) {
+    for (const p of PAPELITOS) {
+      const tp = t - p.demora
+      if (tp <= 0) continue
+      const y = -10 + tp * p.velocidad
+      if (y > v.alto) continue
+      ctx.save()
+      ctx.translate(p.x * v.ancho + Math.sin(tp * 3 + p.fase) * 14, y)
+      ctx.rotate(tp * 5 + p.fase)
+      ctx.fillStyle = p.color
+      ctx.fillRect(-2.5, -4, 5, 8)
+      ctx.restore()
+    }
+  }
+  // El cartel va arriba del travesaño, para no tapar al arquero ni la pelota
+  const crece = suave(Math.min(1, t / 0.18))
+  ctx.save()
+  ctx.translate(a.cx, a.base - a.alto - 14 * a.k)
+  ctx.scale((0.6 + 0.4 * crece) * a.k, (0.6 + 0.4 * crece) * a.k)
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.lineJoin = 'round'
+  ctx.font = `${gol ? 64 : 52}px "Bebas Neue", sans-serif`
+  ctx.lineWidth = 7
+  ctx.strokeStyle = TINTA
+  ctx.strokeText(TEXTO_DEFINICION[tiro.definicion], 0, 0)
+  ctx.fillStyle = gol ? ORO : CREMA
+  ctx.fillText(TEXTO_DEFINICION[tiro.definicion], 0, 0)
+  ctx.restore()
+  // Los puntos del gol suben desde donde entró la pelota, como los de las gambetas (sin pasar el travesaño,
+  // que arriba está el cartel)
+  if (gol) {
+    const [x, y] = enArco(a, tiro.u, tiro.w)
+    ctx.save()
+    ctx.translate(x, Math.max(a.base - a.alto + 30 * a.k, y - 14 * a.k - 26 * a.k * suave(Math.min(1, t / 0.6))))
+    ctx.scale(a.k, a.k)
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'alphabetic'
+    ctx.font = '30px "Bebas Neue", sans-serif'
+    ctx.lineJoin = 'round'
+    ctx.lineWidth = 5
+    ctx.strokeStyle = TINTA
+    ctx.strokeText(`+${PUNTOS_POR_GOL}`, 0, 0)
+    ctx.fillStyle = CREMA
+    ctx.fillText(`+${PUNTOS_POR_GOL}`, 0, 0)
+    ctx.restore()
+  }
+}
+
+// Arriba, en lugar del marcador: el título y cómo se patea (en píxeles CSS)
+function cartelRemate(ctx: CanvasRenderingContext2D, r: Remate, v: Vista, tactil: boolean, arriba: number) {
+  const x = v.cssAncho / 2
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.lineJoin = 'round'
+  ctx.font = '44px "Bebas Neue", sans-serif'
+  ctx.lineWidth = 5
+  ctx.strokeStyle = TINTA
+  ctx.strokeText('¡MANO A MANO!', x, arriba + 52)
+  ctx.fillStyle = ORO
+  ctx.fillText('¡MANO A MANO!', x, arriba + 52)
+  const lista = r.t >= ESPERA_REMATE
+  ctx.globalAlpha = lista ? 0.75 + 0.25 * Math.sin(r.t * 7) : 0.8
+  ctx.font = '700 11px Montserrat, sans-serif'
+  ctx.lineWidth = 3
+  const ayuda = !lista ? 'UN SOLO TIRO' : tactil ? 'TOCÁ PARA PATEAR' : 'ESPACIO PARA PATEAR'
+  ctx.strokeText(ayuda, x, arriba + 70)
+  ctx.fillStyle = CREMA
+  ctx.fillText(ayuda, x, arriba + 70)
+  ctx.globalAlpha = 1
+}
+
+function dibujarRemate(
+  ctx: CanvasRenderingContext2D, j: Juego, r: Remate, v: Vista, fijas: Capas,
+  opciones: { tactil: boolean; arriba: number },
+) {
+  const a = medidasArco(v)
+  const tiro = r.tiro
+  // Sacudón en la patada y en el palo
+  const golpe = !tiro ? 0
+    : tiro.t < 0.12 ? 3
+      : tiro.definicion === 'palo' && tiro.t > DURACION_VUELO && tiro.t < DURACION_VUELO + 0.25 ? 7 : 0
+  if (golpe) ctx.translate((Math.random() - 0.5) * golpe, (Math.random() - 0.5) * golpe)
+  ctx.drawImage(fijas.cielo, 0, 0, v.ancho, v.piso)
+  ciudad(ctx, v, j.distancia, fijas)
+  torres(ctx, v, j.distancia, fijas.torre)
+  alambrado(ctx, v, j.distancia, fijas.tejido)
+  pastoRemate(ctx, v, a)
+  const definido = tiro !== null && tiro.t >= DURACION_VUELO
+  redRemate(ctx, a, definido && tiro.definicion === 'gol' ? enArco(a, tiro.u, tiro.w) : null, definido ? tiro.t - DURACION_VUELO : 0)
+  // Si entró o se fue afuera, la pelota queda detrás de los palos
+  const pose = poseArquero(r, a)
+  const detras = definido && (tiro.definicion === 'gol' || tiro.definicion === 'afuera')
+  if (detras) pelotaRemate(ctx, r, a, pose, v)
+  palosRemate(ctx, a)
+  arqueroRemate(ctx, r, a, pose)
+  if (!detras) pelotaRemate(ctx, r, a, pose, v)
+  miraRemate(ctx, r, a)
+  if (tiro && tiro.t < 0.16) impacto(ctx, a, tiro.t)
+  if (definido) definicionRemate(ctx, v, a, tiro)
+
+  ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0)
+  if (!tiro) cartelRemate(ctx, r, v, opciones.tactil, opciones.arriba)
+  velo(ctx, v, 1 - r.t / 0.35)
 }
 
 export function dibujar(
@@ -1605,17 +2066,22 @@ export function dibujar(
 ) {
   kActual = v.escala * v.dpr
   ctx.setTransform(v.dpr * v.escala, 0, 0, v.dpr * v.escala, 0, 0)
+  const fijas = obtenerCapas(ctx, v)
+  if (j.remate) {
+    dibujarRemate(ctx, j, j.remate, v, fijas, opciones)
+    return
+  }
   if (j.temblor > 0) {
     const a = j.temblor * 16
     ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a)
   }
-  const fijas = obtenerCapas(ctx, v)
   ctx.drawImage(fijas.cielo, 0, 0, v.ancho, v.piso)
   ciudad(ctx, v, j.distancia, fijas)
   torres(ctx, v, j.distancia, fijas.torre)
   alambrado(ctx, v, j.distancia, fijas.tejido)
   cancha(ctx, v, j.distancia)
   arcos(ctx, v, j.distancia)
+  arcoFinal(ctx, v, j)
 
   // En la gambeta y el caño, Don Fulbio pasa por detrás del rival
   const detras = progresoJugada(j) > 0
@@ -1630,4 +2096,6 @@ export function dibujar(
   // El tono crema, la viñeta y el grano van en una capa fija encima del canvas (Juego.tsx)
   ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0)
   marcador(ctx, j, v, opciones.arriba)
+  // Al llegar al arco se oscurece, para pasar al mano a mano
+  if (j.estado === 'llegada') velo(ctx, v, (j.tiempoLlegada - (DURACION_LLEGADA - 0.35)) / 0.35)
 }
