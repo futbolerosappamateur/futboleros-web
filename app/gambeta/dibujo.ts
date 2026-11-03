@@ -234,8 +234,9 @@ const alturaTorre = (v: Vista) => Math.max(200, Math.min(460, v.piso - 120))   /
 
 function obtenerCapas(ctx: CanvasRenderingContext2D, v: Vista): Capas {
   const k = v.escala * v.dpr
-  // Si el escudo todavía no cargó, el cielo se vuelve a armar cuando llegue
-  const clave = `${Math.round(v.ancho)}x${Math.round(v.alto)}@${k.toFixed(3)}|${imagenEscudo ? 'escudo' : ''}`
+  // Si el escudo todavía no cargó, el cielo se vuelve a armar cuando llegue. El mano a mano tiene el piso en
+  // otra altura (vistaRemate): al pasar de la carrera al arco también se arma de nuevo
+  const clave = `${Math.round(v.ancho)}x${Math.round(v.alto)}/${Math.round(v.piso)}@${k.toFixed(3)}|${imagenEscudo ? 'escudo' : ''}`
   if (capas && capas.clave === clave) return capas
 
   const [cielo, gc] = lienzo(v.ancho, v.piso, k)
@@ -1175,6 +1176,18 @@ const PIEZAS = {
   saltando: { src: '/juego/rival/saltando.webp', w: 199, h: 301, p: [100, 298] },
   caido: { src: '/juego/rival/caido.webp', w: 314, h: 164, p: [157, 160] },
   deEspaldas: { src: '/juego/rival/de-espaldas.webp', w: 208, h: 303, p: [104, 300] },
+  // Mano a mano: el arquero de frente y Don Fulbio de espaldas. En las estiradas, p queda entre los guantes
+  arqueroParado: { src: '/juego/arquero/parado.webp', w: 364, h: 399, p: [180, 396] },
+  arqueroBajo: { src: '/juego/arquero/volando-bajo.webp', w: 547, h: 251, p: [468, 141] },
+  arqueroAlto: { src: '/juego/arquero/volando-alto.webp', w: 485, h: 464, p: [412, 60] },
+  arqueroCaido: { src: '/juego/arquero/caido.webp', w: 421, h: 252, p: [210, 248] },
+  arqueroAtajando: { src: '/juego/arquero/atajando.webp', w: 260, h: 563, p: [130, 560] },
+  arqueroLamento: { src: '/juego/arquero/lamento.webp', w: 263, h: 422, p: [128, 418] },
+  arqueroAlivio: { src: '/juego/arquero/alivio.webp', w: 296, h: 561, p: [145, 557] },
+  espaldasListo: { src: '/juego/fulbio/espaldas-listo.webp', w: 291, h: 514, p: [148, 511] },
+  espaldasPatea: { src: '/juego/fulbio/espaldas-patea.webp', w: 491, h: 489, p: [178, 485] },
+  espaldasFesteja: { src: '/juego/fulbio/espaldas-festeja.webp', w: 365, h: 528, p: [185, 524] },
+  espaldasLamenta: { src: '/juego/fulbio/espaldas-lamenta.webp', w: 290, h: 515, p: [136, 511] },
 } satisfies Record<string, DefPieza>
 
 type NombrePieza = keyof typeof PIEZAS
@@ -1193,25 +1206,38 @@ const AJUSTE: Partial<Record<NombrePieza, number>> = {
   brazo: 1.1, antebrazo: 1.1, muslo: 1.05, botin: 0.95, pelota: 1.3,
 }
 const RIVALES = { parado: 1, abierto: 1, barrida: 1, saltando: 1, caido: 1, deEspaldas: 1 }
+const DEL_REMATE = {
+  arqueroParado: 1, arqueroBajo: 1, arqueroAlto: 1, arqueroCaido: 1, arqueroAtajando: 1, arqueroLamento: 1,
+  arqueroAlivio: 1, espaldasListo: 1, espaldasPatea: 1, espaldasFesteja: 1, espaldasLamenta: 1,
+}
+const ESCALA_REMATE = 0.26   // el mano a mano agranda esto según el tamaño del arco
 const escalaDe = (n: NombrePieza) =>
-  (n === 'sentado' ? ESCALA_SENTADO : n in RIVALES ? ESCALA_RIVAL : ESCALA_FULBIO) * (AJUSTE[n] ?? 1)
+  (n === 'sentado' ? ESCALA_SENTADO : n in RIVALES ? ESCALA_RIVAL : n in DEL_REMATE ? ESCALA_REMATE : ESCALA_FULBIO) *
+  (AJUSTE[n] ?? 1)
 
 const imagenes = new Map<NombrePieza, HTMLImageElement>()
 let personajesListos = false
+let remateListo = false
 let cargando: Promise<void> | null = null
+
+const cargar = (nombres: NombrePieza[]) => Promise.all(nombres.map((n) => new Promise<void>((listo, error) => {
+  const img = new Image()
+  img.onload = () => { imagenes.set(n, img); listo() }
+  img.onerror = () => error(new Error(`No cargó ${PIEZAS[n].src}`))
+  img.src = PIEZAS[n].src
+})))
 
 export function cargarImagenes() {
   if (!cargando) {
     const escudo = new Image()
     escudo.onload = () => { imagenEscudo = escudo }
     escudo.src = '/juego/escudo-futboleros.webp'
+    // Primero lo de la carrera; lo del mano a mano se pide después, que recién se ve al final
     const nombres = Object.keys(PIEZAS) as NombrePieza[]
-    cargando = Promise.all(nombres.map((n) => new Promise<void>((listo, error) => {
-      const img = new Image()
-      img.onload = () => { imagenes.set(n, img); listo() }
-      img.onerror = () => error(new Error(`No cargó ${PIEZAS[n].src}`))
-      img.src = PIEZAS[n].src
-    }))).then(() => { personajesListos = true })
+    cargando = cargar(nombres.filter((n) => !(n in DEL_REMATE))).then(() => {
+      personajesListos = true
+      cargar(nombres.filter((n) => n in DEL_REMATE)).then(() => { remateListo = true }).catch(() => {})
+    })
   }
   return cargando
 }
@@ -1252,14 +1278,14 @@ function sprite(n: NombrePieza, oscura: boolean, aumento: number) {
 
 function pieza(
   ctx: CanvasRenderingContext2D, n: NombrePieza, x: number, y: number,
-  angulo = 0, oscura = false, escalaY = 1, aumento = 1,
+  angulo = 0, oscura = false, escalaY = 1, aumento = 1, espejo = false,
 ) {
   const d = PIEZAS[n]
   const esc = escalaDe(n) * aumento
   ctx.save()
   ctx.translate(x, y)
   if (angulo) ctx.rotate(angulo)
-  if (escalaY !== 1) ctx.scale(1, escalaY)
+  if (escalaY !== 1 || espejo) ctx.scale(espejo ? -1 : 1, escalaY)
   ctx.drawImage(sprite(n, oscura, aumento), -d.p[0] * esc, -d.p[1] * esc, d.w * esc, d.h * esc)
   ctx.restore()
 }
@@ -1804,44 +1830,130 @@ function palosRemate(ctx: CanvasRenderingContext2D, a: Arco) {
   ctx.stroke()
 }
 
-// Dónde está el arquero: parado se mueve de un palo al otro; cuando patean se estira hacia la pelota (con
-// la imagen del que salta, girada) y al final cae. Las manos sirven para dejar la pelota atajada
-interface PoseArquero { imagen: 'abierto' | 'saltando'; x: number; y: number; angulo: number; manos: [number, number]; aumento: number }
+// ---- El arquero y Don Fulbio ----
+// Parado, el arquero va de un palo al otro. Cuando patean, si la pelota le viene cerca la agarra sin tirarse;
+// si no, vuela (bajo o alto, según la altura) con los guantes hacia donde llega, cae, y al rato se lamenta, se
+// levanta con la pelota o queda aliviado. Las imágenes vuelan hacia la derecha: para el otro lado se espejan
+// (el caído tiene la cabeza a la izquierda, así que con él es al revés).
+
+const ALTO_ARQUERO = 0.92        // derecho, en altos del arco: es alto
+const ALTO_FULBIO = 0.98         // está más cerca que el arquero
+const ALTO_HOJA_ARQUERO = 560    // píxeles del arquero derecho en su hoja (atajando o aliviado)
+const ALTO_HOJA_FULBIO = 514
+// Puntos de las imágenes, en píxeles de su archivo
+const VUELOS = {
+  arqueroBajo: { pies: [25, 215], abajo: [30, 248] },   // abajo: lo más bajo, que no se meta en el pasto
+  arqueroAlto: { pies: [30, 420], abajo: [20, 461] },
+} as const
+const CAIDO_GUANTES: [number, number] = [100, 208]      // donde queda la pelota si la atajó tirándose
+const ATAJANDO_PELOTA: [number, number] = [130, 172]
+const PATEA_BOTIN: [number, number] = [486, 292]        // la punta del botín, que le pega a la pelota
+const CAE = 0.62          // desde el tiro: empieza a caer
+const EN_EL_PISO = 0.84
+const SE_LEVANTA = 1.5
+
+type ImagenArquero =
+  'arqueroParado' | 'arqueroBajo' | 'arqueroAlto' | 'arqueroCaido' | 'arqueroAtajando' | 'arqueroLamento' | 'arqueroAlivio'
+
+interface PoseArquero {
+  imagen: ImagenArquero
+  x: number                // dónde va el punto p de la imagen
+  y: number
+  angulo: number
+  espejo: boolean
+  aumento: number
+  suelo: number            // la x del cuerpo, para la sombra (y para el muñeco mientras cargan las imágenes)
+  alto: number             // cuánto está en el aire
+  manos: [number, number]  // donde queda la pelota si la ataja
+  conPelota: boolean       // la imagen ya trae la pelota
+}
+
+const aumentoRemate = (a: Arco, alto: number, altoHoja: number) =>
+  Math.round(((alto * a.alto) / (altoHoja * ESCALA_REMATE)) * 20) / 20
+
+// Dónde queda un punto de la imagen respecto de su p, con la imagen espejada y girada como en pieza()
+function girado(dx: number, dy: number, angulo: number, espejo: boolean, e: number): [number, number] {
+  const x = (espejo ? -dx : dx) * e
+  const y = dy * e
+  return [x * Math.cos(angulo) - y * Math.sin(angulo), x * Math.sin(angulo) + y * Math.cos(angulo)]
+}
 
 function poseArquero(r: Remate, a: Arco): PoseArquero {
-  const aumento = Math.round(((a.alto * 0.74) / (PIEZAS.abierto.h * ESCALA_RIVAL)) * 20) / 20
+  const aumento = aumentoRemate(a, ALTO_ARQUERO, ALTO_HOJA_ARQUERO)
+  const e = ESCALA_REMATE * aumento
+  const quieto = (imagen: ImagenArquero, x: number, espejo = false): PoseArquero => {
+    const caido = PIEZAS.arqueroCaido.p
+    const manos: [number, number] = imagen === 'arqueroCaido'
+      ? [x + (espejo ? -1 : 1) * (CAIDO_GUANTES[0] - caido[0]) * e, a.base + (CAIDO_GUANTES[1] - caido[1]) * e]
+      : [x, a.base + (ATAJANDO_PELOTA[1] - PIEZAS.arqueroAtajando.p[1]) * e]
+    return { imagen, x, y: a.base, angulo: 0, espejo, aumento, suelo: x, alto: 0, manos, conPelota: imagen === 'arqueroAtajando' }
+  }
   const tiro = r.tiro
-  if (!tiro || tiro.t < REACCION) {
-    const [x, y] = enArco(a, tiro ? tiro.desde : arqueroEn(r, r.t), 0)
-    return { imagen: 'abierto', x, y, angulo: 0, manos: [x, y - a.alto * 0.42], aumento }
+  const [px] = enArco(a, tiro ? tiro.desde : arqueroEn(r, r.t), 0)
+  if (!tiro || tiro.t < REACCION) return quieto('arqueroParado', px)
+  const t = tiro.t
+  const final: ImagenArquero =
+    tiro.definicion === 'gol' ? 'arqueroLamento' : tiro.definicion === 'atajada' ? 'arqueroAtajando' : 'arqueroAlivio'
+
+  // Le viene cerca: se corre y la agarra sin tirarse
+  if (tiro.definicion === 'atajada' && Math.abs(tiro.u - tiro.desde) < 0.25 && tiro.w < 0.8) {
+    const [bx] = enArco(a, tiro.u, 0)
+    const x = px + (bx - px) * suave(Math.min(1, (t - REACCION) / ESTIRADA))
+    return quieto(t < DURACION_VUELO ? 'arqueroParado' : 'arqueroAtajando', x)
   }
-  const p = suave(Math.min(1, (tiro.t - REACCION) / ESTIRADA))
-  const [px, py] = enArco(a, tiro.desde, 0)
+
+  // Vuela: la imagen se gira un poco para que el cuerpo vaya de los pies hacia donde llegan los guantes
   const [hx, hy] = enArco(a, tiro.au, tiro.aw)
-  const largo = PIEZAS.saltando.h * ESCALA_RIVAL * aumento * 0.92   // de los pies a las manos
-  if (Math.hypot(hx - px, hy - py) < largo * 0.8) {
-    // La tiene cerca: se corre sin tirarse
-    return { imagen: 'abierto', x: px + (hx - px) * p, y: py, angulo: 0, manos: [hx, hy], aumento }
-  }
-  const angulo = Math.atan2(hx - px, py - hy)
-  const piesX = hx - Math.sin(angulo) * largo
-  const piesY = hy + Math.cos(angulo) * largo
-  const cae = tiro.t > 0.65 ? suave(Math.min(1, (tiro.t - 0.65) / 0.35)) * Math.max(0, a.base - 6 - Math.max(hy, piesY)) : 0
-  return {
-    imagen: 'saltando', angulo: angulo * p,
-    x: px + (piesX - px) * p, y: py + (piesY - py) * p + cae,
-    manos: [hx, hy + cae], aumento,
-  }
+  const espejo = hx < px
+  const imagen = tiro.aw < 0.45 ? 'arqueroBajo' : 'arqueroAlto'
+  const p0 = PIEZAS[imagen].p
+  const { pies, abajo } = VUELOS[imagen]
+  const anguloHoja = Math.atan2(p0[1] - pies[1], p0[0] - pies[0])
+  const giro = Math.max(-0.45, Math.min(0.35, Math.atan2(hy - a.base, Math.abs(hx - px)) - anguloHoja))
+  const angulo = espejo ? -giro : giro
+  // Arranca con el cuerpo donde estaba parado y termina con los guantes donde llega
+  const [cx, cy] = girado((pies[0] - p0[0]) / 2, (pies[1] - p0[1]) / 2, angulo, espejo, e)
+  const x0 = px - cx
+  const y0 = a.base - (PIEZAS.arqueroParado.h / 2) * e - cy
+  const p = suave(Math.min(1, (t - REACCION) / ESTIRADA))
+  const x = x0 + (hx - x0) * p
+  const [, ay] = girado(abajo[0] - p0[0], abajo[1] - p0[1], angulo, espejo, e)
+  let y = Math.min(y0 + (hy - y0) * p, a.base - ay)
+  // Después de la pelota cae al pasto; tirado, queda mirando para el lado en que voló
+  if (t > CAE) y += suave(Math.min(1, (t - CAE) / (EN_EL_PISO - CAE))) * (a.base - (y + ay))
+  if (t >= SE_LEVANTA) return quieto(final, x + cx)
+  if (t >= EN_EL_PISO) return quieto('arqueroCaido', x + cx, !espejo)
+  return { imagen, x, y, angulo, espejo, aumento, suelo: x + cx, alto: a.base - (y + cy), manos: [x, y], conPelota: false }
 }
 
 function arqueroRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco, pose: PoseArquero) {
-  if (!personajesListos) {
-    muñeco(ctx, RIVAL, pose.x, pose.y, 1, abierto(r.t), { escala: (a.alto * 0.74) / 62, rotacion: pose.angulo })
+  if (!remateListo) {
+    muñeco(ctx, RIVAL, pose.suelo, a.base, 1, abierto(r.t), { escala: (a.alto * 0.66) / 62 })
     return
   }
-  if (pose.imagen === 'abierto') sombra(ctx, pose.x, a.base, 30 * a.k, 0)
-  const respira = pose.imagen === 'abierto' && !r.tiro ? 1 - 0.012 * (1 + Math.sin(r.t * 8)) : 1
-  pieza(ctx, pose.imagen, pose.x, pose.y + 2, pose.angulo, false, respira, pose.aumento)
+  const ancho = pose.imagen === 'arqueroCaido' ? 60 : pose.alto > 0 ? 40 : 28
+  sombra(ctx, pose.suelo, a.base, ancho * a.k, pose.alto)
+  const respira = pose.imagen === 'arqueroParado' && !r.tiro ? 1 - 0.012 * (1 + Math.sin(r.t * 8)) : 1
+  pieza(ctx, pose.imagen, pose.x, pose.y, pose.angulo, false, respira, pose.aumento, pose.espejo)
+}
+
+// Don Fulbio, de espaldas, atrás y a la izquierda de la pelota: parado ahí, al patear el botín llega justo a
+// ella. Después festeja a los saltitos o se agarra la cabeza
+function fulbioRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco) {
+  if (!remateListo) return
+  const aumento = aumentoRemate(a, ALTO_FULBIO, ALTO_HOJA_FULBIO)
+  const e = ESCALA_REMATE * aumento
+  const p = PIEZAS.espaldasPatea.p
+  const x = a.cx - a.radio * 0.9 - (PATEA_BOTIN[0] - p[0]) * e
+  const y = a.pelotaY - (PATEA_BOTIN[1] - p[1]) * e
+  const tiro = r.tiro
+  const imagen: NombrePieza = !tiro ? 'espaldasListo'
+    : tiro.t < CAE ? 'espaldasPatea'
+      : tiro.definicion === 'gol' ? 'espaldasFesteja' : 'espaldasLamenta'
+  const salto = tiro && imagen === 'espaldasFesteja' ? Math.abs(Math.sin((tiro.t - CAE) * 6)) * 9 * a.k : 0
+  const respira = tiro ? 1 : 1 - 0.01 * (1 + Math.sin(r.t * 5))
+  sombra(ctx, x, y, 34 * a.k, salto)
+  pieza(ctx, imagen, x, y - salto, 0, false, respira, aumento)
 }
 
 // La pelota del mano a mano: está más cerca, así que se ve más grande que en la carrera
@@ -1885,7 +1997,7 @@ function pelotaRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco, pose: P
     const c = suave(Math.min(1, t / 0.7))
     pelotaGrande(ctx, tx + (a.cx - tx) * 0.05 * c, ty + (a.base - chico * 0.9 - ty) * c, chico * 0.92, giro * 0.2)
   } else if (tiro.definicion === 'atajada') {
-    pelotaGrande(ctx, pose.manos[0], pose.manos[1], chico, 0.6)
+    if (!pose.conPelota) pelotaGrande(ctx, pose.manos[0], pose.manos[1], chico, 0.6)
   } else if (tiro.definicion === 'palo') {
     // Rebota para afuera y viene hacia adelante
     const y = ty - 90 * t + 620 * t * t
@@ -2027,30 +2139,40 @@ function cartelRemate(ctx: CanvasRenderingContext2D, r: Remate, v: Vista, tactil
 }
 
 function dibujarRemate(
-  ctx: CanvasRenderingContext2D, j: Juego, r: Remate, v: Vista, fijas: Capas,
+  ctx: CanvasRenderingContext2D, j: Juego, r: Remate, v: Vista,
   opciones: { tactil: boolean; arriba: number },
 ) {
-  const a = medidasArco(v)
+  // La cámara del mano a mano mira un poco más arriba que la de la carrera: el arco sube y abajo queda lugar
+  // para la pelota y Don Fulbio (con el celular parado, el piso ya estaba a esa altura)
+  const vr: Vista = { ...v, piso: v.alto * 0.6 }
+  const fijas = obtenerCapas(ctx, vr)
+  const a = medidasArco(vr)
   const tiro = r.tiro
   // Sacudón en la patada y en el palo
   const golpe = !tiro ? 0
     : tiro.t < 0.12 ? 3
       : tiro.definicion === 'palo' && tiro.t > DURACION_VUELO && tiro.t < DURACION_VUELO + 0.25 ? 7 : 0
   if (golpe) ctx.translate((Math.random() - 0.5) * golpe, (Math.random() - 0.5) * golpe)
-  ctx.drawImage(fijas.cielo, 0, 0, v.ancho, v.piso)
-  ciudad(ctx, v, j.distancia, fijas)
-  torres(ctx, v, j.distancia, fijas.torre)
-  alambrado(ctx, v, j.distancia, fijas.tejido)
-  pastoRemate(ctx, v, a)
+  ctx.drawImage(fijas.cielo, 0, 0, vr.ancho, vr.piso)
+  // Con el piso más arriba, los edificios taparían el escudo: bajan lo que haga falta (los más altos miden
+  // 160) y lo que baja queda detrás del pasto
+  const sello = escudo(vr)
+  const bajada = Math.max(0, sello.y + sello.radio * 0.4 - (vr.piso - 26 - 160))
+  ciudad(ctx, bajada ? { ...vr, piso: vr.piso + bajada } : vr, j.distancia, fijas)
+  torres(ctx, vr, j.distancia, fijas.torre)
+  alambrado(ctx, vr, j.distancia, fijas.tejido)
+  pastoRemate(ctx, vr, a)
   const definido = tiro !== null && tiro.t >= DURACION_VUELO
   redRemate(ctx, a, definido && tiro.definicion === 'gol' ? enArco(a, tiro.u, tiro.w) : null, definido ? tiro.t - DURACION_VUELO : 0)
-  // Si entró o se fue afuera, la pelota queda detrás de los palos
+  // Si entró o se fue afuera, la pelota queda detrás de los palos. Don Fulbio, que está más cerca, va
+  // delante de todo
   const pose = poseArquero(r, a)
   const detras = definido && (tiro.definicion === 'gol' || tiro.definicion === 'afuera')
-  if (detras) pelotaRemate(ctx, r, a, pose, v)
+  if (detras) pelotaRemate(ctx, r, a, pose, vr)
   palosRemate(ctx, a)
   arqueroRemate(ctx, r, a, pose)
-  if (!detras) pelotaRemate(ctx, r, a, pose, v)
+  if (!detras) pelotaRemate(ctx, r, a, pose, vr)
+  fulbioRemate(ctx, r, a)
   miraRemate(ctx, r, a)
   if (tiro && tiro.t < 0.16) impacto(ctx, a, tiro.t)
   if (definido) definicionRemate(ctx, v, a, tiro)
@@ -2066,15 +2188,15 @@ export function dibujar(
 ) {
   kActual = v.escala * v.dpr
   ctx.setTransform(v.dpr * v.escala, 0, 0, v.dpr * v.escala, 0, 0)
-  const fijas = obtenerCapas(ctx, v)
   if (j.remate) {
-    dibujarRemate(ctx, j, j.remate, v, fijas, opciones)
+    dibujarRemate(ctx, j, j.remate, v, opciones)
     return
   }
   if (j.temblor > 0) {
     const a = j.temblor * 16
     ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a)
   }
+  const fijas = obtenerCapas(ctx, v)
   ctx.drawImage(fijas.cielo, 0, 0, v.ancho, v.piso)
   ciudad(ctx, v, j.distancia, fijas)
   torres(ctx, v, j.distancia, fijas.torre)
