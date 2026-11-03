@@ -7,7 +7,7 @@ import {
   nuevoJuego, avanzar, apretarSalto, soltarSalto, apretarGambeta, apretarCaño, metros, puntos,
   PUNTOS_POR_GAMBETA, PUNTOS_POR_CAÑO, type Juego as EstadoJuego, type Motivo,
 } from './motor'
-import { calcularVista, cargarPersonajes, dibujar, texturaGrano, type Vista } from './dibujo'
+import { calcularVista, cargarImagenes, dibujar, texturaGrano, type Vista } from './dibujo'
 
 // Letras de los afiches de Don Fulbio: la firma de Futboleros y los títulos de madera
 const firma = localFont({ src: '../../public/fonts/Lobster-Regular.ttf', display: 'swap' })
@@ -153,7 +153,7 @@ export default function Juego({ fecha }: { fecha: string }) {
         avanzar(j, PASO)
         acumulado -= PASO
       }
-      dibujar(ctx, j, vista, { tactil: tactilRef.current, arriba, firma: firma.style.fontFamily })
+      dibujar(ctx, j, vista, { tactil: tactilRef.current, arriba })
       if (j.estado === 'fin' && pantallaRef.current === 'jugando') terminar(j)
     }
     cuadro = requestAnimationFrame(paso)
@@ -163,10 +163,10 @@ export default function Juego({ fecha }: { fecha: string }) {
     }
   }, [terminar, tactil])
 
-  // Las imágenes de Don Fulbio y de los rivales (mientras cargan se ven los muñecos dibujados), y el
-  // grano de papel de la capa de arriba
+  // El escudo y las imágenes de Don Fulbio y de los rivales (mientras cargan se ven los muñecos
+  // dibujados), y el grano de papel de la capa de arriba
   useEffect(() => {
-    cargarPersonajes().catch(() => {})
+    cargarImagenes().catch(() => {})
     texturaRef.current?.style.setProperty('--grano', `url(${texturaGrano()})`)
   }, [])
 

@@ -113,6 +113,8 @@ function azarFijo(semilla: number) {
 }
 
 const PERIODO_CIUDAD = 1400
+const PARALAJE_CIUDAD = 0.08
+const PLAZA = [530, 890]   // un claro en la tira: ahí van los lugares conocidos
 const EDIFICIOS = (() => {
   const azar = azarFijo(7)
   const lista: { x: number; ancho: number; alto: number; antena: boolean; ventanas: [number, number, number][] }[] = []
@@ -120,6 +122,10 @@ const EDIFICIOS = (() => {
   while (x < PERIODO_CIUDAD) {
     const ancho = 34 + azar() * 70
     const alto = 40 + azar() * 120
+    if (x + ancho > PLAZA[0] && x < PLAZA[1]) {
+      x = PLAZA[1]
+      continue
+    }
     const ventanas: [number, number, number][] = []
     for (let vy = 10; vy < alto - 8; vy += 11) {
       for (let vx = 6; vx < ancho - 6; vx += 9) {
@@ -204,10 +210,12 @@ interface Capas {
   ciudad: HTMLCanvasElement
   torre: HTMLCanvasElement
   tejido: CanvasPattern | null
+  hitos: (HTMLCanvasElement | undefined)[]   // los lugares conocidos, solo los que están cerca
 }
 
 const ALTO_CIUDAD = 180
 let capas: Capas | null = null
+let imagenEscudo: HTMLImageElement | null = null   // el escudo redondo de los afiches (lo carga cargarImagenes)
 
 function lienzo(ancho: number, alto: number, k: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const c = document.createElement('canvas')
@@ -220,15 +228,14 @@ function lienzo(ancho: number, alto: number, k: number): [HTMLCanvasElement, Can
 
 const alturaTorre = (v: Vista) => Math.max(200, Math.min(460, v.piso - 120))   // más altas con más cielo
 
-function obtenerCapas(ctx: CanvasRenderingContext2D, v: Vista, firma: string): Capas {
+function obtenerCapas(ctx: CanvasRenderingContext2D, v: Vista): Capas {
   const k = v.escala * v.dpr
-  // Si la letra de la firma todavía no cargó, el cielo se vuelve a armar cuando cargue
-  const letra = document.fonts ? document.fonts.check(`20px ${firma}`) : true
-  const clave = `${Math.round(v.ancho)}x${Math.round(v.alto)}@${k.toFixed(3)}|${letra}`
+  // Si el escudo todavía no cargó, el cielo se vuelve a armar cuando llegue
+  const clave = `${Math.round(v.ancho)}x${Math.round(v.alto)}@${k.toFixed(3)}|${imagenEscudo ? 'escudo' : ''}`
   if (capas && capas.clave === clave) return capas
 
   const [cielo, gc] = lienzo(v.ancho, v.piso, k)
-  dibujarCielo(gc, v, firma)
+  dibujarCielo(gc, v)
   const [ciudad, gu] = lienzo(PERIODO_CIUDAD + 120, ALTO_CIUDAD, k)
   dibujarCiudad(gu)
   const alto = alturaTorre(v)
@@ -246,11 +253,11 @@ function obtenerCapas(ctx: CanvasRenderingContext2D, v: Vista, firma: string): C
   const tejido = ctx.createPattern(trama, 'repeat')
   tejido?.setTransform(new DOMMatrix().scale(1 / k))
 
-  capas = { clave, cielo, ciudad, torre, tejido }
+  capas = { clave, cielo, ciudad, torre, tejido, hitos: [] }
   return capas
 }
 
-function dibujarCielo(g: CanvasRenderingContext2D, v: Vista, firma: string) {
+function dibujarCielo(g: CanvasRenderingContext2D, v: Vista) {
   const fondo = g.createLinearGradient(0, 0, 0, v.piso)
   fondo.addColorStop(0, '#0a1528')
   fondo.addColorStop(0.6, '#13284a')
@@ -282,29 +289,16 @@ function dibujarCielo(g: CanvasRenderingContext2D, v: Vista, firma: string) {
   }
   g.globalAlpha = 1
 
-  // Escudo de Futboleros: doble aro, estrella y la firma con su subrayado
-  g.strokeStyle = 'rgba(239,227,198,0.5)'
-  g.lineWidth = 3
-  g.beginPath()
-  g.arc(e.x, e.y, e.radio, 0, Math.PI * 2)
-  g.stroke()
-  g.lineWidth = 1.2
-  g.beginPath()
-  g.arc(e.x, e.y, e.radio - 9, 0, Math.PI * 2)
-  g.stroke()
-  estrella(g, e.x, e.y - e.radio * 0.5, e.radio * 0.13, 'rgba(239,227,198,0.6)')
-  g.font = `${Math.round(e.radio * 0.4)}px ${firma}`
-  g.textAlign = 'center'
-  g.textBaseline = 'middle'
-  g.fillStyle = 'rgba(239,227,198,0.62)'
-  g.fillText('Futboleros', e.x, e.y + e.radio * 0.04)
-  g.strokeStyle = 'rgba(239,227,198,0.55)'
-  g.lineWidth = 3
-  g.lineCap = 'round'
-  g.beginPath()
-  g.moveTo(e.x - e.radio * 0.62, e.y + e.radio * 0.36)
-  g.quadraticCurveTo(e.x, e.y + e.radio * 0.18, e.x + e.radio * 0.7, e.y + e.radio * 0.2)
-  g.stroke()
+  // El escudo de Futboleros, con un resplandor atrás para que el aro oscuro se despegue del cielo
+  if (imagenEscudo) {
+    const halo = g.createRadialGradient(e.x, e.y, e.radio * 0.85, e.x, e.y, e.radio * 1.5)
+    halo.addColorStop(0, 'rgba(239,227,198,0.2)')
+    halo.addColorStop(1, 'rgba(239,227,198,0)')
+    g.fillStyle = halo
+    g.fillRect(e.x - e.radio * 1.5, e.y - e.radio * 1.5, e.radio * 3, e.radio * 3)
+    g.imageSmoothingQuality = 'high'
+    g.drawImage(imagenEscudo, e.x - e.radio, e.y - e.radio, e.radio * 2, e.radio * 2)
+  }
 }
 
 // La tira de edificios, con la base abajo de todo
@@ -359,11 +353,278 @@ function dibujarTorre(g: CanvasRenderingContext2D, x: number, tope: number, alto
   }
 }
 
-function ciudad(ctx: CanvasRenderingContext2D, v: Vista, distancia: number, capa: HTMLCanvasElement) {
-  const corrimiento = -((distancia * 0.08) % PERIODO_CIUDAD)
-  for (let x = corrimiento; x < v.ancho; x += PERIODO_CIUDAD) {
-    ctx.drawImage(capa, x, v.piso - 26 - ALTO_CIUDAD, PERIODO_CIUDAD + 120, ALTO_CIUDAD)
+function ciudad(ctx: CanvasRenderingContext2D, v: Vista, distancia: number, fijas: Capas) {
+  const recorrido = distancia * PARALAJE_CIUDAD
+  let usados = 0
+  for (let n = Math.floor(recorrido / PERIODO_CIUDAD), x = -(recorrido % PERIODO_CIUDAD); x < v.ancho; n++, x += PERIODO_CIUDAD) {
+    ctx.drawImage(fijas.ciudad, x, v.piso - 26 - ALTO_CIUDAD, PERIODO_CIUDAD + 120, ALTO_CIUDAD)
+    // En la plaza de cada vuelta de la tira va el lugar que sigue
+    const i = n % HITOS.length
+    const h = HITOS[i]
+    const ancho = (h.ancho + MARGEN_HITO * 2) * ESCALA_HITOS
+    const izq = x + (PLAZA[0] + PLAZA[1]) / 2 - ancho / 2
+    if (izq > v.ancho || izq + ancho < 0) continue
+    usados |= 1 << i
+    const sprite = fijas.hitos[i] ?? (fijas.hitos[i] = spriteHito(h, v))
+    const arriba = v.piso - 26 - (h.alto + MARGEN_HITO) * ESCALA_HITOS
+    ctx.drawImage(sprite, izq, arriba, ancho, (h.alto + MARGEN_HITO * 2) * ESCALA_HITOS)
   }
+  // Los que no se ven no ocupan memoria
+  for (let i = 0; i < HITOS.length; i++) if (!(usados & (1 << i))) fijas.hitos[i] = undefined
+}
+
+// ---- Lugares de Buenos Aires ----
+// La tira de edificios tiene una plaza, y cada vez que pasa (cada 437 m) trae el lugar conocido que
+// sigue, en orden: en 2500 m se ve cada uno una vez. Van iluminados, como de noche.
+
+interface Hito {
+  ancho: number
+  alto: number
+  dibujar: (g: CanvasRenderingContext2D) => void   // con el piso en y = 0 y el borde izquierdo en x = 0
+}
+
+const HITOS: Hito[] = [
+  { ancho: 300, alto: 228, dibujar: congreso },
+  { ancho: 40, alto: 222, dibujar: obelisco },
+  { ancho: 260, alto: 142, dibujar: casaRosada },
+  { ancho: 300, alto: 152, dibujar: puenteDeLaMujer },
+  { ancho: 220, alto: 146, dibujar: bibliotecaNacional },
+  { ancho: 140, alto: 124, dibujar: planetario },
+]
+
+const ESCALA_HITOS = 0.85   // con el celular acostado hay poco cielo y pasan por delante del escudo
+const MARGEN_HITO = 4       // para que no se corten los bordes suavizados
+
+function spriteHito(h: Hito, v: Vista) {
+  const e = ESCALA_HITOS
+  const [c, g] = lienzo((h.ancho + MARGEN_HITO * 2) * e, (h.alto + MARGEN_HITO * 2) * e, v.escala * v.dpr)
+  g.scale(e, e)
+  g.translate(MARGEN_HITO, h.alto + MARGEN_HITO)
+  h.dibujar(g)
+  return c
+}
+
+const PIEDRA_LUZ = '#cfc19d'
+const PIEDRA = '#a69878'
+const PIEDRA_SOMBRA = '#6c6352'
+const VENTANA_OSCURA = '#2a2f40'
+const VENTANA_LUZ = 'rgba(232,192,110,0.85)'
+
+// Un polígono con los puntos seguidos: x0, y0, x1, y1...
+function poligono(g: CanvasRenderingContext2D, relleno: string | CanvasGradient, puntos: number[]) {
+  g.fillStyle = relleno
+  g.beginPath()
+  for (let i = 0; i < puntos.length; i += 2) g.lineTo(puntos[i], puntos[i + 1])
+  g.closePath()
+  g.fill()
+}
+
+// El Congreso: las alas, el pórtico de columnas con la cuadriga arriba y la cúpula verde
+function congreso(g: CanvasRenderingContext2D) {
+  // Tambor y cúpula, atrás del cuerpo del medio
+  g.fillStyle = PIEDRA_SOMBRA
+  g.fillRect(114, -154, 72, 76)
+  g.fillStyle = PIEDRA_LUZ
+  for (let x = 117; x < 184; x += 9) g.fillRect(x, -150, 3, 68)
+  g.fillRect(110, -158, 80, 5)
+  const verde = g.createLinearGradient(112, 0, 188, 0)
+  verde.addColorStop(0, '#93b6a2')
+  verde.addColorStop(1, '#3d675b')
+  g.fillStyle = verde
+  g.beginPath()
+  g.moveTo(112, -158)
+  g.bezierCurveTo(112, -186, 130, -205, 150, -207)
+  g.bezierCurveTo(170, -205, 188, -186, 188, -158)
+  g.closePath()
+  g.fill()
+  g.strokeStyle = 'rgba(20,45,40,0.5)'
+  g.lineWidth = 1
+  g.beginPath()
+  for (const dx of [-26, -13, 13, 26]) {
+    g.moveTo(150 + dx, -158)
+    g.quadraticCurveTo(150 + dx * 0.9, -196, 150, -207)
+  }
+  g.stroke()
+  // Linterna
+  g.fillStyle = PIEDRA_LUZ
+  g.fillRect(143, -218, 14, 12)
+  g.beginPath()
+  g.arc(150, -218, 7, Math.PI, 0)
+  g.fill()
+  g.fillRect(149, -228, 2, 6)
+  // Alas de tres pisos y pabellones en las puntas
+  g.fillStyle = PIEDRA
+  g.fillRect(0, -60, 300, 60)
+  g.fillRect(0, -72, 40, 72)
+  g.fillRect(260, -72, 40, 72)
+  g.fillStyle = PIEDRA_LUZ
+  g.fillRect(-2, -63, 304, 3)
+  g.fillRect(-2, -75, 44, 3)
+  g.fillRect(258, -75, 44, 3)
+  g.fillStyle = VENTANA_OSCURA
+  for (let fila = 0; fila < 3; fila++) {
+    for (let x = 8; x < 296; x += 13) {
+      if (x > 90 && x < 206) continue
+      g.fillRect(x, -52 + fila * 17, 5, 10)
+    }
+  }
+  // Cuerpo del medio con el pórtico: el fondo en sombra entre las columnas
+  g.fillStyle = PIEDRA
+  g.fillRect(94, -80, 112, 80)
+  g.fillStyle = '#3e3a31'
+  g.fillRect(105, -66, 90, 60)
+  g.fillStyle = PIEDRA_LUZ
+  for (let i = 0; i < 6; i++) g.fillRect(106 + i * 16.4, -66, 6, 60)
+  g.fillRect(98, -6, 104, 6)
+  g.fillRect(101, -74, 98, 8)
+  poligono(g, PIEDRA_LUZ, [99, -74, 150, -92, 201, -74])
+  poligono(g, PIEDRA, [111, -76, 150, -88, 189, -76])
+  // La cuadriga, en bronce
+  poligono(g, '#2e2b25', [
+    134, -92, 135, -100, 138, -105, 140, -102, 141, -108, 144, -104, 146, -109, 148, -105, 149, -118, 151, -118,
+    152, -105, 154, -109, 156, -104, 159, -108, 160, -102, 162, -105, 165, -100, 166, -92,
+  ])
+}
+
+// El Obelisco, iluminado desde abajo: se ven dos caras, la de la izquierda con más luz
+function obelisco(g: CanvasRenderingContext2D) {
+  const luz = g.createLinearGradient(0, 0, 0, -222)
+  luz.addColorStop(0, '#f3e9d0')
+  luz.addColorStop(1, '#b8aa88')
+  const sombra = g.createLinearGradient(0, 0, 0, -222)
+  sombra.addColorStop(0, '#a59878')
+  sombra.addColorStop(1, '#6c6352')
+  poligono(g, luz, [9, 0, 13.5, -206, 21, -206, 22, 0])
+  poligono(g, sombra, [22, 0, 21, -206, 26.5, -206, 31, 0])
+  poligono(g, luz, [13.5, -206, 20, -222, 21, -206])
+  poligono(g, sombra, [21, -206, 20, -222, 26.5, -206])
+  g.fillStyle = VENTANA_OSCURA
+  g.fillRect(15.5, -199, 3, 4)
+  poligono(g, PIEDRA_SOMBRA, [3, 0, 5, -4, 35, -4, 37, 0])
+}
+
+// La Casa Rosada: el arco del medio, las ventanas encendidas y la bandera
+function casaRosada(g: CanvasRenderingContext2D) {
+  const rosa = '#c4878a'
+  const rosaLuz = '#dca5a3'
+  g.fillStyle = rosa
+  g.fillRect(0, -70, 260, 70)
+  g.fillStyle = rosaLuz
+  g.fillRect(-2, -73, 264, 3)
+  g.fillRect(-2, -81, 264, 2)
+  for (let x = 0; x < 260; x += 5) g.fillRect(x, -79, 2, 6)
+  g.fillStyle = VENTANA_LUZ
+  for (let fila = 0; fila < 3; fila++) {
+    for (let x = 8; x < 256; x += 12) {
+      if (x > 88 && x < 168) continue
+      g.fillRect(x, -62 + fila * 20, 5, 11)
+    }
+  }
+  // El arco, más alto que el resto, con su frontón y la bandera
+  g.fillStyle = rosaLuz
+  g.fillRect(96, -100, 68, 100)
+  poligono(g, rosaLuz, [92, -100, 130, -116, 168, -100])
+  g.fillStyle = '#2b1f2a'
+  g.beginPath()
+  g.moveTo(112, 0)
+  g.lineTo(112, -40)
+  g.arc(130, -40, 18, Math.PI, 0)
+  g.lineTo(148, 0)
+  g.closePath()
+  g.fill()
+  g.fillStyle = VENTANA_LUZ
+  g.fillRect(101, -88, 6, 12)
+  g.fillRect(153, -88, 6, 12)
+  g.fillRect(117, -90, 26, 10)
+  g.fillStyle = '#d9cdb0'
+  g.fillRect(129, -142, 1.6, 27)
+  g.fillStyle = '#7fb1dd'
+  g.fillRect(130.6, -142, 18, 12)
+  g.fillStyle = '#f2efe6'
+  g.fillRect(130.6, -138, 18, 4)
+  circulo(g, 139.6, -136, 1.3, ORO)
+}
+
+// El Puente de la Mujer: el tablero sobre el dique y el mástil blanco inclinado, con sus tensores
+function puenteDeLaMujer(g: CanvasRenderingContext2D) {
+  const blanco = '#e6dfcc'
+  const blancoSombra = '#a59d89'
+  g.fillStyle = PIEDRA_SOMBRA
+  g.fillRect(30, -18, 10, 18)
+  g.fillRect(268, -18, 10, 18)
+  poligono(g, PIEDRA_SOMBRA, [194, 0, 199, -18, 221, -18, 226, 0])
+  g.strokeStyle = 'rgba(230,223,204,0.7)'
+  g.lineWidth = 0.8
+  g.beginPath()
+  g.moveTo(0, -30)
+  g.lineTo(300, -30)
+  g.stroke()
+  g.fillStyle = blanco
+  g.fillRect(0, -24, 300, 6)
+  g.fillStyle = blancoSombra
+  g.fillRect(0, -19, 300, 2)
+  // Tensores, del mástil al tablero
+  const [bx, by, px, py] = [210, -24, 264, -152]
+  g.strokeStyle = 'rgba(236,229,210,0.75)'
+  g.lineWidth = 0.9
+  g.beginPath()
+  for (let i = 1; i <= 9; i++) {
+    const t = 0.16 + i * 0.085
+    g.moveTo(bx + (px - bx) * t, by + (py - by) * t)
+    g.lineTo(194 - i * 17, -24)
+  }
+  g.stroke()
+  // El mástil, una aguja que se afina hacia la punta
+  poligono(g, blanco, [198, -22, 222, -22, px, py])
+  poligono(g, blancoSombra, [212, -22, 222, -22, px, py])
+}
+
+// La Biblioteca Nacional: el bloque de hormigón de las salas de lectura, sobre cuatro columnas enormes
+function bibliotecaNacional(g: CanvasRenderingContext2D) {
+  const hormigon = '#9a958b'
+  const hormigonLuz = '#bab4a6'
+  const hormigonSombra = '#4b4d55'
+  poligono(g, hormigon, [50, 0, 70, 0, 76, -84, 44, -84])
+  poligono(g, hormigon, [150, 0, 170, 0, 176, -84, 144, -84])
+  g.fillStyle = hormigonSombra
+  g.fillRect(98, -84, 24, 84)
+  g.fillRect(28, -94, 164, 10)
+  g.fillStyle = hormigon
+  g.fillRect(8, -128, 204, 34)
+  g.fillRect(62, -140, 96, 12)
+  g.fillRect(86, -146, 48, 6)
+  g.fillStyle = hormigonLuz
+  g.fillRect(6, -131, 208, 4)
+  // Los ventanales de las salas de lectura, con sus parasoles
+  g.fillStyle = VENTANA_LUZ
+  g.fillRect(14, -120, 192, 12)
+  g.fillStyle = hormigon
+  for (let x = 22; x < 206; x += 10) g.fillRect(x, -120, 2, 12)
+}
+
+// El Planetario: la esfera plateada sobre sus tres patas de hormigón y el aro de la terraza
+function planetario(g: CanvasRenderingContext2D) {
+  poligono(g, '#5d5a54', [10, 0, 32, 0, 64, -42, 52, -46])
+  poligono(g, '#5d5a54', [108, 0, 130, 0, 88, -46, 76, -42])
+  poligono(g, '#8e897e', [54, 0, 86, 0, 78, -40, 62, -40])
+  g.fillStyle = PIEDRA_SOMBRA
+  g.fillRect(44, -4, 52, 4)
+  g.fillStyle = '#8e897e'
+  g.beginPath()
+  g.ellipse(70, -42, 46, 5, 0, 0, Math.PI * 2)
+  g.fill()
+  const brillo = g.createRadialGradient(54, -96, 4, 70, -82, 44)
+  brillo.addColorStop(0, '#efeadd')
+  brillo.addColorStop(1, '#7f7b72')
+  g.fillStyle = brillo
+  g.beginPath()
+  g.arc(70, -82, 40, 0, Math.PI * 2)
+  g.fill()
+  g.strokeStyle = 'rgba(40,40,50,0.35)'
+  g.lineWidth = 1.2
+  g.beginPath()
+  g.ellipse(70, -82, 40, 6, 0, 0, Math.PI)
+  g.stroke()
 }
 
 function torres(ctx: CanvasRenderingContext2D, v: Vista, distancia: number, capa: HTMLCanvasElement) {
@@ -932,8 +1193,11 @@ const imagenes = new Map<NombrePieza, HTMLImageElement>()
 let personajesListos = false
 let cargando: Promise<void> | null = null
 
-export function cargarPersonajes() {
+export function cargarImagenes() {
   if (!cargando) {
+    const escudo = new Image()
+    escudo.onload = () => { imagenEscudo = escudo }
+    escudo.src = '/juego/escudo-futboleros.webp'
     const nombres = Object.keys(PIEZAS) as NombrePieza[]
     cargando = Promise.all(nombres.map((n) => new Promise<void>((listo, error) => {
       const img = new Image()
@@ -1337,7 +1601,7 @@ function marcador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista, arriba: num
 
 export function dibujar(
   ctx: CanvasRenderingContext2D, j: Juego, v: Vista,
-  opciones: { tactil: boolean; arriba: number; firma?: string },   // firma: la familia de la letra de "Futboleros"
+  opciones: { tactil: boolean; arriba: number },
 ) {
   kActual = v.escala * v.dpr
   ctx.setTransform(v.dpr * v.escala, 0, 0, v.dpr * v.escala, 0, 0)
@@ -1345,9 +1609,9 @@ export function dibujar(
     const a = j.temblor * 16
     ctx.translate((Math.random() - 0.5) * a, (Math.random() - 0.5) * a)
   }
-  const fijas = obtenerCapas(ctx, v, opciones.firma ?? 'Lobster, cursive')
+  const fijas = obtenerCapas(ctx, v)
   ctx.drawImage(fijas.cielo, 0, 0, v.ancho, v.piso)
-  ciudad(ctx, v, j.distancia, fijas.ciudad)
+  ciudad(ctx, v, j.distancia, fijas)
   torres(ctx, v, j.distancia, fijas.torre)
   alambrado(ctx, v, j.distancia, fijas.tejido)
   cancha(ctx, v, j.distancia)
