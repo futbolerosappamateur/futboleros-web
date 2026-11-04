@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -129,6 +129,14 @@ export default function EditarPerfilForm({ userId, perfil, fondoUrl, tienePasswo
   const [busquedaClub, setBusquedaClub] = useState('')
   const [password, setPassword] = useState('')
   const [verPassword, setVerPassword] = useState(false)
+
+  // Desde el aviso del sorteo sin domicilio (/editar-perfil#domicilio): directo a ese campo, como en la app
+  useEffect(() => {
+    if (window.location.hash !== '#domicilio') return
+    const el = document.getElementById('domicilio')
+    el?.scrollIntoView({ block: 'center' })
+    el?.focus({ preventScroll: true })
+  }, [])
 
   const set = <K extends keyof DatosPerfil>(campo: K, valor: DatosPerfil[K]) => {
     setD(prev => ({ ...prev, [campo]: valor }))

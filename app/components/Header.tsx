@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { EVENTO_CHAT_LEIDO, contarNoLeidos } from '@/lib/chat'
+import { EVENTO_NOTIF_LEIDAS, contarNotificaciones } from '@/lib/notificaciones'
 import styles from './Header.module.css'
 
 type UserInfo = {
@@ -21,6 +22,7 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
   const [scrolled, setScrolled] = useState(false)
   const [user, setUser] = useState<UserInfo | null>(null)
   const [noLeidos, setNoLeidos] = useState(0)
+  const [avisosNuevos, setAvisosNuevos] = useState(0)
   const userId = user?.id
 
   useEffect(() => {
@@ -70,6 +72,24 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
     }
   }, [userId])
 
+  // Campanita: avisos de la web sin leer cada 30 s, como en la app, y al momento cuando la página los marca leídos
+  useEffect(() => {
+    if (!userId) return
+    const supabase = createClient()
+    let vigente = true
+    const cargar = () => {
+      contarNotificaciones(supabase, userId).then(n => { if (vigente) setAvisosNuevos(n) }).catch(() => {})
+    }
+    cargar()
+    const intervalo = setInterval(cargar, 30000)
+    window.addEventListener(EVENTO_NOTIF_LEIDAS, cargar)
+    return () => {
+      vigente = false
+      clearInterval(intervalo)
+      window.removeEventListener(EVENTO_NOTIF_LEIDAS, cargar)
+    }
+  }, [userId])
+
   const cerrarSesion = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -77,11 +97,17 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
     setOpen(false)
   }
 
-  // Chat y foto van en dos lugares: en la barra de la compu y, en el celular, en la barra y en el menú
+  // Chat, campanita y foto van en dos lugares: en la barra de la compu y, en el celular, en la barra y en el menú
   const chat = (className: string) => (
     <Link href="/chat" className={className} aria-label="Mensajes" title="Mensajes" onClick={() => setOpen(false)}>
       <span className={styles.chatIcono} />
       {noLeidos > 0 && <span className={styles.chatBadge}>{noLeidos > 9 ? '9+' : noLeidos}</span>}
+    </Link>
+  )
+  const campana = (className: string) => (
+    <Link href="/notificaciones" className={className} aria-label="Notificaciones" title="Notificaciones" onClick={() => setOpen(false)}>
+      <span className={styles.campanaIcono} />
+      {avisosNuevos > 0 && <span className={styles.chatBadge}>{avisosNuevos > 9 ? '9+' : avisosNuevos}</span>}
     </Link>
   )
   const avatar = user && (user.avatar_url ? (
@@ -157,6 +183,7 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
 
         <div className={styles.actions}>
           {user && chat(styles.chatBtn)}
+          {user && campana(styles.chatBtn)}
           {user ? (
             <div className={styles.userMenu}>
               <div className={styles.userChip}>
@@ -198,6 +225,7 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
         </div>
 
         {user && chat(`${styles.chatBtn} ${styles.chatMovil}`)}
+        {user && campana(`${styles.chatBtn} ${styles.campanaMovil}`)}
 
         <button
           className={styles.hamburger}

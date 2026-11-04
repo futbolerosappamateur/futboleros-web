@@ -266,6 +266,20 @@
 .chatBtn:hover .chatIcono {
   transform: scale(1.08);
 }
+/* Campanita de notificaciones, a la derecha del chat (mismo botón y mismo globito rojo) */
+.campanaIcono {
+  width: 28px;
+  height: 28px;
+  margin: 1px;
+  background: var(--gold);
+  -webkit-mask: url('/ic-noti.webp') center / contain no-repeat;
+  mask: url('/ic-noti.webp') center / contain no-repeat;
+  transform-origin: 50% 10%;   /* al pasar el mouse se hamaca desde arriba, como una campana */
+  transition: transform 0.2s;
+}
+.chatBtn:hover .campanaIcono {
+  transform: rotate(-10deg);
+}
 .chatBadge {
   position: absolute;
   top: -4px;
@@ -282,8 +296,9 @@
   text-align: center;
 }
 
-/* ── Celular: chat en la barra y la cuenta al final del menú (en la compu no se ven) ── */
+/* ── Celular: chat y campanita en la barra y la cuenta al final del menú (en la compu no se ven) ── */
 .chatMovil,
+.campanaMovil,
 .navCuenta {
   display: none;
 }
@@ -366,7 +381,12 @@
     display: flex;
     margin-left: auto;
   }
-  .chatMovil + .hamburger {
+  .campanaMovil {
+    display: flex;
+    margin-left: 8px;
+  }
+  .chatMovil + .hamburger,
+  .campanaMovil + .hamburger {
     margin-left: 14px;
   }
 

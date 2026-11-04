@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const protectedRoutes = ['/me', '/chat', '/buscar', '/admin', '/editar-perfil']
+  const protectedRoutes = ['/me', '/chat', '/notificaciones', '/buscar', '/admin', '/editar-perfil']
   const isProtected = protectedRoutes.some(r => request.nextUrl.pathname.startsWith(r))
 
   if (isProtected && !user) {

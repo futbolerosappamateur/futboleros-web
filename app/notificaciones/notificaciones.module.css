@@ -1,0 +1,359 @@
+/* ── Página: mismo encabezado que Mensajes ── */
+.page {
+  /* Paleta del perfil del jugador */
+  --tostado: #bda580;
+  --tostado-claro: #cbbaa4;
+  --linea: #dccfbe;
+  --gris-card: #f2f2f2;
+  min-height: 100svh;
+  background: var(--bg);
+}
+
+.hero {
+  background-color: #12120e;
+  padding: 190px 24px 44px;
+}
+
+.heroInner {
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  background: #c9a84c15;
+  border: 1px solid var(--gold-border);
+  padding: 5px 18px 3px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 0.06em;
+  color: #f0e6d0;
+  line-height: 0.95;
+  margin-bottom: 14px;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #c9a84c88;
+  line-height: 1.7;
+}
+
+.body {
+  padding: 40px 24px 80px;
+}
+
+.contenido {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+/* ── Bloques: testimonios para aprobar y avisos ── */
+.bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* El link "#testimonios" de un aviso no lo deja abajo del encabezado fijo */
+.bloqueTestimonios { scroll-margin-top: 96px; }
+
+.bloqueCabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+}
+
+.bloqueTitulo {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--tostado-claro);
+}
+
+.cuenta { color: var(--tostado); }
+
+.marcarTodas {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: var(--gold-light);
+  padding: 2px 0;
+  transition: color 0.2s;
+}
+.marcarTodas:hover { color: var(--text); }
+
+/* Íconos de la app (PNG/WebP con transparencia) teñidos con máscara */
+.icono {
+  display: block;
+  flex-shrink: 0;
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
+}
+
+/* ── Avisos ── */
+.lista {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aviso {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  background: #fff;
+  border: 1px solid var(--linea);
+  border-radius: 12px;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  transition: border-color 0.2s, background-color 0.2s, opacity 0.2s;
+}
+.tocable { cursor: pointer; }
+.tocable:hover { border-color: var(--tostado); }
+
+/* Sin leer, como en la app: más marcado; los leídos, apagados */
+.nuevo {
+  background: #fdf9f0;
+  border-color: #e3d3b4;
+}
+.leido { opacity: 0.6; }
+.leido.tocable:hover { opacity: 0.85; }
+
+/* Sorteo y mensajes de Futboleros: amarillo, como en la app */
+.futboleros {
+  background: #fffbe2;
+  border-color: #ecd96f;
+}
+
+.avisoIcono {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--gris-card);
+  display: grid;
+  place-items: center;
+}
+.avisoIcono .icono {
+  width: 24px;
+  height: 24px;
+  background: var(--tostado);
+}
+.futboleros .avisoIcono { background: #f5e64255; }
+.tipo_sorteo .icono { background: #9a7b22; }
+.tipo_solicitud_aceptada .icono { background: #3dc52b; }
+.tipo_solicitud_rechazada .icono { background: #e63946; }
+
+.avisoFoto {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e2e2e2;
+}
+
+.avisoTexto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.avisoTitulo {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.avisoMensaje {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.avisoCuando {
+  margin-top: 2px;
+  font-size: 0.7rem;
+  color: var(--tostado);
+}
+
+.punto {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+/* ── Sin avisos ── */
+.vacio {
+  padding: 48px 20px;
+  border-radius: 14px;
+  background: var(--gris-card);
+  text-align: center;
+}
+
+.vacioIcono {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  background: #c9a84c88;
+}
+
+.vacioTitulo {
+  margin-bottom: 6px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.vacioTexto {
+  max-width: 380px;
+  margin: 0 auto;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ── Testimonios para aprobar ── */
+.testimonios {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.testimonio {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid var(--gold-border);
+  border-radius: 12px;
+}
+
+.testimonioCabeza {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.testimonioFoto {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e2e2e2;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--gold);
+}
+
+.testimonioAutor {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+.testimonioAutor a { transition: color 0.2s; }
+.testimonioAutor a:hover {
+  color: var(--tostado);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.testimonioFecha {
+  margin-top: 1px;
+  font-size: 0.68rem;
+  color: var(--tostado);
+}
+
+.testimonioTexto {
+  font-size: 0.88rem;
+  font-style: italic;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.testimonioBotones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btnRechazar,
+.btnAprobar {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  border-radius: 6px;
+  padding: 7px 18px 5px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+.btnRechazar {
+  color: #c52b2b;
+  border: 1px solid #c52b2b55;
+}
+.btnRechazar:hover {
+  border-color: #c52b2b;
+  background: #c52b2b0d;
+}
+.btnAprobar {
+  color: #0a0a1a;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+}
+.btnAprobar:hover {
+  background: var(--gold-light);
+  border-color: var(--gold-light);
+}
+
+.hecho,
+.error {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.hecho {
+  color: #2f7d22;
+  background: #3dc52b14;
+}
+.error {
+  color: #c52b2b;
+  background: #c52b2b0d;
+}
+
+/* ── Celular ── */
+@media (max-width: 600px) {
+  .hero { padding: 156px 16px 36px; }   /* debajo del escudo, que en el celular mide 124 px */
+  .body { padding: 28px 12px 56px; }
+  .contenido { gap: 36px; }
+  .bloqueTitulo { font-size: 1.35rem; }
+  .aviso { gap: 12px; padding: 12px; }
+  .testimonio { padding: 14px; }
+}
