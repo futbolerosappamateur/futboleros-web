@@ -1,7 +1,8 @@
 // Dibujo de Gambeta en un canvas 2D, con la estética de los afiches de Don Fulbio: azul marino, crema y
 // dorado, contornos de tinta y grano de papel. Los muñecos se arman con poses (ángulos de cada articulación).
 import {
-  type Juego, type Rival, type Remate, type Tiro, type Definicion, progresoJugada, metros, arqueroEn, miraEn,
+  type Juego, type Rival, type Remate, type Tiro, type Definicion, type ModeloRival, type ModeloArquero,
+  progresoJugada, metros, arqueroEn, miraEn, RIVALES, ARQUEROS,
   META, META_METROS, DISTANCIA_ARCO, DURACION_LLEGADA, DURACION_VUELO, ESPERA_REMATE, PUNTOS_POR_GOL,
   UNIDADES_POR_METRO,
 } from './motor'
@@ -1146,8 +1147,9 @@ const POSE_BARRIDA: Pose = { cadera: [0, -14], torso: -1.15, piernaA: [1.5, 0.05
 
 // ---- Personajes con imágenes (las piezas dibujadas para el juego, en public/juego) ----
 // Don Fulbio se arma como un títere: cada pieza se engancha en su articulación (p) y, en brazos y piernas,
-// la siguiente va donde termina (e). Los rivales son una imagen entera por pose. Las medidas son en píxeles
-// del archivo .webp. Mientras las imágenes no cargan, se usan los muñecos dibujados de arriba.
+// la siguiente va donde termina (e). Los rivales y los arqueros son una imagen entera por pose (más abajo, con
+// las de cada modelo). Las medidas son en píxeles del archivo .webp. Mientras las imágenes no cargan, se usan
+// los muñecos dibujados de arriba.
 
 interface DefPieza { src: string; w: number; h: number; p: [number, number]; e?: [number, number] }
 
@@ -1170,27 +1172,120 @@ const PIEZAS = {
   botin: { src: '/juego/fulbio/botin.webp', w: 106, h: 61, p: [35, 10] },
   pelota: { src: '/juego/fulbio/pelota.webp', w: 82, h: 86, p: [41, 43] },
   sentado: { src: '/juego/fulbio/sentado.webp', w: 387, h: 232, p: [150, 228] },
-  parado: { src: '/juego/rival/parado.webp', w: 154, h: 253, p: [77, 250] },
-  abierto: { src: '/juego/rival/abierto.webp', w: 291, h: 233, p: [146, 230] },
-  barrida: { src: '/juego/rival/barrida.webp', w: 286, h: 200, p: [0, 196] },
-  saltando: { src: '/juego/rival/saltando.webp', w: 199, h: 301, p: [100, 298] },
-  caido: { src: '/juego/rival/caido.webp', w: 314, h: 164, p: [157, 160] },
-  deEspaldas: { src: '/juego/rival/de-espaldas.webp', w: 208, h: 303, p: [104, 300] },
-  // Mano a mano: el arquero de frente y Don Fulbio de espaldas. En las estiradas, p queda entre los guantes
-  arqueroParado: { src: '/juego/arquero/parado.webp', w: 364, h: 399, p: [180, 396] },
-  arqueroBajo: { src: '/juego/arquero/volando-bajo.webp', w: 547, h: 251, p: [468, 141] },
-  arqueroAlto: { src: '/juego/arquero/volando-alto.webp', w: 485, h: 464, p: [412, 60] },
-  arqueroCaido: { src: '/juego/arquero/caido.webp', w: 421, h: 252, p: [210, 248] },
-  arqueroAtajando: { src: '/juego/arquero/atajando.webp', w: 260, h: 563, p: [130, 560] },
-  arqueroLamento: { src: '/juego/arquero/lamento.webp', w: 263, h: 422, p: [128, 418] },
-  arqueroAlivio: { src: '/juego/arquero/alivio.webp', w: 296, h: 561, p: [145, 557] },
+  // Mano a mano: Don Fulbio de espaldas
   espaldasListo: { src: '/juego/fulbio/espaldas-listo.webp', w: 291, h: 514, p: [148, 511] },
   espaldasPatea: { src: '/juego/fulbio/espaldas-patea.webp', w: 491, h: 489, p: [178, 485] },
   espaldasFesteja: { src: '/juego/fulbio/espaldas-festeja.webp', w: 365, h: 528, p: [185, 524] },
   espaldasLamenta: { src: '/juego/fulbio/espaldas-lamenta.webp', w: 290, h: 515, p: [136, 511] },
 } satisfies Record<string, DefPieza>
 
-type NombrePieza = keyof typeof PIEZAS
+// Rivales y arqueros, cada modelo en su carpeta (public/juego/rival/<modelo>/ y public/juego/arquero/<modelo>/).
+// Cada pose va con su ancho, su alto y el punto p: lo que va en el piso, salvo en las estiradas del arquero,
+// donde es el punto entre los guantes. Los rivales están todos a la misma escala: el grandote, rojo, es más
+// grande en su archivo
+type PoseRival = 'parado' | 'abierto' | 'barrida' | 'saltando' | 'caido' | 'deEspaldas'
+type PoseArq = 'parado' | 'bajo' | 'alto' | 'caido' | 'atajando' | 'lamento' | 'alivio'
+type Medida = [number, number, number, number]
+type Punto = [number, number]
+
+const ARCHIVOS_RIVAL: Record<PoseRival, string> = {
+  parado: 'parado', abierto: 'abierto', barrida: 'barrida', saltando: 'saltando', caido: 'caido', deEspaldas: 'de-espaldas',
+}
+const ARCHIVOS_ARQUERO: Record<PoseArq, string> = {
+  parado: 'parado', bajo: 'volando-bajo', alto: 'volando-alto', caido: 'caido', atajando: 'atajando', lamento: 'lamento',
+  alivio: 'alivio',
+}
+
+const DIBUJOS_RIVAL: Record<ModeloRival, Record<PoseRival, Medida>> = {
+  amarillo: {
+    parado: [154, 253, 77, 250], abierto: [291, 233, 146, 230], barrida: [286, 200, 0, 196],
+    saltando: [199, 301, 100, 298], caido: [314, 164, 157, 160], deEspaldas: [208, 303, 104, 300],
+  },
+  rojo: {
+    parado: [174, 268, 87, 265], abierto: [311, 255, 156, 252], barrida: [303, 226, 0, 222],
+    saltando: [205, 323, 103, 320], caido: [363, 180, 182, 176], deEspaldas: [243, 320, 122, 317],
+  },
+  blanco: {
+    parado: [154, 261, 77, 258], abierto: [296, 243, 148, 240], barrida: [288, 207, 0, 203],
+    saltando: [204, 309, 102, 306], caido: [310, 173, 155, 169], deEspaldas: [212, 312, 106, 309],
+  },
+  naranja: {
+    parado: [156, 258, 78, 255], abierto: [278, 243, 139, 240], barrida: [287, 211, 0, 207],
+    saltando: [195, 304, 98, 301], caido: [305, 166, 153, 162], deEspaldas: [215, 309, 108, 306],
+  },
+  bordo: {
+    parado: [153, 253, 77, 250], abierto: [288, 236, 144, 233], barrida: [286, 203, 0, 199],
+    saltando: [199, 300, 100, 297], caido: [312, 166, 156, 162], deEspaldas: [211, 306, 106, 303],
+  },
+}
+
+interface DibujosArquero {
+  poses: Record<PoseArq, Medida>
+  alto: number                                                     // píxeles del arquero derecho (atajando o aliviado)
+  vuelos: Record<'bajo' | 'alto', { pies: Punto; abajo: Punto }>   // abajo: lo más bajo, que no se meta en el pasto
+  guantes: Punto                                                   // en el caído: donde queda la pelota si la atajó tirándose
+  pelota: Punto                                                    // la que trae dibujada el que ataja
+}
+
+// Los nuevos copian las poses del verde: sus puntos salen de encajar cada silueta sobre la del verde
+const DIBUJOS_ARQUERO: Record<ModeloArquero, DibujosArquero> = {
+  verde: {
+    poses: {
+      parado: [364, 399, 180, 396], bajo: [547, 251, 468, 141], alto: [485, 464, 412, 60], caido: [421, 252, 210, 248],
+      atajando: [260, 563, 130, 560], lamento: [263, 422, 128, 418], alivio: [296, 561, 145, 557],
+    },
+    alto: 560, vuelos: { bajo: { pies: [25, 215], abajo: [30, 248] }, alto: { pies: [30, 420], abajo: [20, 461] } },
+    guantes: [100, 208], pelota: [130, 172],
+  },
+  naranja: {
+    poses: {
+      parado: [376, 393, 188, 390], bajo: [554, 246, 472, 144], alto: [489, 484, 419, 65], caido: [409, 235, 205, 231],
+      atajando: [283, 548, 142, 545], lamento: [292, 424, 146, 420], alivio: [331, 542, 166, 538],
+    },
+    alto: 545, vuelos: { bajo: { pies: [20, 218], abajo: [28, 244] }, alto: { pies: [30, 440], abajo: [26, 482] } },
+    guantes: [93, 191], pelota: [138, 152],
+  },
+  violeta: {
+    poses: {
+      parado: [349, 422, 175, 419], bajo: [557, 260, 478, 145], alto: [499, 481, 427, 65], caido: [412, 264, 206, 260],
+      atajando: [262, 582, 131, 579], lamento: [257, 445, 129, 441], alivio: [298, 576, 149, 572],
+    },
+    alto: 579, vuelos: { bajo: { pies: [26, 221], abajo: [30, 258] }, alto: { pies: [34, 436], abajo: [23, 479] } },
+    guantes: [98, 222], pelota: [128, 190],
+  },
+  celeste: {
+    poses: {
+      parado: [393, 415, 197, 412], bajo: [553, 261, 472, 152], alto: [497, 479, 422, 63], caido: [439, 272, 220, 268],
+      atajando: [277, 576, 139, 573], lamento: [296, 443, 148, 439], alivio: [332, 579, 166, 575],
+    },
+    alto: 573, vuelos: { bajo: { pies: [20, 226], abajo: [30, 259] }, alto: { pies: [21, 441], abajo: [26, 477] } },
+    guantes: [100, 224], pelota: [136, 171],
+  },
+}
+
+type PiezaRival = `rival/${ModeloRival}/${PoseRival}`
+type PiezaArquero = `arquero/${ModeloArquero}/${PoseArq}`
+const piezaRival = (m: ModeloRival, p: PoseRival): PiezaRival => `rival/${m}/${p}`
+const piezaArquero = (m: ModeloArquero, p: PoseArq): PiezaArquero => `arquero/${m}/${p}`
+const POSES_RIVAL = Object.keys(ARCHIVOS_RIVAL) as PoseRival[]
+const POSES_ARQUERO = Object.keys(ARCHIVOS_ARQUERO) as PoseArq[]
+
+const POR_MODELO = {} as Record<PiezaRival | PiezaArquero, DefPieza>
+for (const m of RIVALES) {
+  for (const pose of POSES_RIVAL) {
+    const [w, h, px, py] = DIBUJOS_RIVAL[m][pose]
+    POR_MODELO[piezaRival(m, pose)] = { src: `/juego/rival/${m}/${ARCHIVOS_RIVAL[pose]}.webp`, w, h, p: [px, py] }
+  }
+}
+for (const m of ARQUEROS) {
+  for (const pose of POSES_ARQUERO) {
+    const [w, h, px, py] = DIBUJOS_ARQUERO[m].poses[pose]
+    POR_MODELO[piezaArquero(m, pose)] = { src: `/juego/arquero/${m}/${ARCHIVOS_ARQUERO[pose]}.webp`, w, h, p: [px, py] }
+  }
+}
+
+type NombrePieza = keyof typeof PIEZAS | PiezaRival | PiezaArquero
+const TODAS: Record<NombrePieza, DefPieza> = { ...PIEZAS, ...POR_MODELO }
 type Cabeza = 'cabezaContento' | 'cabezaDolor' | 'cabezaGrito'
 
 // Puntos del torso y del short (en píxeles de su archivo)
@@ -1205,38 +1300,54 @@ const AJUSTE: Partial<Record<NombrePieza, number>> = {
   cabezaContento: 1.3, cabezaDolor: 1.3, cabezaGrito: 1.3, torso: 1.2, short: 1.15,
   brazo: 1.1, antebrazo: 1.1, muslo: 1.05, botin: 0.95, pelota: 1.3,
 }
-const RIVALES = { parado: 1, abierto: 1, barrida: 1, saltando: 1, caido: 1, deEspaldas: 1 }
-const DEL_REMATE = {
-  arqueroParado: 1, arqueroBajo: 1, arqueroAlto: 1, arqueroCaido: 1, arqueroAtajando: 1, arqueroLamento: 1,
-  arqueroAlivio: 1, espaldasListo: 1, espaldasPatea: 1, espaldasFesteja: 1, espaldasLamenta: 1,
-}
+const DEL_REMATE = { espaldasListo: 1, espaldasPatea: 1, espaldasFesteja: 1, espaldasLamenta: 1 }
 const ESCALA_REMATE = 0.26   // el mano a mano agranda esto según el tamaño del arco
 const escalaDe = (n: NombrePieza) =>
-  (n === 'sentado' ? ESCALA_SENTADO : n in RIVALES ? ESCALA_RIVAL : n in DEL_REMATE ? ESCALA_REMATE : ESCALA_FULBIO) *
-  (AJUSTE[n] ?? 1)
+  (n === 'sentado' ? ESCALA_SENTADO
+    : n.startsWith('rival/') ? ESCALA_RIVAL
+      : n.startsWith('arquero/') || n in DEL_REMATE ? ESCALA_REMATE
+        : ESCALA_FULBIO) * (AJUSTE[n] ?? 1)
 
 const imagenes = new Map<NombrePieza, HTMLImageElement>()
 let personajesListos = false
-let remateListo = false
+let espaldasListas = false
+const rivalesListos = new Set<ModeloRival>()
+const arquerosListos = new Set<ModeloArquero>()
+const arquerosPedidos = new Set<ModeloArquero>()
 let cargando: Promise<void> | null = null
 
 const cargar = (nombres: NombrePieza[]) => Promise.all(nombres.map((n) => new Promise<void>((listo, error) => {
   const img = new Image()
   img.onload = () => { imagenes.set(n, img); listo() }
-  img.onerror = () => error(new Error(`No cargó ${PIEZAS[n].src}`))
-  img.src = PIEZAS[n].src
+  img.onerror = () => error(new Error(`No cargó ${TODAS[n].src}`))
+  img.src = TODAS[n].src
 })))
 
-export function cargarImagenes() {
+// El arquero de una partida: se pide al empezar, que hasta el mano a mano hay tiempo
+export function cargarArquero(m: ModeloArquero) {
+  if (arquerosPedidos.has(m)) return
+  arquerosPedidos.add(m)
+  cargar(POSES_ARQUERO.map((p) => piezaArquero(m, p)))
+    .then(() => { arquerosListos.add(m) })
+    .catch(() => { arquerosPedidos.delete(m) })
+}
+
+export function cargarImagenes(arquero: ModeloArquero) {
   if (!cargando) {
     const escudo = new Image()
     escudo.onload = () => { imagenEscudo = escudo }
     escudo.src = '/juego/escudo-futboleros.webp'
-    // Primero lo de la carrera; lo del mano a mano se pide después, que recién se ve al final
-    const nombres = Object.keys(PIEZAS) as NombrePieza[]
-    cargando = cargar(nombres.filter((n) => !(n in DEL_REMATE))).then(() => {
+    // Primero lo de la carrera con el rival amarillo (mientras llegan los otros, se ven como él); después los
+    // otros rivales y lo del mano a mano, que recién se ve al final
+    const carrera = (Object.keys(PIEZAS) as (keyof typeof PIEZAS)[]).filter((n) => !(n in DEL_REMATE))
+    cargando = cargar([...carrera, ...POSES_RIVAL.map((p) => piezaRival('amarillo', p))]).then(() => {
       personajesListos = true
-      cargar(nombres.filter((n) => n in DEL_REMATE)).then(() => { remateListo = true }).catch(() => {})
+      rivalesListos.add('amarillo')
+      for (const m of RIVALES) {
+        if (m !== 'amarillo') cargar(POSES_RIVAL.map((p) => piezaRival(m, p))).then(() => { rivalesListos.add(m) }).catch(() => {})
+      }
+      cargar(Object.keys(DEL_REMATE) as NombrePieza[]).then(() => { espaldasListas = true }).catch(() => {})
+      cargarArquero(arquero)
     })
   }
   return cargando
@@ -1257,7 +1368,7 @@ function sprite(n: NombrePieza, oscura: boolean, aumento: number) {
   const clave = `${n}${oscura ? '·' : ''}${aumento === 1 ? '' : '×' + aumento}`
   let c = sprites.get(clave)
   if (!c) {
-    const d = PIEZAS[n]
+    const d = TODAS[n]
     const img = imagenes.get(n) as HTMLImageElement
     const f = escalaDe(n) * aumento * kActual * 1.25
     c = document.createElement('canvas')
@@ -1280,7 +1391,7 @@ function pieza(
   ctx: CanvasRenderingContext2D, n: NombrePieza, x: number, y: number,
   angulo = 0, oscura = false, escalaY = 1, aumento = 1, espejo = false,
 ) {
-  const d = PIEZAS[n]
+  const d = TODAS[n]
   const esc = escalaDe(n) * aumento
   ctx.save()
   ctx.translate(x, y)
@@ -1293,7 +1404,7 @@ function pieza(
 // Brazo o pierna: se engancha en (x, y) y apunta en el ángulo a (desde la vertical, + adelante), como en
 // las poses. Devuelve dónde termina, para enganchar la pieza siguiente
 function segmento(ctx: CanvasRenderingContext2D, n: NombrePieza, x: number, y: number, a: number, oscura: boolean): [number, number] {
-  const d: DefPieza = PIEZAS[n]
+  const d = TODAS[n]
   const [px, py] = d.p
   const [ex, ey] = d.e ?? d.p
   const propio = Math.atan2(ex - px, ey - py)
@@ -1409,11 +1520,14 @@ function signoDePregunta(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.fillText('?', x, y)
 }
 
-// Rivales con sus imágenes: una por pose. Los que esperan parados "respiran" (se achican apenas de alto)
+// Rivales con sus imágenes: una por pose. Los que esperan parados "respiran" (se achican apenas de alto).
+// Mientras no llegaron las imágenes de su modelo, se ve como el amarillo
 function rivalConImagen(ctx: CanvasRenderingContext2D, r: Rival, j: Juego, v: Vista, x: number) {
+  const m = rivalesListos.has(r.modelo) ? r.modelo : 'amarillo'
+  const n = (pose: PoseRival) => piezaRival(m, pose)
   if (r.tipo === 'barrida') {
     sombra(ctx, x + 40, v.piso, 40, 0)
-    pieza(ctx, 'barrida', x - 2, v.piso + 1)
+    pieza(ctx, n('barrida'), x - 2, v.piso + 1)
     return
   }
   const centro = x + r.ancho / 2
@@ -1423,17 +1537,17 @@ function rivalConImagen(ctx: CanvasRenderingContext2D, r: Rival, j: Juego, v: Vi
   if (r.pasado === 'gambeta') {
     // Queda en cuatro patas: cae desde un poco más arriba
     const c = suave(r.caida)
-    pieza(ctx, 'caido', centro + 6 * c, v.piso + 1 - 10 * (1 - c))
+    pieza(ctx, n('caido'), centro + 6 * c, v.piso + 1 - 10 * (1 - c))
   } else if (r.pasado === 'caño' && r.caida < 0.4) {
-    pieza(ctx, 'abierto', centro, v.piso + 1, 0, false, respira)   // la pelota está pasando entre las piernas
+    pieza(ctx, n('abierto'), centro, v.piso + 1, 0, false, respira)   // la pelota está pasando entre las piernas
   } else if (r.pasado === 'caño') {
-    // Lo dejaste mirando: se da vuelta a buscar la pelota
-    pieza(ctx, 'deEspaldas', centro, v.piso + 1)
-    signoDePregunta(ctx, centro - 4, v.piso - 92)
+    // Lo dejaste mirando: se da vuelta a buscar la pelota (el signo, un poco arriba de la cabeza)
+    pieza(ctx, n('deEspaldas'), centro, v.piso + 1)
+    signoDePregunta(ctx, centro - 4, v.piso - DIBUJOS_RIVAL[m].deEspaldas[1] * ESCALA_RIVAL - 12)
   } else if (r.saltó && r.salto > 0) {
-    pieza(ctx, 'saltando', centro, v.piso + 1 - r.salto)
+    pieza(ctx, n('saltando'), centro, v.piso + 1 - r.salto)
   } else {
-    pieza(ctx, r.tipo === 'abierto' ? 'abierto' : 'parado', centro, v.piso + 1, 0, false, respira)
+    pieza(ctx, n(r.tipo === 'abierto' ? 'abierto' : 'parado'), centro, v.piso + 1, 0, false, respira)
   }
 }
 
@@ -1838,25 +1952,16 @@ function palosRemate(ctx: CanvasRenderingContext2D, a: Arco) {
 
 const ALTO_ARQUERO = 0.92        // derecho, en altos del arco: es alto
 const ALTO_FULBIO = 0.98         // está más cerca que el arquero
-const ALTO_HOJA_ARQUERO = 560    // píxeles del arquero derecho en su hoja (atajando o aliviado)
 const ALTO_HOJA_FULBIO = 514
-// Puntos de las imágenes, en píxeles de su archivo
-const VUELOS = {
-  arqueroBajo: { pies: [25, 215], abajo: [30, 248] },   // abajo: lo más bajo, que no se meta en el pasto
-  arqueroAlto: { pies: [30, 420], abajo: [20, 461] },
-} as const
-const CAIDO_GUANTES: [number, number] = [100, 208]      // donde queda la pelota si la atajó tirándose
-const ATAJANDO_PELOTA: [number, number] = [130, 172]
-const PATEA_BOTIN: [number, number] = [486, 292]        // la punta del botín, que le pega a la pelota
+// La punta del botín, que le pega a la pelota, en píxeles de su archivo (los puntos de cada arquero están con
+// sus dibujos, en DIBUJOS_ARQUERO)
+const PATEA_BOTIN: [number, number] = [486, 292]
 const CAE = 0.62          // desde el tiro: empieza a caer
 const EN_EL_PISO = 0.84
 const SE_LEVANTA = 1.5
 
-type ImagenArquero =
-  'arqueroParado' | 'arqueroBajo' | 'arqueroAlto' | 'arqueroCaido' | 'arqueroAtajando' | 'arqueroLamento' | 'arqueroAlivio'
-
 interface PoseArquero {
-  imagen: ImagenArquero
+  imagen: PoseArq
   x: number                // dónde va el punto p de la imagen
   y: number
   angulo: number
@@ -1878,43 +1983,44 @@ function girado(dx: number, dy: number, angulo: number, espejo: boolean, e: numb
   return [x * Math.cos(angulo) - y * Math.sin(angulo), x * Math.sin(angulo) + y * Math.cos(angulo)]
 }
 
-function poseArquero(r: Remate, a: Arco): PoseArquero {
-  const aumento = aumentoRemate(a, ALTO_ARQUERO, ALTO_HOJA_ARQUERO)
+function poseArquero(r: Remate, a: Arco, m: ModeloArquero): PoseArquero {
+  const d = DIBUJOS_ARQUERO[m]
+  const def = (pose: PoseArq) => TODAS[piezaArquero(m, pose)]
+  const aumento = aumentoRemate(a, ALTO_ARQUERO, d.alto)
   const e = ESCALA_REMATE * aumento
-  const quieto = (imagen: ImagenArquero, x: number, espejo = false): PoseArquero => {
-    const caido = PIEZAS.arqueroCaido.p
-    const manos: [number, number] = imagen === 'arqueroCaido'
-      ? [x + (espejo ? -1 : 1) * (CAIDO_GUANTES[0] - caido[0]) * e, a.base + (CAIDO_GUANTES[1] - caido[1]) * e]
-      : [x, a.base + (ATAJANDO_PELOTA[1] - PIEZAS.arqueroAtajando.p[1]) * e]
-    return { imagen, x, y: a.base, angulo: 0, espejo, aumento, suelo: x, alto: 0, manos, conPelota: imagen === 'arqueroAtajando' }
+  const quieto = (imagen: PoseArq, x: number, espejo = false): PoseArquero => {
+    const caido = def('caido').p
+    const manos: [number, number] = imagen === 'caido'
+      ? [x + (espejo ? -1 : 1) * (d.guantes[0] - caido[0]) * e, a.base + (d.guantes[1] - caido[1]) * e]
+      : [x, a.base + (d.pelota[1] - def('atajando').p[1]) * e]
+    return { imagen, x, y: a.base, angulo: 0, espejo, aumento, suelo: x, alto: 0, manos, conPelota: imagen === 'atajando' }
   }
   const tiro = r.tiro
   const [px] = enArco(a, tiro ? tiro.desde : arqueroEn(r, r.t), 0)
-  if (!tiro || tiro.t < REACCION) return quieto('arqueroParado', px)
+  if (!tiro || tiro.t < REACCION) return quieto('parado', px)
   const t = tiro.t
-  const final: ImagenArquero =
-    tiro.definicion === 'gol' ? 'arqueroLamento' : tiro.definicion === 'atajada' ? 'arqueroAtajando' : 'arqueroAlivio'
+  const final: PoseArq = tiro.definicion === 'gol' ? 'lamento' : tiro.definicion === 'atajada' ? 'atajando' : 'alivio'
 
   // Le viene cerca: se corre y la agarra sin tirarse
   if (tiro.definicion === 'atajada' && Math.abs(tiro.u - tiro.desde) < 0.25 && tiro.w < 0.8) {
     const [bx] = enArco(a, tiro.u, 0)
     const x = px + (bx - px) * suave(Math.min(1, (t - REACCION) / ESTIRADA))
-    return quieto(t < DURACION_VUELO ? 'arqueroParado' : 'arqueroAtajando', x)
+    return quieto(t < DURACION_VUELO ? 'parado' : 'atajando', x)
   }
 
   // Vuela: la imagen se gira un poco para que el cuerpo vaya de los pies hacia donde llegan los guantes
   const [hx, hy] = enArco(a, tiro.au, tiro.aw)
   const espejo = hx < px
-  const imagen = tiro.aw < 0.45 ? 'arqueroBajo' : 'arqueroAlto'
-  const p0 = PIEZAS[imagen].p
-  const { pies, abajo } = VUELOS[imagen]
+  const imagen = tiro.aw < 0.45 ? 'bajo' : 'alto'
+  const p0 = def(imagen).p
+  const { pies, abajo } = d.vuelos[imagen]
   const anguloHoja = Math.atan2(p0[1] - pies[1], p0[0] - pies[0])
   const giro = Math.max(-0.45, Math.min(0.35, Math.atan2(hy - a.base, Math.abs(hx - px)) - anguloHoja))
   const angulo = espejo ? -giro : giro
   // Arranca con el cuerpo donde estaba parado y termina con los guantes donde llega
   const [cx, cy] = girado((pies[0] - p0[0]) / 2, (pies[1] - p0[1]) / 2, angulo, espejo, e)
   const x0 = px - cx
-  const y0 = a.base - (PIEZAS.arqueroParado.h / 2) * e - cy
+  const y0 = a.base - (def('parado').h / 2) * e - cy
   const p = suave(Math.min(1, (t - REACCION) / ESTIRADA))
   const x = x0 + (hx - x0) * p
   const [, ay] = girado(abajo[0] - p0[0], abajo[1] - p0[1], angulo, espejo, e)
@@ -1922,25 +2028,26 @@ function poseArquero(r: Remate, a: Arco): PoseArquero {
   // Después de la pelota cae al pasto; tirado, queda mirando para el lado en que voló
   if (t > CAE) y += suave(Math.min(1, (t - CAE) / (EN_EL_PISO - CAE))) * (a.base - (y + ay))
   if (t >= SE_LEVANTA) return quieto(final, x + cx)
-  if (t >= EN_EL_PISO) return quieto('arqueroCaido', x + cx, !espejo)
+  if (t >= EN_EL_PISO) return quieto('caido', x + cx, !espejo)
   return { imagen, x, y, angulo, espejo, aumento, suelo: x + cx, alto: a.base - (y + cy), manos: [x, y], conPelota: false }
 }
 
-function arqueroRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco, pose: PoseArquero) {
-  if (!remateListo) {
+function arqueroRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco, pose: PoseArquero, m: ModeloArquero) {
+  if (!arquerosListos.has(m)) {
+    cargarArquero(m)   // por si no se pidió al empezar la partida
     muñeco(ctx, RIVAL, pose.suelo, a.base, 1, abierto(r.t), { escala: (a.alto * 0.66) / 62 })
     return
   }
-  const ancho = pose.imagen === 'arqueroCaido' ? 60 : pose.alto > 0 ? 40 : 28
+  const ancho = pose.imagen === 'caido' ? 60 : pose.alto > 0 ? 40 : 28
   sombra(ctx, pose.suelo, a.base, ancho * a.k, pose.alto)
-  const respira = pose.imagen === 'arqueroParado' && !r.tiro ? 1 - 0.012 * (1 + Math.sin(r.t * 8)) : 1
-  pieza(ctx, pose.imagen, pose.x, pose.y, pose.angulo, false, respira, pose.aumento, pose.espejo)
+  const respira = pose.imagen === 'parado' && !r.tiro ? 1 - 0.012 * (1 + Math.sin(r.t * 8)) : 1
+  pieza(ctx, piezaArquero(m, pose.imagen), pose.x, pose.y, pose.angulo, false, respira, pose.aumento, pose.espejo)
 }
 
 // Don Fulbio, de espaldas, atrás y a la izquierda de la pelota: parado ahí, al patear el botín llega justo a
 // ella. Después festeja a los saltitos o se agarra la cabeza
 function fulbioRemate(ctx: CanvasRenderingContext2D, r: Remate, a: Arco) {
-  if (!remateListo) return
+  if (!espaldasListas) return
   const aumento = aumentoRemate(a, ALTO_FULBIO, ALTO_HOJA_FULBIO)
   const e = ESCALA_REMATE * aumento
   const p = PIEZAS.espaldasPatea.p
@@ -2166,11 +2273,11 @@ function dibujarRemate(
   redRemate(ctx, a, definido && tiro.definicion === 'gol' ? enArco(a, tiro.u, tiro.w) : null, definido ? tiro.t - DURACION_VUELO : 0)
   // Si entró o se fue afuera, la pelota queda detrás de los palos. Don Fulbio, que está más cerca, va
   // delante de todo
-  const pose = poseArquero(r, a)
+  const pose = poseArquero(r, a, j.arquero)
   const detras = definido && (tiro.definicion === 'gol' || tiro.definicion === 'afuera')
   if (detras) pelotaRemate(ctx, r, a, pose, vr)
   palosRemate(ctx, a)
-  arqueroRemate(ctx, r, a, pose)
+  arqueroRemate(ctx, r, a, pose, j.arquero)
   if (!detras) pelotaRemate(ctx, r, a, pose, vr)
   fulbioRemate(ctx, r, a)
   miraRemate(ctx, r, a)

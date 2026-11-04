@@ -10,6 +10,12 @@ export type Motivo = 'barrida' | 'parado' | 'cerrado'
 export type Estado = 'listo' | 'jugando' | 'pausa' | 'cayendo' | 'llegada' | 'remate' | 'fin'
 export type Definicion = 'gol' | 'atajada' | 'palo' | 'afuera'
 
+// Los rivales y los arqueros que hay (los dibujos de cada uno están en dibujo.ts)
+export const RIVALES = ['amarillo', 'rojo', 'blanco', 'naranja', 'bordo'] as const
+export const ARQUEROS = ['verde', 'naranja', 'violeta', 'celeste'] as const
+export type ModeloRival = (typeof RIVALES)[number]
+export type ModeloArquero = (typeof ARQUEROS)[number]
+
 // En el arco, u va de -1 (palo izquierdo) a 1 (palo derecho) y w de 0 (el piso) a 1 (el travesaño)
 export interface Tiro {
   t: number              // tiempo desde que pateó
@@ -38,6 +44,7 @@ export interface Rival {
   x: number             // borde izquierdo en el mundo
   ancho: number
   piel: string
+  modelo: ModeloRival   // cuál de los rivales es
   salto: number         // los que esperan parados saltan con vos si los querés saltar
   vSalto: number
   saltó: boolean
@@ -93,6 +100,7 @@ export interface Juego {
   colocados: number
   tiempoLlegada: number
   remate: Remate | null
+  arquero: ModeloArquero
 }
 
 export const X_JUGADOR = 110        // el mayor margen izquierdo de las pantallas (para limpiar rivales)
@@ -162,7 +170,14 @@ export const hizoGol = (j: Juego) => j.remate?.tiro?.definicion === 'gol'
 export const puntos = (j: Juego) =>
   metros(j) + j.gambetas * PUNTOS_POR_GAMBETA + j.caños * PUNTOS_POR_CAÑO + (hizoGol(j) ? PUNTOS_POR_GOL : 0)
 
-export function nuevoJuego(fecha: string, estado: Estado = 'listo'): Juego {
+// El arquero va rotando día a día, así no se repite dos días seguidos. Mientras se puede jugar más de una vez
+// por día, en cada partida sale el siguiente
+export function arqueroDelDia(fecha: string, partida = 0): ModeloArquero {
+  const [a, m, d] = fecha.split('-').map(Number)
+  return ARQUEROS[(Math.floor(Date.UTC(a, m - 1, d) / 86400000) + partida) % ARQUEROS.length]
+}
+
+export function nuevoJuego(fecha: string, estado: Estado = 'listo', arquero = arqueroDelDia(fecha)): Juego {
   return {
     estado, fecha,
     distancia: 0, velocidad: estado === 'listo' ? VELOCIDAD_LISTO : V_INICIAL, tiempo: 0,
@@ -174,7 +189,7 @@ export function nuevoJuego(fecha: string, estado: Estado = 'listo'): Juego {
     motivo: null, tiempoCaida: 0, temblor: 0,
     azar: generador(hash(`gambeta-${fecha}`)),
     proximoX: 900, colocados: 0,
-    tiempoLlegada: 0, remate: null,
+    tiempoLlegada: 0, remate: null, arquero,
   }
 }
 
@@ -281,9 +296,17 @@ function colocarHasta(j: Juego, hasta: number) {
           : i === 4 ? 'abierto'
             : sorteo < 0.42 ? 'barrida' : sorteo < 0.76 ? 'parado' : 'abierto'
     const ancho = ANCHO[tipo]
+    // El mismo número da la piel del muñeco y cuál de los rivales es, que nunca es el mismo que el anterior
+    // (el anterior siempre sigue en la lista: se los saca recién cuando quedaron bien atrás)
+    const aspecto = j.azar()
+    const anterior = j.rivales.length ? RIVALES.indexOf(j.rivales[j.rivales.length - 1].modelo) : -1
+    const modelo = anterior < 0
+      ? Math.floor(aspecto * RIVALES.length)
+      : (anterior + 1 + Math.floor(aspecto * (RIVALES.length - 1))) % RIVALES.length
     j.rivales.push({
       tipo, x: j.proximoX, ancho,
-      piel: PIELES[Math.floor(j.azar() * PIELES.length)],
+      piel: PIELES[Math.floor(aspecto * PIELES.length)],
+      modelo: RIVALES[modelo],
       salto: 0, vSalto: 0, saltó: false, pasado: null, caida: 0,
       pista: i === 0 ? 'SALTÁ' : i === 2 ? 'GAMBETEALO' : i === 4 ? '¡CAÑO!' : null,
     })

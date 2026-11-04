@@ -4,11 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import localFont from 'next/font/local'
 import styles from './juego.module.css'
 import {
-  nuevoJuego, avanzar, apretarSalto, soltarSalto, apretarGambeta, apretarCaño, patear, metros, puntos,
+  nuevoJuego, avanzar, apretarSalto, soltarSalto, apretarGambeta, apretarCaño, patear, metros, puntos, arqueroDelDia,
   PUNTOS_POR_GAMBETA, PUNTOS_POR_CAÑO, PUNTOS_POR_GOL, META_METROS,
   type Juego as EstadoJuego, type Motivo, type Definicion,
 } from './motor'
-import { calcularVista, cargarImagenes, dibujar, texturaGrano, type Vista } from './dibujo'
+import { calcularVista, cargarArquero, cargarImagenes, dibujar, texturaGrano, type Vista } from './dibujo'
 import {
   activarSonido, apagarSonido, contarSonido, empezarSonido, pausarSonido, sonidoApagado, terminarSonido, tocar,
 } from './sonido'
@@ -71,6 +71,7 @@ export default function Juego({ fecha }: { fecha: string }) {
   const juegoRef = useRef<EstadoJuego>(nuevoJuego(fecha))
   const pantallaRef = useRef<Pantalla>('inicio')
   const tactilRef = useRef(false)
+  const partidasRef = useRef(0)
   const [pantalla, setPantallaEstado] = useState<Pantalla>('inicio')
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [cuenta, setCuenta] = useState<number | null>(null)
@@ -82,10 +83,13 @@ export default function Juego({ fecha }: { fecha: string }) {
     setPantallaEstado(p)
   }, [])
 
+  // La primera partida tiene el arquero del día; mientras se pueda jugar de nuevo, en cada una sale otro
   const jugar = useCallback(() => {
     activarSonido()
     empezarSonido()
-    juegoRef.current = nuevoJuego(fecha, 'jugando')
+    const arquero = arqueroDelDia(fecha, partidasRef.current++)
+    cargarArquero(arquero)
+    juegoRef.current = nuevoJuego(fecha, 'jugando', arquero)
     setResultado(null)
     setCuenta(null)
     setPantalla('jugando')
@@ -190,7 +194,7 @@ export default function Juego({ fecha }: { fecha: string }) {
   // El escudo y las imágenes de Don Fulbio y de los rivales (mientras cargan se ven los muñecos
   // dibujados), y el grano de papel de la capa de arriba
   useEffect(() => {
-    cargarImagenes().catch(() => {})
+    cargarImagenes(juegoRef.current.arquero).catch(() => {})
     texturaRef.current?.style.setProperty('--grano', `url(${texturaGrano()})`)
   }, [])
 
