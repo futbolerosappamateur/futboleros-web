@@ -8,12 +8,13 @@ import Footer from '../../components/Footer'
 import ParallaxHero from '../../components/ParallaxHero'
 import AvatarModal from './AvatarModal'
 import BotonEditar from './BotonEditar'
+import BotonSeguir from './BotonSeguir'
 import CarruselFiguritas from './CarruselFiguritas'
 import BloquePublicidad from '../../components/BloquePublicidad'
 import { createServiceClient } from '@/lib/supabase/service'
 import { FONDO_PERFIL, NOMBRE_PAIS, REDES, urlRed } from '@/lib/perfil-opciones'
 import { formatoRating } from '@/lib/formato'
-import { hayUsuario, perfilVisible } from '@/lib/privacidad'
+import { hayUsuario, perfilVisible, usuarioActual } from '@/lib/privacidad'
 import { OG_IMAGEN } from '@/lib/sitio'
 import styles from './jugador.module.css'
 
@@ -94,14 +95,16 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
 
   const perfil = await getPerfil(slug)
   if (!perfil) notFound()
-  const logueado = await hayUsuario()
+  const yo = await usuarioActual()
+  const logueado = !!yo
   if (!perfilVisible(perfil, logueado)) return <PerfilPrivado slug={slug} />
   const id = perfil.id
+  const esMio = yo?.id === id
   // Figuritas y testimonios son de Plan 10; sin plan, en lugar de testimonios va publicidad
   const esPro = !!perfil.es_pro
   const sinFilas = Promise.resolve({ data: [] as any[] })
 
-  const [{ data: statsData }, { data: historial }, { data: testimonios }, { count: seguidores }, { count: grupos }, { data: figusData }, { data: fondoData }] =
+  const [{ data: statsData }, { data: historial }, { data: testimonios }, { count: seguidores }, { count: grupos }, { data: figusData }, { data: fondoData }, { data: loSigo }] =
     await Promise.all([
 
       supabase.rpc('get_stats_globales', { p_usuario_id: id }),
@@ -148,6 +151,11 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
 
       // Fondo del encabezado aparte: si la columna fondo_url todavía no existe, el perfil se ve igual
       supabase.from('perfiles').select('fondo_url').eq('id', id).maybeSingle(),
+
+      // Si quien mira ya lo sigue (su fila tiene este id en siguiendo, como en la app)
+      yo && !esMio
+        ? supabase.from('perfiles').select('id').eq('id', yo.id).contains('siguiendo', [id]).maybeSingle()
+        : Promise.resolve({ data: null }),
     ])
 
   const s = {
@@ -252,6 +260,7 @@ export default async function JugadorPage({ params }: { params: Promise<{ slug: 
                 </div>
               )}
               <BotonEditar perfilId={perfil.id} />
+              {!esMio && <BotonSeguir perfilId={perfil.id} slug={slug} logueado={logueado} siguiendo={!!loSigo} />}
             </div>
 
             {/* Ficha (columna izquierda) */}

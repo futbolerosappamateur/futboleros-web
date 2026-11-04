@@ -243,15 +243,22 @@
 
 .redIcono { width: 15px; height: 15px; }
 
-/* Botón de editar (solo el dueño): en su propia línea, debajo de las redes, para que no
-   las empuje hacia abajo. Sin redes queda a la derecha, en el lugar de ellas */
-.filaEditar {
+/* Botón de editar (solo el dueño) o de seguir (los demás): en su propia línea, debajo de las redes,
+   para que no las empuje hacia abajo. Sin redes queda a la derecha, en el lugar de ellas */
+.filaEditar,
+.filaSeguir {
   margin-left: auto;
   display: flex;
 }
-.redes + .filaEditar {
+.redes + .filaEditar,
+.redes + .filaSeguir {
   flex-basis: 100%;
   justify-content: flex-end;
+}
+.filaSeguir {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .btnEditar {
@@ -267,6 +274,67 @@
 .btnEditar:hover {
   border-color: var(--gold);
   background: var(--gold-dim);
+}
+
+/* Seguir va lleno; Siguiendo, como el de editar. Con el mouse encima, Siguiendo pasa a "Dejar de seguir" */
+.btnSeguir,
+.btnSiguiendo {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  border-radius: 6px;
+  padding: 6px 14px 4px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s, opacity 0.2s;
+}
+.btnSeguir {
+  color: #0a0a1a;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+}
+.btnSeguir:hover:not(:disabled) {
+  background: var(--gold-light);
+  border-color: var(--gold-light);
+}
+.btnSiguiendo {
+  display: inline-grid;   /* los dos textos en la misma celda: el botón no cambia de ancho */
+  color: var(--gold-light);
+  background: none;
+  border: 1px solid var(--gold-border);
+}
+.btnSiguiendo > span {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.btnSiguiendo svg {
+  width: 0.95em;
+  height: 0.95em;
+  margin-top: -2px;   /* Bebas Neue se apoya más abajo que el centro */
+}
+.dejarTexto { visibility: hidden; }
+@media (hover: hover) {
+  .btnSiguiendo:hover:not(:disabled) {
+    color: #c52b2b;
+    border-color: #c52b2b66;
+    background: #c52b2b0d;
+  }
+  .btnSiguiendo:hover:not(:disabled) .siguiendoTexto { visibility: hidden; }
+  .btnSiguiendo:hover:not(:disabled) .dejarTexto { visibility: visible; }
+}
+.btnSeguir:disabled,
+.btnSiguiendo:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.errorSeguir {
+  flex-basis: 100%;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #c52b2b;
 }
 
 .tagCyan {
@@ -779,12 +847,12 @@
   align-items: start;
 }
 
-/* Publicidad en lugar de testimonios: ocupa todo el alto, hasta el último partido.
-   Con contain: size la imagen no agranda la fila; el alto lo pone la lista de partidos. */
+/* Publicidad en lugar de testimonios: alto fijo, en la proporción del aviso (392 × 376, que en la compu
+   es justo el ancho de la columna), haya o no partidos al lado. Antes se estiraba hasta el último
+   partido y, sin partidos, quedaba de 250 px y la imagen se recortaba arriba y abajo */
 .publicidad {
-  align-self: stretch;
-  min-height: 250px;
-  contain: size;
+  width: 100%;
+  aspect-ratio: 392 / 376;
 }
 
 .ultimos,
@@ -910,7 +978,7 @@
 /* Columna derecha angosta: partidos y testimonios (o publicidad) uno debajo del otro */
 @container (max-width: 640px) {
   .cierre { grid-template-columns: minmax(0, 1fr); }
-  .publicidad { contain: none; min-height: 0; }   /* debajo de los partidos: con su alto natural */
+  .publicidad { aspect-ratio: auto; }   /* debajo de los partidos: con el alto de su imagen */
 }
 
 /* Celular: menos figuritas a la vista, se desliza con el dedo */
@@ -988,7 +1056,10 @@
   .username { flex-basis: 100%; margin-right: 0; }
   .redes { flex-basis: 100%; margin-left: 0; justify-content: center; }
   .filaEditar,
-  .redes + .filaEditar { flex-basis: 100%; margin-left: 0; justify-content: center; }
+  .redes + .filaEditar,
+  .filaSeguir,
+  .redes + .filaSeguir { flex-basis: 100%; margin-left: 0; justify-content: center; }
+  .errorSeguir { text-align: center; }
 }
 
 /* ── Perfil privado visto sin cuenta ── */
