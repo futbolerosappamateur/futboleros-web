@@ -46,6 +46,17 @@ export interface Rival {
   pista: string | null  // ayuda en los primeros rivales
 }
 
+// Lo que tiene que sonar: el motor solo lo anota, como los textos y el polvo, y Juego.tsx se lo pasa a sonido.ts
+export type Sonido =
+  | { tipo: 'salto' }
+  | { tipo: 'jugada'; jugada: Jugada }                  // arranca una gambeta o un caño
+  | { tipo: 'pasó'; jugada: Jugada; racha: number }     // y le salió
+  | { tipo: 'choque'; motivo: Motivo }
+  | { tipo: 'llegada' }
+  | { tipo: 'remate' }
+  | { tipo: 'patada' }
+  | { tipo: 'definicion'; definicion: Definicion }      // la pelota llegó al arco
+
 interface Texto { texto: string; x: number; y: number; vida: number; grande: boolean }
 interface Particula { x: number; y: number; vx: number; vy: number; vida: number; total: number; color: string; tam: number }
 
@@ -73,6 +84,7 @@ export interface Juego {
   rivales: Rival[]
   textos: Texto[]
   particulas: Particula[]
+  sonidos: Sonido[]     // lo que pasó y todavía no sonó
   motivo: Motivo | null
   tiempoCaida: number
   temblor: number
@@ -158,7 +170,7 @@ export function nuevoJuego(fecha: string, estado: Estado = 'listo'): Juego {
     jugada: null, tiempoJugada: 0, esperaJugada: 0,
     pedidoSalto: 0, pedidoGambeta: 0, pedidoCaño: 0,
     fasePaso: 0, gambetas: 0, caños: 0, racha: 0, ultimaJugada: -10,
-    rivales: [], textos: [], particulas: [],
+    rivales: [], textos: [], particulas: [], sonidos: [],
     motivo: null, tiempoCaida: 0, temblor: 0,
     azar: generador(hash(`gambeta-${fecha}`)),
     proximoX: 900, colocados: 0,
@@ -196,6 +208,7 @@ export function patear(j: Juego) {
   if (j.estado !== 'remate' || !r || r.tiro || r.t < ESPERA_REMATE) return
   const [u, w] = miraEn(r, r.t)
   r.tiro = { t: 0, u, w, ...definir(r, u, w, arqueroEn(r, r.t)) }
+  j.sonidos.push({ tipo: 'patada' })
 }
 
 // ---- Mano a mano ----
@@ -248,6 +261,7 @@ function empezarRemate(j: Juego) {
     miraPeriodoU: 1.7 + azar() * 0.5,
     miraPeriodoW: 2.3 + azar() * 0.6,
   }
+  j.sonidos.push({ tipo: 'remate' })
 }
 
 // ---- Recorrido ----
@@ -323,6 +337,7 @@ function chocar(j: Juego, motivo: Motivo) {
   j.jugada = null
   j.tiempoJugada = 0
   polvo(j, j.distancia + 10, 4, 18, '#d4a54a', 1.4)
+  j.sonidos.push({ tipo: 'choque', motivo })
 }
 
 function pasar(j: Juego, r: Rival, jugada: Jugada) {
@@ -335,6 +350,7 @@ function pasar(j: Juego, r: Rival, jugada: Jugada) {
   const nombre = jugada === 'caño' ? '¡CAÑO!' : '¡GAMBETA!'
   texto(j, j.racha > 1 ? `${nombre} ¡OLÉ! ×${j.racha}` : nombre, r.x + 10, 122, jugada === 'caño' || j.racha > 1)
   texto(j, `+${valor}`, r.x + 14, 98)
+  j.sonidos.push({ tipo: 'pasó', jugada, racha: j.racha })
 }
 
 export function avanzar(j: Juego, dt: number) {
@@ -349,7 +365,9 @@ export function avanzar(j: Juego, dt: number) {
     const r = j.remate as Remate
     r.t += dt
     if (r.tiro) {
+      const antes = r.tiro.t
       r.tiro.t += dt
+      if (antes < DURACION_VUELO && r.tiro.t >= DURACION_VUELO) j.sonidos.push({ tipo: 'definicion', definicion: r.tiro.definicion })
       if (r.tiro.t > DURACION_DEFINICION) j.estado = 'fin'
     }
     return
@@ -415,6 +433,7 @@ export function avanzar(j: Juego, dt: number) {
     j.vy = V_SALTO
     j.enAire = true
     j.pedidoSalto = 0
+    j.sonidos.push({ tipo: 'salto' })
   }
   if (j.enAire) {
     if (!j.apretandoSalto && j.vy > V_CORTE) j.vy = V_CORTE
@@ -434,6 +453,7 @@ export function avanzar(j: Juego, dt: number) {
     j.tiempoJugada = DURACION_JUGADA
     j.pedidoGambeta = 0
     j.pedidoCaño = 0
+    j.sonidos.push({ tipo: 'jugada', jugada: j.jugada })
   }
 
   colocarHasta(j, j.distancia + 1600)
@@ -455,6 +475,7 @@ export function avanzar(j: Juego, dt: number) {
     j.jugada = null
     j.tiempoJugada = 0
     texto(j, '¡MANO A MANO!', j.distancia + 200, 150, true)   // todavía avanza un poco al frenar
+    j.sonidos.push({ tipo: 'llegada' })
   }
 
   actualizarEfectos(j, dt)

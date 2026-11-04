@@ -267,6 +267,25 @@
   touch-action: none;
 }
 
+/* El parlante, igual que la pausa (y al lado mientras se juega) */
+.sonido {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  left: 14px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--navy);
+  color: var(--crema);
+  box-shadow: inset 0 0 0 1.5px var(--oro);
+}
+
+.sonido svg { width: 22px; height: 22px; }
+.sonidoAlLado { left: 62px; }
+.sonido:focus-visible { outline: 2px solid var(--oro); outline-offset: 3px; }
+
 .pausa {
   position: absolute;
   top: calc(14px + env(safe-area-inset-top, 0px));

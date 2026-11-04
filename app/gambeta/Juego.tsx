@@ -9,6 +9,9 @@ import {
   type Juego as EstadoJuego, type Motivo, type Definicion,
 } from './motor'
 import { calcularVista, cargarImagenes, dibujar, texturaGrano, type Vista } from './dibujo'
+import {
+  activarSonido, apagarSonido, contarSonido, empezarSonido, pausarSonido, sonidoApagado, terminarSonido, tocar,
+} from './sonido'
 
 // Letras de los afiches de Don Fulbio: la firma de Futboleros y los títulos de madera
 const firma = localFont({ src: '../../public/fonts/Lobster-Regular.ttf', display: 'swap' })
@@ -72,6 +75,7 @@ export default function Juego({ fecha }: { fecha: string }) {
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [cuenta, setCuenta] = useState<number | null>(null)
   const [tactil, setTactil] = useState(false)
+  const [mudo, setMudo] = useState(false)
 
   const setPantalla = useCallback((p: Pantalla) => {
     pantallaRef.current = p
@@ -79,6 +83,8 @@ export default function Juego({ fecha }: { fecha: string }) {
   }, [])
 
   const jugar = useCallback(() => {
+    activarSonido()
+    empezarSonido()
     juegoRef.current = nuevoJuego(fecha, 'jugando')
     setResultado(null)
     setCuenta(null)
@@ -90,15 +96,20 @@ export default function Juego({ fecha }: { fecha: string }) {
     if (pantallaRef.current !== 'jugando' || j.estado !== 'jugando') return
     j.estado = 'pausa'
     soltarSalto(j)
+    pausarSonido()
     setCuenta(null)
     setPantalla('pausa')
   }, [setPantalla])
 
   // Volver de la pausa con una cuenta de 3
-  const seguir = useCallback(() => setCuenta((c) => (c === null ? 3 : c)), [])
+  const seguir = useCallback(() => {
+    activarSonido()
+    setCuenta((c) => (c === null ? 3 : c))
+  }, [])
 
   useEffect(() => {
     if (cuenta === null) return
+    contarSonido(cuenta)
     if (cuenta === 0) {
       juegoRef.current.estado = 'jugando'
       setCuenta(null)
@@ -124,6 +135,7 @@ export default function Juego({ fecha }: { fecha: string }) {
       mejor: Math.max(anterior, total), record: anterior > 0 && total > anterior,
       frase: FRASES[Math.floor(Math.random() * FRASES.length)],
     })
+    terminarSonido(j.remate !== null)
     setPantalla('fin')
   }, [setPantalla])
 
@@ -160,6 +172,10 @@ export default function Juego({ fecha }: { fecha: string }) {
         avanzar(j, PASO)
         acumulado -= PASO
       }
+      if (j.sonidos.length) {
+        for (const s of j.sonidos) tocar(s)
+        j.sonidos.length = 0
+      }
       dibujar(ctx, j, vista, { tactil: tactilRef.current, arriba })
       if (j.estado === 'remate' && pantallaRef.current === 'jugando') setPantalla('remate')
       if (j.estado === 'fin' && (pantallaRef.current === 'jugando' || pantallaRef.current === 'remate')) terminar(j)
@@ -178,6 +194,16 @@ export default function Juego({ fecha }: { fecha: string }) {
     texturaRef.current?.style.setProperty('--grano', `url(${texturaGrano()})`)
   }, [])
 
+  // El parlante: si lo apagó, queda apagado en este navegador
+  useEffect(() => { setMudo(sonidoApagado()) }, [])
+
+  const alternarSonido = useCallback(() => {
+    const apagar = !sonidoApagado()
+    apagarSonido(apagar)
+    setMudo(apagar)
+    if (!apagar) activarSonido()
+  }, [])
+
   // Pantalla táctil: botones en lugar de teclas
   useEffect(() => {
     const t = window.matchMedia('(pointer: coarse)').matches
@@ -190,6 +216,10 @@ export default function Juego({ fecha }: { fecha: string }) {
     const abajo = (e: KeyboardEvent) => {
       const p = pantallaRef.current
       const j = juegoRef.current
+      if (e.code === 'KeyM') {
+        if (!e.repeat) alternarSonido()
+        return
+      }
       // Mano a mano: cualquier tecla del juego patea
       if (p === 'remate') {
         if (esSalto(e.code) || esGambeta(e.code) || esCaño(e.code) || e.code === 'Enter') {
@@ -232,7 +262,7 @@ export default function Juego({ fecha }: { fecha: string }) {
       window.removeEventListener('keyup', arriba)
       document.removeEventListener('visibilitychange', oculta)
     }
-  }, [jugar, pausar, seguir])
+  }, [jugar, pausar, seguir, alternarSonido])
 
   const botonSalto = {
     onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -363,6 +393,25 @@ export default function Juego({ fecha }: { fecha: string }) {
           </div>
         </div>
       )}
+
+      {/* El parlante va en todas las pantallas (encima de las tarjetas y del botón de patear): mientras se
+          juega, al lado de la pausa; en las otras, en la esquina. No se queda con el foco, así Espacio sigue
+          siendo saltar */}
+      <button
+        className={`${styles.sonido} ${pantalla === 'jugando' ? styles.sonidoAlLado : ''}`}
+        onPointerDown={(e) => e.preventDefault()}
+        onClick={alternarSonido}
+        aria-label={mudo ? 'Prender el sonido' : 'Apagar el sonido'}
+        title={mudo ? 'Prender el sonido (M)' : 'Apagar el sonido (M)'}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 9.5h4l5-4.5v14l-5-4.5H3z" fill="currentColor" />
+          <path
+            d={mudo ? 'M16 9.5l5 5m0-5l-5 5' : 'M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11'}
+            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          />
+        </svg>
+      </button>
     </div>
   )
 }
