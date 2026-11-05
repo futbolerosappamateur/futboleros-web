@@ -71,6 +71,7 @@ export default async function Grupos({
     miembros: g.grupo_jugadores?.[0]?.count ?? 0,
     partidos: conteo[g.id]?.partidos ?? 0,
     goles: conteo[g.id]?.goles ?? 0,
+    creado_en: g.creado_en ?? null,
   }))
 
   return (

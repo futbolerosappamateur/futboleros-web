@@ -14,6 +14,7 @@ export type JugadorConStats = {
   avatar_url: string | null
   imagen_ia: string | null
   es_pro: boolean
+  creado_en: string | null   // cuándo se registró
   stats: {
     partidos: number
     goles: number
@@ -23,8 +24,15 @@ export type JugadorConStats = {
   }
 }
 
-type Sort = 'nombre' | 'partidos' | 'goles' | 'asistencias' | 'rating'
+type Sort = 'nombre' | 'nuevos' | 'antiguos' | 'partidos' | 'goles' | 'asistencias' | 'rating'
 type View = 'grid' | 'list'
+
+// Por fecha de registro (las fechas vienen como "2026-11-04T22:06:01.64"); sin fecha, al final
+function porFecha(a: string | null, b: string | null, nuevosPrimero: boolean) {
+  if (!a || !b) return a ? -1 : b ? 1 : 0
+  if (a === b) return 0
+  return (a > b) === nuevosPrimero ? -1 : 1
+}
 
 export default function JugadoresClient({
   jugadores,
@@ -50,6 +58,9 @@ export default function JugadoresClient({
 
     arr.sort((a, b) => {
       if (sort === 'nombre') return a.nombre.localeCompare(b.nombre, 'es')
+      if (sort === 'nuevos' || sort === 'antiguos') {
+        return porFecha(a.creado_en, b.creado_en, sort === 'nuevos') || a.nombre.localeCompare(b.nombre, 'es')
+      }
       if (sort === 'partidos') return b.stats.partidos - a.stats.partidos
       if (sort === 'goles') return b.stats.goles - a.stats.goles
       if (sort === 'asistencias') return b.stats.asistencias - a.stats.asistencias
@@ -86,6 +97,8 @@ export default function JugadoresClient({
               className={styles.sortSelect}
             >
               <option value="nombre">A → Z</option>
+              <option value="nuevos">Últimos registrados</option>
+              <option value="antiguos">Primeros registrados</option>
               <option value="partidos">Más partidos</option>
               <option value="goles">Más goles</option>
               <option value="asistencias">Más asistencias</option>

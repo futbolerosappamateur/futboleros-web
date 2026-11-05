@@ -16,12 +16,26 @@ export type GrupoCard = {
   miembros: number
   partidos: number
   goles: number
+  creado_en: string | null   // cuándo se creó
 }
 
-type Orden = 'nombre' | 'miembros' | 'partidos' | 'goles'
+type Orden = 'nombre' | 'nuevos' | 'antiguos' | 'miembros' | 'partidos' | 'goles'
 type Vista = 'grid' | 'list'
 
 const porNombre = (a: GrupoCard, b: GrupoCard) => (a.nombre ?? '').localeCompare(b.nombre ?? '', 'es')
+
+// Por fecha de creación (las fechas vienen como "2026-10-05T18:30:00.12"); sin fecha, al final
+function porFecha(a: string | null, b: string | null, nuevosPrimero: boolean) {
+  if (!a || !b) return a ? -1 : b ? 1 : 0
+  if (a === b) return 0
+  return (a > b) === nuevosPrimero ? -1 : 1
+}
+
+function comparar(a: GrupoCard, b: GrupoCard, orden: Orden) {
+  if (orden === 'nombre') return 0
+  if (orden === 'nuevos' || orden === 'antiguos') return porFecha(a.creado_en, b.creado_en, orden === 'nuevos')
+  return b[orden] - a[orden]
+}
 
 // Buscador, orden y vista (cards o lista), igual que en jugadores; a igual número ordena por nombre
 export default function GruposClient({ grupos, initialQ }: { grupos: GrupoCard[]; initialQ: string }) {
@@ -37,7 +51,7 @@ export default function GruposClient({ grupos, initialQ }: { grupos: GrupoCard[]
           (g.descripcion?.toLowerCase().includes(term) ?? false)
         )
       : [...grupos]
-    return lista.sort((a, b) => (orden === 'nombre' ? 0 : b[orden] - a[orden]) || porNombre(a, b))
+    return lista.sort((a, b) => comparar(a, b, orden) || porNombre(a, b))
   }, [grupos, q, orden])
 
   return (
@@ -64,6 +78,8 @@ export default function GruposClient({ grupos, initialQ }: { grupos: GrupoCard[]
             aria-label="Ordenar grupos"
           >
             <option value="nombre">A → Z</option>
+            <option value="nuevos">Últimos creados</option>
+            <option value="antiguos">Primeros creados</option>
             <option value="miembros">Más integrantes</option>
             <option value="partidos">Más partidos</option>
             <option value="goles">Más goles</option>

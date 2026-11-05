@@ -36,7 +36,7 @@ export default async function Jugadores({
 
   let consulta = supabase
     .from('perfiles')
-    .select('id, nombre, apodo, username, avatar_url, imagen_ia, es_pro')
+    .select('id, nombre, apodo, username, avatar_url, imagen_ia, es_pro, creado_en')
     .not('nombre', 'is', null)
     .neq('nombre', '')
   // Sin cuenta, solo los perfiles públicos
@@ -88,6 +88,7 @@ export default async function Jugadores({
     avatar_url: j.avatar_url,
     imagen_ia: j.imagen_ia,
     es_pro: j.es_pro ?? false,
+    creado_en: j.creado_en ?? null,
     stats: statsMap[j.id]
       ? {
           partidos: statsMap[j.id].partidos,
