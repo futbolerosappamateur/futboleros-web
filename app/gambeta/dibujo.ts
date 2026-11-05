@@ -1182,9 +1182,10 @@ const PIEZAS = {
 // Rivales y arqueros, cada modelo en su carpeta (public/juego/rival/<modelo>/ y public/juego/arquero/<modelo>/).
 // Cada pose va con su ancho, su alto y el punto p: lo que va en el piso, salvo en las estiradas del arquero,
 // donde es el punto entre los guantes. Los rivales están todos a la misma escala: el grandote, rojo, es más
-// grande en su archivo
+// grande en su archivo. El arquero de perfil es el que espera en el arco al final de la carrera: su archivo ya
+// está espejado (mira a la izquierda, hacia Don Fulbio) y su p es el medio entre los botines
 type PoseRival = 'parado' | 'abierto' | 'barrida' | 'saltando' | 'caido' | 'deEspaldas'
-type PoseArq = 'parado' | 'bajo' | 'alto' | 'caido' | 'atajando' | 'lamento' | 'alivio'
+type PoseArq = 'parado' | 'bajo' | 'alto' | 'caido' | 'atajando' | 'lamento' | 'alivio' | 'perfil'
 type Medida = [number, number, number, number]
 type Punto = [number, number]
 
@@ -1193,7 +1194,7 @@ const ARCHIVOS_RIVAL: Record<PoseRival, string> = {
 }
 const ARCHIVOS_ARQUERO: Record<PoseArq, string> = {
   parado: 'parado', bajo: 'volando-bajo', alto: 'volando-alto', caido: 'caido', atajando: 'atajando', lamento: 'lamento',
-  alivio: 'alivio',
+  alivio: 'alivio', perfil: 'de-perfil',
 }
 
 const DIBUJOS_RIVAL: Record<ModeloRival, Record<PoseRival, Medida>> = {
@@ -1233,6 +1234,7 @@ const DIBUJOS_ARQUERO: Record<ModeloArquero, DibujosArquero> = {
     poses: {
       parado: [364, 399, 180, 396], bajo: [547, 251, 468, 141], alto: [485, 464, 412, 60], caido: [421, 252, 210, 248],
       atajando: [260, 563, 130, 560], lamento: [263, 422, 128, 418], alivio: [296, 561, 145, 557],
+      perfil: [237, 254, 156, 250],
     },
     alto: 560, vuelos: { bajo: { pies: [25, 215], abajo: [30, 248] }, alto: { pies: [30, 420], abajo: [20, 461] } },
     guantes: [100, 208], pelota: [130, 172],
@@ -1241,6 +1243,7 @@ const DIBUJOS_ARQUERO: Record<ModeloArquero, DibujosArquero> = {
     poses: {
       parado: [376, 393, 188, 390], bajo: [554, 246, 472, 144], alto: [489, 484, 419, 65], caido: [409, 235, 205, 231],
       atajando: [283, 548, 142, 545], lamento: [292, 424, 146, 420], alivio: [331, 542, 166, 538],
+      perfil: [232, 246, 150, 242],
     },
     alto: 545, vuelos: { bajo: { pies: [20, 218], abajo: [28, 244] }, alto: { pies: [30, 440], abajo: [26, 482] } },
     guantes: [93, 191], pelota: [138, 152],
@@ -1249,6 +1252,7 @@ const DIBUJOS_ARQUERO: Record<ModeloArquero, DibujosArquero> = {
     poses: {
       parado: [349, 422, 175, 419], bajo: [557, 260, 478, 145], alto: [499, 481, 427, 65], caido: [412, 264, 206, 260],
       atajando: [262, 582, 131, 579], lamento: [257, 445, 129, 441], alivio: [298, 576, 149, 572],
+      perfil: [230, 264, 151, 260],
     },
     alto: 579, vuelos: { bajo: { pies: [26, 221], abajo: [30, 258] }, alto: { pies: [34, 436], abajo: [23, 479] } },
     guantes: [98, 222], pelota: [128, 190],
@@ -1257,6 +1261,7 @@ const DIBUJOS_ARQUERO: Record<ModeloArquero, DibujosArquero> = {
     poses: {
       parado: [393, 415, 197, 412], bajo: [553, 261, 472, 152], alto: [497, 479, 422, 63], caido: [439, 272, 220, 268],
       atajando: [277, 576, 139, 573], lamento: [296, 443, 148, 439], alivio: [332, 579, 166, 575],
+      perfil: [235, 256, 155, 253],
     },
     alto: 573, vuelos: { bajo: { pies: [20, 226], abajo: [30, 259] }, alto: { pies: [21, 441], abajo: [26, 477] } },
     guantes: [100, 224], pelota: [136, 171],
@@ -1302,11 +1307,13 @@ const AJUSTE: Partial<Record<NombrePieza, number>> = {
 }
 const DEL_REMATE = { espaldasListo: 1, espaldasPatea: 1, espaldasFesteja: 1, espaldasLamenta: 1 }
 const ESCALA_REMATE = 0.26   // el mano a mano agranda esto según el tamaño del arco
+const ESCALA_PERFIL = 0.244  // el arquero que espera en la carrera (sus archivos son más chicos que los del remate)
 const escalaDe = (n: NombrePieza) =>
   (n === 'sentado' ? ESCALA_SENTADO
     : n.startsWith('rival/') ? ESCALA_RIVAL
-      : n.startsWith('arquero/') || n in DEL_REMATE ? ESCALA_REMATE
-        : ESCALA_FULBIO) * (AJUSTE[n] ?? 1)
+      : n.endsWith('/perfil') ? ESCALA_PERFIL
+        : n.startsWith('arquero/') || n in DEL_REMATE ? ESCALA_REMATE
+          : ESCALA_FULBIO) * (AJUSTE[n] ?? 1)
 
 const imagenes = new Map<NombrePieza, HTMLImageElement>()
 let personajesListos = false
@@ -1323,7 +1330,7 @@ const cargar = (nombres: NombrePieza[]) => Promise.all(nombres.map((n) => new Pr
   img.src = TODAS[n].src
 })))
 
-// El arquero de una partida: se pide al empezar, que hasta el mano a mano hay tiempo
+// El arquero de una partida: se pide al empezar, que hasta el arco del final hay tiempo
 export function cargarArquero(m: ModeloArquero) {
   if (arquerosPedidos.has(m)) return
   arquerosPedidos.add(m)
@@ -1747,11 +1754,28 @@ function marcador(ctx: CanvasRenderingContext2D, j: Juego, v: Vista, arriba: num
   etiqueta('GAMBETAS', derecha - 50, arriba + 57, 'right')
 }
 
+// El arquero de la partida espera a Don Fulbio de perfil, agachado y con los guantes listos, un paso adelante
+// de la línea (sale a achicar) y a mitad de camino entre los palos, que con el arco de perfil es un poco más
+// arriba. Respira como los rivales que esperan parados. Si todavía no llegó su imagen (se pide al empezar la
+// partida), el muñeco
+const ARQUERO_ADELANTE = 30   // unidades, delante de la línea del arco (así el talón no toca el palo)
+
+function arqueroEsperando(ctx: CanvasRenderingContext2D, j: Juego, x: number, piso: number) {
+  const m = j.arquero
+  if (!arquerosListos.has(m)) {
+    muñeco(ctx, RIVAL, x, piso, -1, abierto(j.tiempo))
+    return
+  }
+  sombra(ctx, x, piso, 24, 0)
+  const respira = 1 - 0.012 * (1 + Math.sin(j.tiempo * 7))
+  pieza(ctx, piezaArquero(m, 'perfil'), x, piso + 1, 0, false, respira)
+}
+
 // El arco del final del recorrido, de perfil: la boca mira a Don Fulbio y la red va hacia atrás
 function arcoFinal(ctx: CanvasRenderingContext2D, v: Vista, j: Juego) {
   if (j.estado === 'listo') return
   const x = META + DISTANCIA_ARCO - j.distancia + v.xJugador
-  if (x > v.ancho + 20 || x < -100) return
+  if (x > v.ancho + 70 || x < -100) return   // el arquero asoma antes que el arco
   const piso = v.piso + 1
   const alto = 80
   const [lx, ly] = [9, -20]   // el palo de atrás está más lejos: se ve más arriba
@@ -1793,6 +1817,7 @@ function arcoFinal(ctx: CanvasRenderingContext2D, v: Vista, j: Juego) {
   palo(x + lx, piso + ly, x + lx, piso - alto + ly, 2.6)
   palo(x, piso - alto, x + lx, piso - alto + ly, 3.4)
   palo(x, piso, x, piso - alto, 3.4)
+  arqueroEsperando(ctx, j, x + lx / 2 - ARQUERO_ADELANTE, v.piso + ly / 2)
 }
 
 // Un velo oscuro para pasar de la carrera al mano a mano (en píxeles CSS)
