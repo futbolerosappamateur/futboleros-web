@@ -1,78 +1,196 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import Filete from '../components/Filete'
+import ParallaxHero from '../components/ParallaxHero'
+import FiguritaStack from '../components/FiguritaStack'
+import FiguritaBrillante from '../components/FiguritaBrillante'
+import AnimarAlScroll from '../components/AnimarAlScroll'
+import { createServiceClient } from '@/lib/supabase/service'
+import { PRECIOS, pesos } from '@/lib/plan10'
 import PlanButtons from './PlanButtons'
-import styles from './plan10.module.css'
+import base from './plan10.module.css'
+import styles from './vitrina.module.css'
 
+export const metadata: Metadata = {
+  title: 'Plan 10',
+  description: `Sin anuncios, testimonios, una figurita nueva por mes, sorteo mensual y el álbum impreso. Desde ${pesos(PRECIOS.mensual)} por mes.`,
+}
+
+// La fila de figuritas de la comunidad se renueva cada 5 minutos
+export const revalidate = 300
+
+// Los mismos cinco beneficios de antes, con los íconos de la pantalla del Plan 10 de la app
 const BENEFICIOS = [
-  {
-    titulo: 'Sin anuncios',
-    descripcion: 'Disfrutá la app sin interrupciones publicitarias.',
-    svg: <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />,
-  },
-  {
-    titulo: 'Testimonios',
-    descripcion: 'Escribí y recibí testimonios de tus compañeros.',
-    svg: <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />,
-  },
-  {
-    titulo: 'Tu figurita',
-    descripcion: 'Una figurita vintage personalizada por mes.',
-    svg: <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />,
-  },
-  {
-    titulo: 'Sorteo mensual',
-    descripcion: 'Participá en el sorteo del primer día de cada mes.',
-    svg: <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0" />,
-  },
-  {
-    titulo: 'Álbum impreso anual',
-    descripcion: 'Tu equipo puede ganar el álbum impreso si más de la mitad son "10". Primera edición a finales de 2027.',
-    svg: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />,
-  },
+  { icono: '/ic-ojoc.webp', titulo: 'Sin anuncios', descripcion: 'Disfrutá la app sin interrupciones publicitarias.' },
+  { icono: '/ic-testi2.webp', titulo: 'Testimonios', descripcion: 'Escribí y recibí testimonios de tus compañeros.' },
+  { icono: '/ic-fig2.webp', titulo: 'Tu figurita', descripcion: 'Una figurita vintage personalizada por mes.' },
+  { icono: '/ic-sorteo.webp', titulo: 'Sorteo mensual', descripcion: 'Participá en el sorteo del primer día de cada mes.' },
+  { icono: '/ic-album.webp', titulo: 'Álbum impreso anual', descripcion: 'Tu equipo puede ganar el álbum impreso si más de la mitad son "10". Primera edición a finales de 2027.' },
 ]
 
-export default function Plan10() {
+// Las cuatro poses del editor de figuritas de la app (mitad de hombre, mitad de mujer)
+const POSES = [
+  { src: '/pose1.webp', alt: 'Pose con los brazos cruzados' },
+  { src: '/pose2m.webp', alt: 'Pose con las manos en la cintura' },
+  { src: '/pose3.webp', alt: 'Pose con las manos atrás' },
+  { src: '/pose4m.webp', alt: 'Pose con el pulgar arriba' },
+]
+
+// Jugadores con perfil público y figurita, como la fila de la home (las imágenes las arma /api/figurita)
+async function getFiguritasPublicas() {
+  const { data } = await createServiceClient()
+    .from('perfiles')
+    .select('id, username, nombre, nombre_figurita')
+    .eq('perfil_publico', true)
+    .not('imagen_ia', 'is', null)
+    .order('actualizado_en', { ascending: false, nullsFirst: false })
+    .limit(24)
+  return (data ?? []) as { id: string; username: string | null; nombre: string | null; nombre_figurita: string | null }[]
+}
+
+const MINIMO_FIGURITAS = 3       // con menos, la fila no se muestra
+const FIGURITAS_POR_VUELTA = 8   // se repiten hasta llenar el ancho de una pantalla grande
+
+export default async function Plan10() {
+  const figuritas = await getFiguritasPublicas()
+  const fila = figuritas.length >= MINIMO_FIGURITAS
+    ? Array.from({ length: Math.ceil(FIGURITAS_POR_VUELTA / figuritas.length) }, () => figuritas).flat()
+    : []
+
   return (
     <>
-      <Header darkLinks />
+      <Header />
       <main className={styles.page}>
-        <div className={styles.inner}>
-          <div className={`${styles.hero} ${styles.heroSinVolver}`}>
-            <span className={styles.badge}>PLAN 10</span>
-            <h1 className={styles.title}>LLEVÁ TU JUEGO<br />AL SIGUIENTE NIVEL</h1>
-            <p className={styles.subtitle}>Todo lo que necesitás para destacarte en la cancha y fuera de ella.</p>
-            <Filete />
-          </div>
 
-          <div className={styles.benefits}>
-            {BENEFICIOS.map(b => (
-              <div key={b.titulo} className={styles.benefitCard}>
-                <div className={styles.benefitIcon}>
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5">
-                    {b.svg}
-                  </svg>
-                </div>
-                <div className={styles.benefitInfo}>
-                  <p className={styles.benefitTitle}>{b.titulo}</p>
-                  <p className={styles.benefitDesc}>{b.descripcion}</p>
-                </div>
+        {/* ── Portada: el vestuario de fondo, el texto a la izquierda y la pila de figuritas a la derecha ── */}
+        <ParallaxHero src="/hero.webp" overlay="rgba(10,10,14,0.76)" className={styles.portada}>
+          <div className={styles.portadaInner}>
+            <div className={styles.portadaTexto}>
+              <span className={styles.sello}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/ic-10.webp" alt="" width={16} height={16} />
+                PLAN 10
+              </span>
+              <h1 className={styles.titulo}>LLEVÁ TU JUEGO<br />AL SIGUIENTE NIVEL</h1>
+              <p className={styles.bajada}>Todo lo que necesitás para destacarte en la cancha y fuera de ella.</p>
+              <p className={styles.desde}>Desde <strong>{pesos(PRECIOS.mensual)}</strong> por mes</p>
+              <div className={styles.botones}>
+                <a href="#planes" className={styles.botonDorado}>Quiero el Plan 10</a>
+                <a href="#beneficios" className={styles.botonLinea}>Ver beneficios</a>
               </div>
+            </div>
+            <FiguritaStack />
+          </div>
+        </ParallaxHero>
+
+        {/* ── Beneficios ── */}
+        <section id="beneficios" className={styles.beneficios}>
+          <h2 className={styles.seccionTitulo} data-revelar>TODO LO QUE TRAE</h2>
+          <Filete className={styles.filete} />
+          <ul className={styles.beneficiosGrilla}>
+            {BENEFICIOS.map((b, i) => (
+              <li key={b.titulo} className={styles.beneficio} data-revelar style={{ '--retraso': `${i * 0.08}s` } as React.CSSProperties}>
+                <span className={styles.beneficioIcono}>
+                  <span className={styles.icono} style={{ '--icono': `url(${b.icono})` } as React.CSSProperties} aria-hidden="true" />
+                </span>
+                <h3 className={styles.beneficioTitulo}>{b.titulo}</h3>
+                <p className={styles.beneficioTexto}>{b.descripcion}</p>
+              </li>
             ))}
+          </ul>
+        </section>
+
+        {/* ── La figurita: de la foto a la carta, con las poses de la app ── */}
+        <section className={styles.figurita}>
+          <div className={styles.figuritaCabeza} data-revelar>
+            <span className={styles.etiqueta}>Tu figurita</span>
+            <h2 className={styles.figuritaTitulo}>UNA FIGURITA NUEVA<br />CADA MES</h2>
+            <p className={styles.figuritaTexto}>
+              Subí una foto, elegí tu pose y la inteligencia artificial arma tu figurita, como las del álbum de
+              siempre. Con el Plan 10 hacés una nueva cada mes y la sumás a tu colección.
+            </p>
           </div>
 
-          <p className={styles.plansTitle}>ELEGÍ TU PLAN</p>
+          <ol className={styles.pasos}>
+            <li className={styles.paso} data-revelar>
+              <div className={`${styles.pasoImagen} ${styles.pasoFoto}`}>
+                <span className={styles.icono} style={{ '--icono': 'url(/ic-camara.webp)' } as React.CSSProperties} aria-hidden="true" />
+              </div>
+              <p className={styles.pasoTexto}><span className={styles.pasoNumero}>1</span>Subí una foto tuya</p>
+            </li>
+            <li className={styles.paso} data-revelar style={{ '--retraso': '0.12s' } as React.CSSProperties}>
+              <div className={`${styles.pasoImagen} ${styles.poses}`}>
+                {POSES.map((p, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={p.src} src={p.src} alt={p.alt} width={265} height={265} loading="lazy" className={i === 0 ? styles.poseElegida : undefined} />
+                ))}
+              </div>
+              <p className={styles.pasoTexto}><span className={styles.pasoNumero}>2</span>Elegí entre 4 poses</p>
+            </li>
+            <li className={styles.paso} data-revelar style={{ '--retraso': '0.24s' } as React.CSSProperties}>
+              <div className={`${styles.pasoImagen} ${styles.pasoCarta}`}>
+                <FiguritaBrillante className={styles.carta}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/figurita-2.webp" alt="Figurita de ejemplo" width={496} height={715} loading="lazy" />
+                </FiguritaBrillante>
+              </div>
+              <p className={styles.pasoTexto}><span className={styles.pasoNumero}>3</span>La IA arma tu figurita</p>
+            </li>
+          </ol>
 
-          <PlanButtons />
+          {/* Figuritas de jugadores con perfil público: pasan solas, brillan con el mouse y llevan al perfil.
+              La lista va dos veces seguidas para que la vuelta no se note */}
+          {fila.length > 0 && (
+            <div className={styles.album} data-revelar>
+              <p className={styles.albumTitulo}>Las figuritas de la comunidad</p>
+              <div className={styles.albumPista} style={{ animationDuration: `${fila.length * 6}s` }}>
+                {[0, 1].map(copia => (
+                  <ul key={copia} className={styles.albumGrupo} aria-hidden={copia === 1 || undefined}>
+                    {fila.map((f, i) => {
+                      const repetida = copia === 1 || i >= figuritas.length
+                      const nombre = f.nombre_figurita?.trim() || f.nombre?.trim().split(' ')[0] || 'un jugador'
+                      return (
+                        <li key={i} aria-hidden={repetida || undefined}>
+                          <Link
+                            href={`/jugadores/${f.username ?? f.id}`}
+                            className={styles.albumLink}
+                            aria-label={`Figurita de ${nombre}`}
+                            tabIndex={repetida ? -1 : undefined}
+                          >
+                            <FiguritaBrillante inclinacion={10} destello={false}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={`/api/figurita/${f.id}?ancho=320`} alt="" width={320} height={461} loading="lazy" />
+                            </FiguritaBrillante>
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
 
-          <p className={styles.planNote}>
-            El pago es procesado de forma segura por MercadoPago. ¿Tenés dudas?{' '}
-            <Link href="/contacto">Escribinos</Link>.
-          </p>
-        </div>
+        {/* ── Planes, sobre papel de álbum ── */}
+        <section id="planes" className={styles.planes}>
+          <div className={styles.planesInner}>
+            <h2 className={styles.seccionTitulo} data-revelar>ELEGÍ TU PLAN</h2>
+            <Filete className={styles.filete} />
+            <div data-revelar>
+              <PlanButtons />
+            </div>
+            <p className={base.planNote}>
+              El pago es procesado de forma segura por MercadoPago. ¿Tenés dudas?{' '}
+              <Link href="/contacto">Escribinos</Link>.
+            </p>
+          </div>
+        </section>
       </main>
       <Footer />
+      <AnimarAlScroll />
     </>
   )
 }

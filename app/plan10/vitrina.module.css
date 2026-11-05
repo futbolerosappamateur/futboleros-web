@@ -1,0 +1,507 @@
+/* Página del Plan 10. Las tarjetas de los planes y la nota de abajo vienen de plan10.module.css
+   (las comparte con /pagar) */
+
+.page {
+  background: var(--bg);
+}
+
+/* Los botones de la portada bajan con suavidad a los planes y a los beneficios */
+:global(html):has(.page) { scroll-behavior: smooth; }
+
+/* ── Portada ── */
+.portada {
+  position: relative;
+  isolation: isolate;
+  background-color: #12120e;
+  padding: 200px 24px 90px;   /* debajo del escudo que cuelga del encabezado */
+  overflow: hidden;
+}
+/* Más oscuro del lado del texto: el escudo grande de la pared del fondo no compite con el título */
+.portada::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(10, 10, 14, 0.62) 0%, rgba(10, 10, 14, 0.4) 45%, rgba(10, 10, 14, 0) 75%);
+}
+
+.portadaInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 32px;
+  align-items: center;
+}
+
+.portadaTexto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.sello {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.2em;
+  color: #12120e;
+  background: var(--gold);
+  padding: 6px 16px 4px;
+  border-radius: 4px;
+}
+.sello img {
+  width: 16px;
+  height: 16px;
+  margin-top: -2px;
+  filter: brightness(0) saturate(100%) invert(6%) sepia(9%) saturate(1500%) hue-rotate(15deg);   /* casi negro */
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 5.4vw, 4.4rem);   /* "AL SIGUIENTE NIVEL" entra en un renglón al lado de la pila */
+  letter-spacing: 0.05em;
+  line-height: 0.92;
+  color: #f0e6d0;
+}
+
+.bajada {
+  max-width: 440px;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: #b9ab8e;
+}
+
+.desde {
+  font-size: 1rem;
+  color: #b9ab8e;
+}
+.desde strong {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  margin: 0 4px;
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+/* Botón dorado con los filetes en las esquinas, como el de la figurita de la home */
+.botonDorado,
+.botonLinea {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  padding: 16px 34px 13px;
+  border-radius: 8px;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
+}
+.botonDorado {
+  background-color: var(--gold);
+  background-image: url('/cor-left-top.webp'), url('/cor-right-top.webp'), url('/cor-left-bottom.webp'), url('/cor-right-bottom.webp');
+  background-position: top left, top right, bottom left, bottom right;
+  background-repeat: no-repeat;
+  background-size: 22px 22px;
+  color: #12120e;
+}
+.botonDorado:hover {
+  background-color: #e8c96d;
+  transform: translateY(-1px);
+}
+.botonLinea {
+  color: var(--gold);
+  border: 1px solid var(--gold-border);
+}
+.botonLinea:hover {
+  border-color: var(--gold);
+  background-color: #c9a84c14;
+}
+
+/* ── Títulos de sección ── */
+.seccionTitulo {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-align: center;
+  color: var(--text);
+}
+
+.filete {
+  margin: 14px auto 0;
+}
+
+/* ── Beneficios: tres arriba y dos abajo, centrados ── */
+.beneficios {
+  padding: 90px 24px 100px;
+  scroll-margin-top: 40px;
+}
+
+.beneficiosGrilla {
+  list-style: none;
+  max-width: 1100px;
+  margin: 48px auto 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.beneficio {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 30px 26px 28px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--gold-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px #0000000b;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+}
+.beneficio:nth-child(4) { grid-column: 2 / span 2; }
+.beneficio:nth-child(5) { grid-column: 4 / span 2; }
+.beneficio:hover {
+  transform: translateY(-4px);
+  border-color: var(--gold);
+  box-shadow: 0 14px 32px #c9a84c26;
+}
+
+.beneficioIcono {
+  width: 84px;
+  height: 84px;
+  margin-bottom: 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #c9a84c30, #c9a84c12 70%);
+  border: 1px solid var(--gold-border);
+}
+
+/* Íconos de la app (PNG/WebP con transparencia) teñidos con máscara */
+.icono {
+  display: block;
+  flex-shrink: 0;
+  -webkit-mask: var(--icono) center / contain no-repeat;
+  mask: var(--icono) center / contain no-repeat;
+}
+.beneficioIcono .icono {
+  width: 44px;
+  height: 44px;
+  background: var(--gold-light);
+}
+
+.beneficioTitulo {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  line-height: 1.05;
+  color: var(--text);
+}
+
+.beneficioTexto {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* ── La figurita (fondo oscuro, como la sección de la home) ── */
+.figurita {
+  background: radial-gradient(ellipse at 50% 0%, #2a2414 0%, #12120e 60%);
+  padding: 96px 24px 90px;
+}
+
+.figuritaCabeza {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.etiqueta {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #12120e;
+  background: var(--gold);
+  padding: 4px 14px 2px;
+  border-radius: 4px;
+}
+
+.figuritaTitulo {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  letter-spacing: 0.06em;
+  line-height: 0.95;
+  color: #f0e6d0;
+}
+
+.figuritaTexto {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #9a8e78;
+}
+
+/* Tres pasos con flechas entre medio */
+.pasos {
+  list-style: none;
+  max-width: 1000px;
+  margin: 60px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 56px;
+}
+
+.paso {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+/* Flecha dorada hacia el paso siguiente */
+.paso + .paso::before {
+  content: '';
+  position: absolute;
+  top: 130px;
+  left: -42px;
+  width: 26px;
+  height: 26px;
+  border-top: 3px solid var(--gold);
+  border-right: 3px solid var(--gold);
+  transform: rotate(45deg);
+  opacity: 0.7;
+}
+
+.pasoImagen {
+  width: 230px;
+  height: 284px;
+  display: grid;
+  place-items: center;
+}
+
+.pasoFoto {
+  border: 2px dashed #c9a84c66;
+  border-radius: 16px;
+  background: #ffffff08;
+}
+.pasoFoto .icono {
+  width: 72px;
+  height: 72px;
+  background: var(--gold);
+  opacity: 0.85;
+}
+
+.poses {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  place-items: stretch;
+  align-content: center;
+}
+.poses img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  opacity: 0.75;
+}
+.poses .poseElegida {
+  border-color: var(--gold);
+  opacity: 1;
+  box-shadow: 0 0 0 3px #c9a84c33;
+}
+
+.pasoCarta {
+  filter: drop-shadow(0 14px 26px #00000099);
+}
+.carta {
+  width: 197px;
+  border-radius: 6.5% / 4.5%;   /* el redondeo de la tarjeta */
+}
+.carta img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pasoTexto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.06em;
+  color: #f0e6d0;
+}
+
+.pasoNumero {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding-top: 3px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #12120e;
+  font-size: 1.05rem;
+}
+
+/* Fila de figuritas de la comunidad: de borde a borde, pasando sola (se frena con el mouse encima) */
+.album {
+  margin: 90px -24px 0;
+  overflow: hidden;
+}
+.albumTitulo {
+  margin-bottom: 20px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+.albumPista {
+  display: flex;
+  width: max-content;
+  padding-block: 14px;   /* aire para la figurita inclinada y su sombra */
+  animation: desfile 48s linear infinite;   /* la duración real va en el style, según cuántas haya */
+}
+.album:hover .albumPista { animation-play-state: paused; }
+.albumGrupo {
+  display: flex;
+  list-style: none;
+  gap: 22px;
+  padding: 0 11px;   /* 11 + 11 entre las dos copias = el mismo espacio que entre figuritas */
+}
+.albumLink {
+  display: block;
+  width: 170px;
+  filter: drop-shadow(0 12px 22px #00000080);
+  transition: transform 0.25s ease;
+}
+.albumLink:hover { transform: translateY(-6px); }
+.albumLink img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 629 / 907;
+  background: #022232;   /* mientras se dibuja */
+}
+
+@keyframes desfile {
+  to { transform: translateX(-50%); }
+}
+
+/* ── Planes, sobre papel de álbum ── */
+.planes {
+  padding: 90px 24px 110px;
+  background: linear-gradient(#fbf6eccc, #fbf6eccc), url('/textura.webp') center / 640px repeat;
+  scroll-margin-top: 20px;
+}
+
+.planesInner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.planesInner > div[data-revelar] { margin-top: 44px; }
+
+/* ── Tablet y celular ── */
+@media (max-width: 960px) {
+  .portadaInner {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 24px;
+  }
+  .portadaTexto {
+    align-items: center;
+    text-align: center;
+  }
+  .botones { justify-content: center; }
+  .portada::before { background: rgba(10, 10, 14, 0.38); }   /* texto centrado: oscuro parejo */
+
+  .beneficiosGrilla { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .beneficio,
+  .beneficio:nth-child(4),
+  .beneficio:nth-child(5) { grid-column: auto; }
+  .beneficio:nth-child(5) { grid-column: 1 / -1; justify-self: center; max-width: calc(50% - 10px); }
+
+  .pasos { gap: 40px; }
+  .paso + .paso::before { left: -33px; }
+}
+
+/* Los pasos, uno debajo del otro cuando no entran los tres */
+@media (max-width: 800px) {
+  .pasos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 64px;
+  }
+  /* Flecha hacia abajo entre pasos */
+  .paso + .paso::before {
+    top: -46px;
+    left: calc(50% - 13px);
+    transform: rotate(135deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .portada { padding: 156px 16px 64px; }   /* debajo del escudo, que en el celular mide 124 px */
+  .titulo { font-size: clamp(2.6rem, 12vw, 3.4rem); }
+  .botonDorado,
+  .botonLinea { padding: 15px 26px 12px; font-size: 1rem; }
+
+  .beneficios { padding: 64px 16px 72px; }
+  .beneficiosGrilla {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 36px;
+  }
+  /* En renglones, con el ícono al costado: los cinco entran sin bajar tanto */
+  .beneficio,
+  .beneficio:nth-child(5) {
+    max-width: none;
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 4px;
+    align-items: center;
+    padding: 18px 18px 18px 16px;
+    text-align: left;
+  }
+  .beneficioIcono {
+    grid-row: span 2;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0;
+  }
+  .beneficioIcono .icono { width: 34px; height: 34px; }
+  .beneficioTitulo { font-size: 1.3rem; align-self: end; }
+  .beneficioTexto { font-size: 0.88rem; align-self: start; }
+
+  .figurita { padding: 72px 16px 64px; }
+  .album { margin: 64px -16px 0; }
+  .albumLink { width: 130px; }
+
+  .planes { padding: 64px 16px 80px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(html):has(.page) { scroll-behavior: auto; }
+  .albumPista { animation: none; }
+  .album { overflow-x: auto; }
+}

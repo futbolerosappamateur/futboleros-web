@@ -29,13 +29,6 @@
   margin-bottom: 56px;
 }
 
-/* Plan 10 no lleva el link "Inicio" (/pagar sí). En la compu el título queda donde estaba, lejos del escudo
-   que cuelga del encabezado; en el celular sube y queda a ~40 px del escudo */
-.heroSinVolver { margin-top: 71px; }
-@media (max-width: 640px) {
-  .heroSinVolver { margin-top: 0; }
-}
-
 .badge {
   display: inline-block;
   font-family: var(--font-display);
@@ -64,52 +57,6 @@
   max-width: 460px;
   margin: 0 auto;
   line-height: 1.7;
-}
-
-/* ── Benefits ── */
-.benefits {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 52px;
-}
-
-.benefitCard {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  background: var(--surface);
-  border: 1px solid var(--gold-border);
-  border-radius: 12px;
-  padding: 20px 24px;
-}
-
-.benefitIcon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: var(--gold-dim);
-  border: 1px solid var(--gold-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.benefitInfo { flex: 1; }
-
-.benefitTitle {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-
-.benefitDesc {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  line-height: 1.55;
 }
 
 /* ── Plans ── */
