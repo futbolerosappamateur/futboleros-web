@@ -13,9 +13,33 @@ export const TIPOS_WEB = [
   'salida_grupo',         // alguien salió de tu grupo
 ]
 
-// La página de notificaciones avisa con este evento cuando marca avisos como leídos, así la campanita
-// del encabezado baja al momento y no recién en la próxima consulta
+// La campanita y la página avisan con este evento cuando marcan avisos como leídos, así el número del
+// encabezado baja al momento y la otra se actualiza
 export const EVENTO_NOTIF_LEIDAS = 'futboleros:notificaciones-leidas'
+
+// Un aviso ya listo para mostrar (lo arma lib/notificaciones-servidor.ts)
+export type Aviso = {
+  id: number
+  tipo: string
+  titulo: string
+  mensaje: string
+  leida: boolean
+  creado_en: string
+  cuando: string    // "hace 5 min", armado en el servidor
+  icono: string
+  foto?: string     // la del que te sigue
+  href?: string     // a dónde lleva; sin link, tocarlo solo lo marca leído
+}
+
+// Un testimonio que le dejaron y espera que lo apruebe o lo rechace
+export type Pendiente = {
+  id: number
+  texto: string
+  fecha: string
+  autor: string
+  foto?: string
+  href?: string
+}
 
 // Avisos de la web sin leer (la misma tabla que la campanita de la app, solo los tipos de arriba)
 export async function contarNotificaciones(supabase: SupabaseClient, userId: string) {

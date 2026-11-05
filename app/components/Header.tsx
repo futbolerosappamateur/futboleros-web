@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { EVENTO_CHAT_LEIDO, contarNoLeidos } from '@/lib/chat'
 import { EVENTO_NOTIF_LEIDAS, contarNotificaciones } from '@/lib/notificaciones'
+import Campanita from './Campanita'
 import styles from './Header.module.css'
 
 type UserInfo = {
@@ -104,11 +105,15 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
       {noLeidos > 0 && <span className={styles.chatBadge}>{noLeidos > 9 ? '9+' : noLeidos}</span>}
     </Link>
   )
-  const campana = (className: string) => (
-    <Link href="/notificaciones" className={className} aria-label="Notificaciones" title="Notificaciones" onClick={() => setOpen(false)}>
-      <span className={styles.campanaIcono} />
-      {avisosNuevos > 0 && <span className={styles.chatBadge}>{avisosNuevos > 9 ? '9+' : avisosNuevos}</span>}
-    </Link>
+  // La campanita abre su desplegable con los últimos avisos (Campanita.tsx); el botón se ve como el del chat
+  const campana = (id: string, className?: string) => (
+    <Campanita
+      userId={id}
+      sinLeer={avisosNuevos}
+      className={className}
+      clases={{ boton: styles.chatBtn, icono: styles.campanaIcono, numero: styles.chatBadge }}
+      onAbrir={() => setOpen(false)}
+    />
   )
   const avatar = user && (user.avatar_url ? (
     <Image
@@ -183,7 +188,7 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
 
         <div className={styles.actions}>
           {user && chat(styles.chatBtn)}
-          {user && campana(styles.chatBtn)}
+          {user && campana(user.id)}
           {user ? (
             <div className={styles.userMenu}>
               <div className={styles.userChip}>
@@ -225,7 +230,7 @@ export default function Header({ darkLinks = false }: { darkLinks?: boolean }) {
         </div>
 
         {user && chat(`${styles.chatBtn} ${styles.chatMovil}`)}
-        {user && campana(`${styles.chatBtn} ${styles.campanaMovil}`)}
+        {user && campana(user.id, styles.campanaMovil)}
 
         <button
           className={styles.hamburger}

@@ -1,37 +1,12 @@
 'use client'
 
-import { useOptimistic, useState, useTransition } from 'react'
+import { useEffect, useOptimistic, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { EVENTO_NOTIF_LEIDAS, TIPOS_WEB } from '@/lib/notificaciones'
+import { EVENTO_NOTIF_LEIDAS, type Aviso, type Pendiente } from '@/lib/notificaciones'
+import { marcarLeida, marcarTodas, yaLeida } from '@/lib/notificaciones-cliente'
 import { responderTestimonio } from './actions'
 import styles from './notificaciones.module.css'
-
-export type Aviso = {
-  id: number
-  tipo: string
-  titulo: string
-  mensaje: string
-  leida: boolean
-  cuando: string    // "hace 5 min", ya armado en el servidor
-  icono: string
-  foto?: string     // la del que te sigue
-  href?: string     // a dónde lleva; sin link, tocarlo solo lo marca leído
-}
-
-export type Pendiente = {
-  id: number
-  texto: string
-  fecha: string
-  autor: string
-  foto?: string
-  href?: string
-}
-
-// Lo que se marcó leído en esta visita al sitio: al volver con "atrás", Next muestra la página que tenía
-// guardada y sin esto los avisos aparecerían otra vez como nuevos
-const leidasEnLaVisita = new Set<number>()
 
 const avisar = () => window.dispatchEvent(new Event(EVENTO_NOTIF_LEIDAS))
 
@@ -40,29 +15,19 @@ export default function NotificacionesClient({ userId, avisos, pendientes }: {
   avisos: Aviso[]
   pendientes: Pendiente[]
 }) {
-  const [leidas, setLeidas] = useState(() => new Set(leidasEnLaVisita))
-  const lista = avisos.map(a => (leidas.has(a.id) ? { ...a, leida: true } : a))
+  // Se vuelve a dibujar cuando se marca algo, acá o en la campanita del encabezado
+  const [, redibujar] = useState(0)
+  useEffect(() => {
+    const alMarcar = () => redibujar(n => n + 1)
+    window.addEventListener(EVENTO_NOTIF_LEIDAS, alMarcar)
+    return () => window.removeEventListener(EVENTO_NOTIF_LEIDAS, alMarcar)
+  }, [])
+  const lista = avisos.map(a => (yaLeida(a) ? { ...a, leida: true } : a))
   const sinLeer = lista.filter(a => !a.leida)
 
-  const anotar = (ids: number[]) => {
-    ids.forEach(id => leidasEnLaVisita.add(id))
-    setLeidas(new Set(leidasEnLaVisita))
-  }
-
   // Como en la app: tocar un aviso lo marca leído (y, si tiene link, lleva ahí)
-  const marcarLeida = (a: Aviso) => {
-    if (a.leida) return
-    anotar([a.id])
-    createClient().from('notificaciones').update({ leida: true }).eq('id', a.id).eq('usuario_id', userId)
-      .then(avisar)
-  }
-
-  // Todas las de la web, también las más viejas que no entran en la lista; las de partidos quedan para la app
-  const marcarTodas = () => {
-    anotar(lista.map(a => a.id))
-    createClient().from('notificaciones').update({ leida: true })
-      .eq('usuario_id', userId).eq('leida', false).in('tipo', TIPOS_WEB)
-      .then(avisar)
+  const tocar = (a: Aviso) => {
+    if (!a.leida) marcarLeida(userId, a.id)
   }
 
   return (
@@ -75,7 +40,9 @@ export default function NotificacionesClient({ userId, avisos, pendientes }: {
             Avisos{sinLeer.length > 0 && <span className={styles.cuenta}> ({sinLeer.length})</span>}
           </h2>
           {sinLeer.length > 0 && (
-            <button type="button" className={styles.marcarTodas} onClick={marcarTodas}>Marcar todas como leídas</button>
+            <button type="button" className={styles.marcarTodas} onClick={() => marcarTodas(userId, lista.map(a => a.id))}>
+              Marcar todas como leídas
+            </button>
           )}
         </div>
 
@@ -114,9 +81,9 @@ export default function NotificacionesClient({ userId, avisos, pendientes }: {
               return (
                 <li key={a.id}>
                   {a.href ? (
-                    <Link href={a.href} className={clase} onClick={() => marcarLeida(a)}>{contenido}</Link>
+                    <Link href={a.href} className={clase} onClick={() => tocar(a)}>{contenido}</Link>
                   ) : !a.leida ? (
-                    <button type="button" className={clase} onClick={() => marcarLeida(a)}>{contenido}</button>
+                    <button type="button" className={clase} onClick={() => tocar(a)}>{contenido}</button>
                   ) : (
                     <div className={clase}>{contenido}</div>
                   )}
