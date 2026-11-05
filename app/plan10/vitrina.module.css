@@ -217,6 +217,17 @@
   color: var(--text-muted);
 }
 
+/* Letra chica: abajo de todo, separada por una línea */
+.beneficioNota {
+  align-self: stretch;   /* la línea de arriba, de lado a lado de la tarjeta */
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #c9a84c2e;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: #8a8578;
+}
+
 /* ── La figurita (fondo oscuro, como la sección de la home) ── */
 .figurita {
   background: radial-gradient(ellipse at 50% 0%, #2a2414 0%, #12120e 60%);
@@ -484,7 +495,7 @@
     text-align: left;
   }
   .beneficioIcono {
-    grid-row: span 2;
+    grid-row: span 3;   /* título, texto y, si hay, la letra chica */
     width: 64px;
     height: 64px;
     margin-bottom: 0;
@@ -492,6 +503,11 @@
   .beneficioIcono .icono { width: 34px; height: 34px; }
   .beneficioTitulo { font-size: 1.3rem; align-self: end; }
   .beneficioTexto { font-size: 0.88rem; align-self: start; }
+  .beneficioNota {
+    grid-column: 2;
+    margin-top: 4px;
+    padding-top: 8px;
+  }
 
   .figurita { padding: 72px 16px 64px; }
   .album { margin: 64px -16px 0; }

@@ -21,13 +21,24 @@ export const metadata: Metadata = {
 // La fila de figuritas de la comunidad se renueva cada 5 minutos
 export const revalidate = 300
 
-// Los mismos cinco beneficios de antes, con los íconos de la pantalla del Plan 10 de la app
-const BENEFICIOS = [
+// Los cinco beneficios, con los íconos y los textos de la pantalla del Plan 10 de la app (screens/PlanPro.js);
+// la nota va abajo, en letra chica
+const BENEFICIOS: { icono: string; titulo: string; descripcion: string; nota?: string }[] = [
   { icono: '/ic-ojoc.webp', titulo: 'Sin anuncios', descripcion: 'Disfrutá la app sin interrupciones publicitarias.' },
   { icono: '/ic-testi2.webp', titulo: 'Testimonios', descripcion: 'Escribí y recibí testimonios de tus compañeros.' },
   { icono: '/ic-fig2.webp', titulo: 'Tu figurita', descripcion: 'Una figurita vintage personalizada por mes.' },
-  { icono: '/ic-sorteo.webp', titulo: 'Sorteo mensual', descripcion: 'Participá en el sorteo del primer día de cada mes.' },
-  { icono: '/ic-album.webp', titulo: 'Álbum impreso anual', descripcion: 'Tu equipo puede ganar el álbum impreso si más de la mitad son "10". Primera edición a finales de 2027.' },
+  {
+    icono: '/ic-sorteo.webp',
+    titulo: 'Sorteo mensual',
+    descripcion: 'Participá en el sorteo del primer día de cada mes.',
+    nota: 'Los sorteos se realizarán a partir de que Futboleros tenga +100 jugadores con Plan 10.',
+  },
+  {
+    icono: '/ic-album.webp',
+    titulo: 'Álbum impreso anual',
+    descripcion: 'Tu grupo puede ganar el álbum impreso con las figuritas de sus jugadores para pegar. Hasta 20 jugadores por grupo (los que más partidos jugaron). Disponible para grupos con 10 o más planes 10 activos por 6 meses o más consecutivos.',
+    nota: 'Se entrega un álbum por grupo.',
+  },
 ]
 
 // Las cuatro poses del editor de figuritas de la app (mitad de hombre, mitad de mujer)
@@ -97,6 +108,7 @@ export default async function Plan10() {
                 </span>
                 <h3 className={styles.beneficioTitulo}>{b.titulo}</h3>
                 <p className={styles.beneficioTexto}>{b.descripcion}</p>
+                {b.nota && <p className={styles.beneficioNota}>{b.nota}</p>}
               </li>
             ))}
           </ul>
