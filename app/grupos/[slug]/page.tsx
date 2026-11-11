@@ -11,6 +11,7 @@ import { resolverGrupo } from '@/lib/grupos'
 import { formatoRating } from '@/lib/formato'
 import { hayUsuario, perfilVisible } from '@/lib/privacidad'
 import { OG_IMAGEN } from '@/lib/sitio'
+import FotoGrupo from './FotoGrupo'
 import styles from './grupo.module.css'
 
 // Página pública del grupo, solo lectura: todo sale de lo que se carga en la app
@@ -155,14 +156,7 @@ export default async function GrupoPage({ params }: { params: Promise<{ slug: st
         <ParallaxHero src={fondo || FONDO_GRUPO} className={styles.hero}>
           <div className={styles.heroInner}>
             <div className={styles.heroBottom}>
-              <div className={styles.fotoCircle}>
-                {grupo.foto_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={grupo.foto_url} alt={grupo.nombre} />
-                ) : (
-                  <span>{grupo.nombre?.charAt(0)?.toUpperCase() ?? '?'}</span>
-                )}
-              </div>
+              <FotoGrupo src={grupo.foto_url} nombre={grupo.nombre} />
               <div className={styles.heroInfo}>
                 <p className={styles.badge}>Grupo</p>
                 <h1 className={styles.nombre}>{grupo.nombre}</h1>
