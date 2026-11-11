@@ -130,20 +130,31 @@ export async function eliminarUsuario(id: string): Promise<Resultado> {
   if (errorPerfil) return { ok: false, error: 'No se pudo revisar la cuenta. Probá de nuevo.' }
   if (perfil?.is_admin || perfil?.acceso_panel) return { ok: false, error: 'Las cuentas con acceso al panel no se borran desde acá.' }
 
-  // Grupos que administra (también los dados de baja): la base no deja borrar la cuenta de un admin, porque
-  // grupos.admin_id apunta a ella, y el grupo quedaría sin nadie que lo maneje. Antes se borraban igual todos sus
-  // datos y recién al final fallaba: quedaba la cuenta viva y vacía. Ahora se avisa antes de borrar nada
+  // Grupos que administra (también los dados de baja). La base no deja borrar la cuenta de un admin, porque
+  // grupos.admin_id apunta a ella: antes se borraban igual todos sus datos y recién al final fallaba, y quedaba la
+  // cuenta viva y vacía. Desde el 11/11/2026 cada grupo pasa al integrante activo más antiguo, que recibe un aviso,
+  // o se da de baja si no queda nadie (soltar_grupos_de_cuenta, futboleros/supabase/rating_y_cuentas.sql)
   const { data: gruposAdmin, error: errorGrupos } = await supabase.from('grupos').select('nombre').eq('admin_id', id)
   if (errorGrupos) return { ok: false, error: 'No se pudo revisar la cuenta. Probá de nuevo.' }
-  if (gruposAdmin?.length) {
-    const nombres = gruposAdmin.map(g => `«${g.nombre || 'sin nombre'}»`).join(', ')
-    return { ok: false, error: `Es admin de ${nombres}. Mientras administre un grupo, la cuenta no se puede borrar.` }
+  const tieneGrupos = (gruposAdmin?.length ?? 0) > 0
+  if (tieneGrupos) {
+    // Se prueba con una cuenta que no existe: si la base todavía no tiene esa función, no se borra nada
+    const { error: sinFuncion } = await supabase.rpc('soltar_grupos_de_cuenta', { p_uid: '00000000-0000-0000-0000-000000000000' })
+    if (sinFuncion) {
+      const nombres = gruposAdmin!.map(g => `«${g.nombre || 'sin nombre'}»`).join(', ')
+      return { ok: false, error: `Es admin de ${nombres}. Mientras administre un grupo, la cuenta no se puede borrar.` }
+    }
   }
 
   try {
     // Primero el débito y los archivos: si algo falla, todavía no se borró nada y se puede reintentar
     await darDeBajaDebito(supabase, id)
     await borrarArchivos(supabase, id)
+    // Sus grupos pasan a otro integrante o se dan de baja, antes de sacarlo de grupo_jugadores
+    if (tieneGrupos) {
+      const { error } = await supabase.rpc('soltar_grupos_de_cuenta', { p_uid: id })
+      if (error) throw new Error(`grupos: ${error.message}`)
+    }
     // Si un paso falla no se sigue: antes se seguía igual y la cuenta podía quedar borrada a medias (la que ganó el
     // sorteo de octubre quedó sin datos y con el perfil suelto). Cada paso se puede repetir: un reintento lo termina
     for (const [tabla, columna] of DATOS_DEL_USUARIO) {
