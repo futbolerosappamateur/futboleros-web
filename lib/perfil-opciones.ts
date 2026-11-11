@@ -36,7 +36,8 @@ export const PAISES = [
   { code: 'MX', nombre: 'México' }, { code: 'ES', nombre: 'España' },
   { code: 'IT', nombre: 'Italia' }, { code: 'DE', nombre: 'Alemania' },
   { code: 'FR', nombre: 'Francia' }, { code: 'PT', nombre: 'Portugal' },
-  { code: 'GB', nombre: 'Inglaterra' }, { code: 'US', nombre: 'EE.UU.' },
+  { code: 'GB', nombre: 'Inglaterra' }, { code: 'BE', nombre: 'Bélgica' },
+  { code: 'US', nombre: 'EE.UU.' },
 ]
 export const NOMBRE_PAIS: Record<string, string> = Object.fromEntries(PAISES.map(p => [p.code, p.nombre]))
 
