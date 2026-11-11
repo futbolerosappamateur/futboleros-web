@@ -21,6 +21,8 @@ type RatingRow = {
   total_asistencias: number | null
   partidos_ganados: number | null
   rating: number | string | null
+  // Partidos con nota en ese grupo (futboleros/supabase/rating_y_cuentas.sql); sin la columna, pesa por partidos
+  partidos_con_nota?: number | null
 }
 
 export default async function Jugadores({
@@ -54,31 +56,32 @@ export default async function Jugadores({
   if (ids.length) {
     const { data } = await supabase
       .from('ratings')
-      .select('usuario_id, partidos_jugados, total_goles, total_asistencias, partidos_ganados, rating')
+      .select('*')
       .in('usuario_id', ids)
       .limit(10000)
     ratingRows = (data ?? []) as RatingRow[]
   }
 
-  type Stats = { partidos: number; goles: number; asistencias: number; ganados: number; ratingSum: number; conRating: number; filas: number }
+  type Stats = { partidos: number; goles: number; asistencias: number; ganados: number; ratingSum: number; ratingPeso: number }
   const statsMap: Record<string, Stats> = {}
   for (const row of ratingRows) {
-    const s = (statsMap[row.usuario_id] ??= { partidos: 0, goles: 0, asistencias: 0, ganados: 0, ratingSum: 0, conRating: 0, filas: 0 })
+    const s = (statsMap[row.usuario_id] ??= { partidos: 0, goles: 0, asistencias: 0, ganados: 0, ratingSum: 0, ratingPeso: 0 })
     s.partidos += row.partidos_jugados ?? 0
     s.goles += row.total_goles ?? 0
     s.asistencias += row.total_asistencias ?? 0
     s.ganados += row.partidos_ganados ?? 0
-    s.filas++
-    if (row.rating != null) {
-      s.ratingSum += Number(row.rating)
-      s.conRating++
+    const peso = Number(row.partidos_con_nota ?? row.partidos_jugados) || 0
+    if (row.rating != null && peso > 0) {
+      s.ratingSum += Number(row.rating) * peso
+      s.ratingPeso += peso
     }
   }
 
-  // Rating global como get_stats_globales: SUM(rating) / COUNT(*) / 10 (ratings guarda la nota × 10),
-  // y 5.0 si nunca tuvo nota; la página del jugador lo muestra solo si jugó algún partido
+  // Rating global como get_stats_globales y la app (regla del 11/11/2026): cuenta todos los partidos del jugador,
+  // de todos sus grupos. Es el promedio de todas sus notas: cada grupo pesa por sus partidos con nota (ratings guarda
+  // la nota × 10). 5.0 si nunca tuvo nota; la página del jugador lo muestra solo si jugó algún partido
   const ratingGlobal = (s: Stats) =>
-    s.partidos > 0 ? (s.conRating > 0 ? s.ratingSum / s.filas / 10 : 5) : null
+    s.partidos > 0 ? (s.ratingPeso > 0 ? s.ratingSum / s.ratingPeso / 10 : 5) : null
 
   const jugadoresConStats: JugadorConStats[] = lista.map((j: any) => ({
     id: j.id,

@@ -66,7 +66,8 @@ const ARCHIVOS_DEL_USUARIO = [
   { bucket: 'figuritas', prefijo: (uid: string) => `figurita_${uid}_` },
 ]
 
-// En orden: primero lo que depende del perfil. pagos_plan10 queda (sin el perfil ya no dice de quién es)
+// En orden: primero lo que depende del perfil. pagos_plan10 queda (sin el perfil ya no dice de quién es).
+// stats_grupo no va: es una vista que se arma sola con las estadísticas (borrar de ahí fallaba siempre)
 const DATOS_DEL_USUARIO: [tabla: string, columna: string][] = [
   ['testimonios', 'autor_id'],
   ['testimonios', 'destinatario_id'],
@@ -74,7 +75,6 @@ const DATOS_DEL_USUARIO: [tabla: string, columna: string][] = [
   ['figuritas_generadas', 'user_id'],
   ['estadisticas', 'usuario_id'],
   ['ratings', 'usuario_id'],
-  ['stats_grupo', 'usuario_id'],
   ['convocatorias', 'usuario_id'],
   ['mensajes', 'sender_id'],
   ['conversaciones', 'usuario1_id'],
@@ -129,11 +129,27 @@ export async function eliminarUsuario(id: string): Promise<Resultado> {
   // Si no se pudo leer, no se borra: podría ser una cuenta del panel
   if (errorPerfil) return { ok: false, error: 'No se pudo revisar la cuenta. Probá de nuevo.' }
   if (perfil?.is_admin || perfil?.acceso_panel) return { ok: false, error: 'Las cuentas con acceso al panel no se borran desde acá.' }
+
+  // Grupos que administra (también los dados de baja): la base no deja borrar la cuenta de un admin, porque
+  // grupos.admin_id apunta a ella, y el grupo quedaría sin nadie que lo maneje. Antes se borraban igual todos sus
+  // datos y recién al final fallaba: quedaba la cuenta viva y vacía. Ahora se avisa antes de borrar nada
+  const { data: gruposAdmin, error: errorGrupos } = await supabase.from('grupos').select('nombre').eq('admin_id', id)
+  if (errorGrupos) return { ok: false, error: 'No se pudo revisar la cuenta. Probá de nuevo.' }
+  if (gruposAdmin?.length) {
+    const nombres = gruposAdmin.map(g => `«${g.nombre || 'sin nombre'}»`).join(', ')
+    return { ok: false, error: `Es admin de ${nombres}. Mientras administre un grupo, la cuenta no se puede borrar.` }
+  }
+
   try {
     // Primero el débito y los archivos: si algo falla, todavía no se borró nada y se puede reintentar
     await darDeBajaDebito(supabase, id)
     await borrarArchivos(supabase, id)
-    for (const [tabla, columna] of DATOS_DEL_USUARIO) await supabase.from(tabla).delete().eq(columna, id)
+    // Si un paso falla no se sigue: antes se seguía igual y la cuenta podía quedar borrada a medias (la que ganó el
+    // sorteo de octubre quedó sin datos y con el perfil suelto). Cada paso se puede repetir: un reintento lo termina
+    for (const [tabla, columna] of DATOS_DEL_USUARIO) {
+      const { error } = await supabase.from(tabla).delete().eq(columna, id)
+      if (error) throw new Error(`${tabla}: ${error.message}`)
+    }
     const { error } = await supabase.auth.admin.deleteUser(id)
     if (error && error.status !== 404) throw error
     return { ok: true }
